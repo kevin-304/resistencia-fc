@@ -1,0 +1,84 @@
+/* Ajustes para la versión celular (se carga después de estilos.css). */
+body.movil {
+  display: block;
+  overflow: auto;
+  font-size: calc(15px * var(--escala));
+  -webkit-tap-highlight-color: transparent;
+}
+body.movil #vista {
+  overflow: visible;
+  padding: 14px 14px calc(92px + env(safe-area-inset-bottom));
+  min-height: 100vh;
+}
+
+/* Barra de navegación inferior */
+#menu-movil {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--barra); border-top: 1px solid color-mix(in srgb, var(--barra-texto) 12%, transparent);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+#menu-movil button {
+  all: unset; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0;
+  color: var(--barra-texto); opacity: .75; font-size: .74em; font-weight: 600; border-radius: 10px;
+}
+#menu-movil button svg { width: 23px; height: 23px; }
+#menu-movil button.activo { color: var(--barra-activo); opacity: 1; background: color-mix(in srgb, var(--barra-activo) 14%, transparent); }
+
+/* Cabeceras más compactas */
+body.movil .cabecera { gap: 8px; margin-bottom: 12px; }
+body.movil .cabecera .titulo { min-width: 0; flex-basis: 100%; order: 5; }
+body.movil h1 { font-size: 1.3em; }
+body.movil .tarjeta { padding: 14px; }
+body.movil .rejilla-2, body.movil .rejilla-3, body.movil .rejilla-4 { grid-template-columns: 1fr; }
+body.movil .campos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.movil input, body.movil select { height: 44px; font-size: 16px; } /* 16px evita el zoom automático */
+body.movil textarea { font-size: 16px; }
+body.movil .boton { min-height: 42px; }
+body.movil .estrellas { flex-wrap: wrap; }
+body.movil .estrellas button { width: 38px; height: 38px; }
+body.movil #avisos-flotantes { left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); }
+body.movil .aviso-flotante { max-width: none; }
+
+/* Pestañas del día: una fila que se desliza */
+body.movil .pestanas { flex-wrap: nowrap; overflow-x: auto; margin: 0 -14px 14px; padding: 0 14px 12px; scrollbar-width: none; }
+body.movil .pestanas::-webkit-scrollbar { display: none; }
+body.movil .pestanas button { flex: none; padding: 9px 14px; }
+
+/* Comidas en celular */
+body.movil .comida { grid-template-columns: 1fr 1fr; }
+body.movil .comida > input[data-k="desc"] { grid-column: 1 / -1; }
+body.movil .comida .chips button[data-accion="frecuente-guardar"] { margin-left: 0 !important; }
+
+/* Calentamiento: 2 tarjetas por fila */
+body.movil .ej-galeria { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+body.movil .ej-texto { padding: 7px 9px 9px; }
+
+/* Calendario compacto: número y marcas */
+body.movil .cal-cabecera { flex-wrap: wrap; }
+body.movil .cal-cabecera h1 { min-width: 0; flex: 1; font-size: 1.1em; white-space: nowrap; }
+body.movil .cal-cabecera [data-registrar] { display: none; }
+body.movil .cal-dias-semana, body.movil .cal-rejilla { gap: 4px; }
+body.movil .cal-dias-semana div { font-size: .68em; letter-spacing: 0; }
+body.movil .celda { min-height: 64px; padding: 5px 4px; gap: 3px; border-radius: 9px; align-items: center; }
+body.movil .celda.hoy { padding: 4px 3px; }
+body.movil .celda .c-top { justify-content: center; }
+body.movil .celda .c-num { font-size: 1em; }
+body.movil .celda .c-sem, body.movil .celda .c-plan, body.movil .celda .c-datos { display: none; }
+body.movil .celda .c-marcas { display: grid; grid-template-columns: repeat(2, 12px); gap: 3px; }
+body.movil .marca-dia { width: 12px; height: 12px; border-radius: 4px; border-width: 1px; }
+body.movil .marca-dia svg { display: none; }
+body.movil .leyenda { gap: 10px; font-size: .78em; }
+
+/* Bienvenida */
+body.movil .bienvenida .logo-grande img { width: 70px; height: 70px; }
+body.movil .titulo-logo { font-size: 2em; }
+
+/* Enviar */
+.dia-envio { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--borde); cursor: pointer; }
+.dia-envio:last-child { border-bottom: 0; }
+.dia-envio input { width: 22px; height: 22px; accent-color: var(--acento); flex: none; }
+.dia-envio > span:nth-of-type(1) { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.dia-envio small { color: var(--texto-suave); font-size: .82em; }
+.aviso-pill { background: color-mix(in srgb, var(--aviso) 18%, transparent); color: var(--aviso); }
+.boton-fijo { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom)); width: 100%; margin-top: 14px; box-shadow: var(--sombra); }
