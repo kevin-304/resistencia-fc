@@ -1,6 +1,6 @@
 // Creación del perfil la primera vez (bienvenida) y edición del perfil después.
 import { estado, guardarPerfil, guardarRutas, guardarConfig, nuevaRuta, subtitulo, reiniciarEstado } from '../estado.js';
-import { pesoMetaSugerido, imc, INICIO_POR_DEFECTO } from '../plan.js';
+import { pesoMetaSugerido, imc, INICIO_POR_DEFECTO, planSugerido, planVacio } from '../plan.js';
 import { aviso, navegar } from '../nav.js';
 import { I } from '../iconos.js';
 import { aNumero, escapar, num, hoyISO, proximoLunes, fechaLarga, diasEntre } from '../util.js';
@@ -79,7 +79,8 @@ function leerFormulario(raiz, p) {
 // ---------- Bienvenida (primera vez) ----------
 export async function mostrarBienvenida(cont) {
   const hayPerfiles = (await window.api.listarPerfiles()).length > 0;
-  let paso = 1; // 1 = datos personales, 2 = ruta principal
+  let paso = 1; // 1 = datos personales, 2 = ruta principal y plan
+  let tipoPlan = 'sugerido';
   const p = {};
   const ruta = { nombre: '', ciudad: '', terreno: '', distancia: null, desnivel: null };
 
@@ -124,6 +125,11 @@ export async function mostrarBienvenida(cont) {
           <label class="campo"><span>Distancia ida y vuelta</span><div class="con-unidad"><input id="r-km" inputmode="decimal" value="${ruta.distancia != null ? String(ruta.distancia).replace('.', ',') : ''}"><em>km</em></div></label>
           <label class="campo"><span>Desnivel positivo</span><div class="con-unidad"><input id="r-desnivel" inputmode="decimal" value="${ruta.desnivel ?? ''}"><em>m</em></div></label>
         </div>
+        <p class="suave pequeño" style="margin:18px 0 8px;font-weight:600">¿Con qué plan empiezas?</p>
+        <div class="sexo-opciones">
+          <button type="button" data-plan="sugerido" class="${tipoPlan === 'sugerido' ? 'activo' : ''}">Plan sugerido<small>Rutina semanal, ejercicios, ayuno 16:8 y metas listas para usar</small></button>
+          <button type="button" data-plan="blanco" class="${tipoPlan === 'blanco' ? 'activo' : ''}">Plan en blanco<small>Lo armo yo desde cero en "Mi plan"</small></button>
+        </div>
         <div style="display:flex;justify-content:space-between;margin-top:18px">
           <button class="boton fantasma" id="atras">${I.izquierda} Atrás</button>
           <button class="boton primario grande" id="terminar">${I.check} Empezar</button>
@@ -135,6 +141,10 @@ export async function mostrarBienvenida(cont) {
         distancia: aNumero(caja.querySelector('#r-km').value),
         desnivel: aNumero(caja.querySelector('#r-desnivel').value),
       });
+      caja.querySelectorAll('[data-plan]').forEach((b) => b.addEventListener('click', () => {
+        tipoPlan = b.dataset.plan;
+        caja.querySelectorAll('[data-plan]').forEach((x) => x.classList.toggle('activo', x === b));
+      }));
       caja.querySelector('#atras').addEventListener('click', () => { leerRuta(); paso = 1; pintar(); });
       caja.querySelector('#terminar').addEventListener('click', async () => {
         leerRuta();
@@ -144,6 +154,7 @@ export async function mostrarBienvenida(cont) {
         estado.perfil = { ...p, creado: hoyISO() };
         estado.rutas = [r];
         estado.config.rutaPrincipal = r.id;
+        estado.config.plan = tipoPlan === 'blanco' ? planVacio() : planSugerido();
         estado.config.terreno = { actual: r.terreno === 'plano' ? 'plano' : 'montana', desde: r.terreno === 'plano' ? estado.perfil.fechaInicio : null };
         await guardarPerfil();
         await guardarRutas();

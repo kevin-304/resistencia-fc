@@ -2,7 +2,7 @@
 // resúmenes semanales, rachas y alertas sanas (sección 9.8 del plan).
 
 import { horasEntre, sumarDias, diaSemana, duracionAMinutos, lunesDe, hoyISO, aMinutos, promedio, suma, diasEntre } from './util.js';
-import { planDelDia, kmEsfuerzo, semanaDelPlan, ejerciciosDe, resumenComplemento } from './plan.js';
+import { planDelDia, kmEsfuerzo, semanaDelPlan, ejerciciosDe, resumenComplemento, normalizarPlan } from './plan.js';
 
 export const ETIQUETAS_COMIDA = [
   { id: 'proteina', nombre: 'Proteína', bueno: true },
@@ -28,12 +28,14 @@ export const ML_POR_VASO = 250;
 export function metricasDia(fecha, dias, ctx) {
   const d = dias[fecha] || {};
   const ayer = dias[sumarDias(fecha, -1)] || {};
-  const plan = planDelDia(fecha, ctx.inicio, ctx.terreno, ctx.rutaPrincipal);
+  const pu = ctx.plan || normalizarPlan(null);
+  const plan = planDelDia(fecha, ctx.inicio, ctx.terreno, ctx.rutaPrincipal, pu);
   const m = { fecha, plan, registrado: Object.keys(d).length > 0 };
+  const metas = pu.metas;
 
   // Sueño: de la hora de dormir (noche anterior) a la de despertar.
   m.sueno = horasEntre(d.sueno?.dormir, d.sueno?.despertar);
-  m.suenoOk = m.sueno == null ? null : m.sueno >= 7 - 1e-9;
+  m.suenoOk = m.sueno == null ? null : m.sueno >= (metas.suenoHoras || 7) - 1e-9;
 
   // Ayuno: desde la última comida de ayer hasta la primera de hoy.
   m.ayunoHoras = horasEntre(ayer.ayuno?.ultima, d.ayuno?.primera);
@@ -60,7 +62,7 @@ export function metricasDia(fecha, dias, ctx) {
 
   // Complemento
   const c = d.complemento || {};
-  const listaComp = ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana);
+  const listaComp = ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana, pu);
   const rc = resumenComplemento(listaComp, c.registro || {});
   const hechosViejos = Object.values(c.ejercicios || {}).filter(Boolean).length; // formato anterior (casillas)
   m.compReps = rc.reps;
@@ -78,15 +80,16 @@ export function metricasDia(fecha, dias, ctx) {
   m.guineos = d.frutas?.guineo || 0;
   m.naranjas = d.frutas?.naranja || 0;
   m.otrasFrutas = d.frutas?.otra || 0;
+  m.alimentos = { ...(d.frutas || {}) };
   m.aguaL = d.agua ? (d.agua * ML_POR_VASO) / 1000 : null;
   m.comidasFueraVentana = plan.ayuno ? comidas.filter((x) => fueraDeVentana(x.hora, plan.ayuno.ventana, d.ayuno?.guineoAntes)).length : 0;
 
   m.peso = d.medidas?.peso ?? null;
   m.cintura = d.medidas?.cintura ?? null;
 
-  // Cumplimiento: lunes a sábado = ruta + ayuno + complemento. Domingo no cuenta.
+  // Cumplimiento: lo que el plan pide ese día (ruta, ayuno, complemento). Los días de descanso no cuentan.
   if (plan.antesDelPlan || plan.descanso) m.cumplido = null;
-  else m.cumplido = m.rutaHecha && m.ayunoOk === true && m.compHecho;
+  else m.cumplido = (!plan.ruta || m.rutaHecha) && (!plan.ayuno || m.ayunoOk === true) && (!plan.complemento || m.compHecho);
   return m;
 }
 
@@ -133,7 +136,9 @@ export function resumen(lista) {
     guineos: suma(lista.map((m) => m.guineos)),
     naranjas: suma(lista.map((m) => m.naranjas)),
     otrasFrutas: suma(lista.map((m) => m.otrasFrutas)),
+    alimentos: lista.reduce((t, m) => { for (const [k, v] of Object.entries(m.alimentos || {})) t[k] = (t[k] || 0) + (Number(v) || 0); return t; }, {}),
     limitar: suma(lista.map((m) => m.limitar)),
+    comidasTotal: suma(lista.map((m) => m.comidas)),
     aguaProm: promedio(lista.map((m) => m.aguaL)),
     peso: [...lista].reverse().find((m) => m.peso != null)?.peso ?? null,
     cintura: [...lista].reverse().find((m) => m.cintura != null)?.cintura ?? null,
@@ -209,6 +214,8 @@ export function rachas(dias, ctx, hasta = hoyISO()) {
 // ---------- Alertas sanas ----------
 export function alertasDia(fecha, dias, ctx) {
   const m = metricasDia(fecha, dias, ctx);
+  const pu = ctx.plan || normalizarPlan(null);
+  const metas = pu.metas;
   const a = [];
   const hoy = hoyISO();
   const ahora = new Date().getHours() * 60 + new Date().getMinutes();
@@ -223,14 +230,15 @@ export function alertasDia(fecha, dias, ctx) {
     if (seguidos) a.push({ nivel: 'peligro', texto: `Molestia en ${zona.toLowerCase()} 3 días seguidos: descansa y, si sigue, consulta a un médico o fisioterapeuta.` });
     else if ((m.molestia.nivel || 0) >= 4) a.push({ nivel: 'aviso', texto: `Molestia fuerte en ${zona.toLowerCase()}: dolor localizado = ese día solo caminas.` });
   }
-  if (m.plan.ruta && m.kcalIngeridas != null && m.kcalIngeridas < 1500 && diaTerminado) {
-    a.push({ nivel: 'aviso', texto: `Comiste ~${Math.round(m.kcalIngeridas)} kcal en un día de entrenamiento: el mínimo es ~1.500 kcal (referencia 1.700–1.900).` });
+  if (metas.kcalMin && m.plan.ruta && m.kcalIngeridas != null && m.kcalIngeridas < metas.kcalMin && diaTerminado) {
+    a.push({ nivel: 'aviso', texto: `Comiste ~${Math.round(m.kcalIngeridas)} kcal en un día de entrenamiento: tu mínimo es ~${metas.kcalMin} kcal${metas.kcalMax ? ` (referencia hasta ${metas.kcalMax})` : ''}.` });
   }
-  if (m.ayunoHoras != null && !m.plan.descanso && m.plan.ayuno && m.ayunoHoras > 16.5) {
-    a.push({ nivel: 'aviso', texto: `Ayuno de ${m.ayunoHoras.toFixed(1).replace('.', ',')} h: no alargues más de 16 h con 6 días de ruta.` });
+  if (m.ayunoHoras != null && !m.plan.descanso && m.plan.ayuno && !m.plan.ayuno.flexible && m.ayunoHoras > m.plan.ayuno.horas + 0.5) {
+    a.push({ nivel: 'aviso', texto: `Ayuno de ${m.ayunoHoras.toFixed(1).replace('.', ',')} h: no alargues más de ${m.plan.ayuno.horas} h si entrenas casi todos los días.` });
   }
-  if (m.guineos > 2) {
-    a.push({ nivel: 'info', texto: 'Más de 2 guineos hoy: la recomendación es 1 al día (hasta 2 en días fuertes).' });
+  for (const al of pu.alimentos || []) {
+    const n = Number(m.alimentos?.[al.id]) || 0;
+    if (al.max && n > al.max) a.push({ nivel: 'info', texto: `Más de ${al.max} de "${al.nombre}" hoy${al.nota ? ` (recomendación: ${al.nota})` : ''}.` });
   }
   if (m.comidasFueraVentana > 0) {
     a.push({ nivel: 'info', texto: `${m.comidasFueraVentana} comida(s) fuera de la ventana de hoy (${m.plan.ayuno.ventana.join('–')}).` });

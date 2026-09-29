@@ -58,7 +58,7 @@ export function mostrarCalendario(cont, params = {}) {
       <span><i style="border:1.5px dashed var(--texto-suave)"></i>A medias</span>
       <span><i style="border:1.5px solid var(--peligro)"></i>No cumplido</span>
     </div>
-    ${r ? resumenMes(r) : ''}
+    ${r ? resumenMes(r, ctx) : ''}
   `;
 
   cont.querySelectorAll('[data-mover]').forEach((b) => b.addEventListener('click', () => {
@@ -99,15 +99,15 @@ function celda(fecha, ctx, hoy, mesActual) {
   </button>`;
 }
 
-function resumenMes(r) {
+function resumenMes(r, ctx) {
   const item = (et, val, nota = '') => `<div class="kpi"><span class="etiqueta">${et}</span><span class="valor">${val}</span>${nota ? `<span class="nota">${nota}</span>` : ''}</div>`;
   return `<div class="tarjeta resumen-mes">
     <div class="tarjeta-cab"><h2>Resumen del mes (hasta hoy)</h2></div>
     <div class="rejilla rejilla-4">
       ${item('Días cumplidos', `${r.diasCumplidos}<small>/ ${r.diasEntreno}</small>`, 'ruta + ayuno + complemento')}
       ${item('Kilómetros', `${num(r.km, 1)}<small>km</small>`, `${num(r.kmEsf, 1)} km-esfuerzo`)}
-      ${item('Sueño promedio', r.sueno != null ? `${num(r.sueno, 1)}<small>h</small>` : '—', `${r.diasSuenoOk} noches ≥ 7 h`)}
-      ${item('Frutas', `${r.guineos}<small>guineos</small> ${r.naranjas}<small>naranjas</small>`)}
+      ${item('Sueño promedio', r.sueno != null ? `${num(r.sueno, 1)}<small>h</small>` : '—', `${r.diasSuenoOk} noches con tu meta de sueño`)}
+      ${item('Comidas registradas', `${r.comidasTotal}<small>comidas</small>`, ctx.plan.alimentos.slice(0, 3).map((a) => `${r.alimentos[a.id] || 0} ${escapar(a.nombre.toLowerCase())}`).join(' · '))}
     </div>
   </div>`;
 }

@@ -2,7 +2,7 @@
 // Cada cambio se guarda solo (no hay botón "Guardar").
 import { estado, contexto, diaDe, diaEditable, diaCambiado, guardarFrecuentes, rutaPrincipal } from '../estado.js';
 import { metricasDia, alertasDia, ETIQUETAS_COMIDA, TIPOS_COMIDA, ML_POR_VASO, fueraDeVentana } from '../metricas.js';
-import { TIPOS_SESION, TIPOS_COMPLEMENTO, ejerciciosDe, COMPLEMENTOS, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo } from '../plan.js';
+import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo } from '../plan.js';
 import { navegar, alSalir, aviso } from '../nav.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
@@ -18,10 +18,12 @@ const PESTANAS = [
   { id: 'medidas', nombre: 'Medidas' },
   { id: 'notas', nombre: 'Notas' },
 ];
-let pestanaActual = 'plan'; // se recuerda al pasar de un día a otro
+let pestanaActual = 'plan';
+let PU = normalizarPlan(null); // plan del perfil abierto (se fija al mostrar el día) // se recuerda al pasar de un día a otro
 
 export function mostrarDia(cont, { fecha }) {
   const ctx = contexto();
+  PU = ctx.plan;
   const hoy = hoyISO();
   const m0 = metricasDia(fecha, estado.dias, ctx);
   const plan = m0.plan;
@@ -43,7 +45,7 @@ export function mostrarDia(cont, { fecha }) {
       ${fecha !== hoy ? '<button class="boton" data-accion="hoy">Ir a hoy</button>' : ''}
     </div>
     <nav class="pestanas" id="pestanas">
-      ${PESTANAS.map((t) => `<button data-pestana="${t.id}" class="${t.id === pestanaActual ? 'activa' : ''}"><span class="punto" data-punto="${t.id}"></span>${t.nombre}</button>`).join('')}
+      ${PESTANAS.filter((t) => t.id !== 'calentamiento' || PU.calentamiento).map((t) => `<button data-pestana="${t.id}" class="${t.id === pestanaActual ? 'activa' : ''}"><span class="punto" data-punto="${t.id}"></span>${t.nombre}</button>`).join('')}
     </nav>
     <div class="alertas" id="alertas" style="margin-bottom:16px"></div>
     <div class="dia-paneles">
@@ -168,7 +170,7 @@ export function mostrarDia(cont, { fecha }) {
     if (accion === 'todo-complemento') {
       const dia = diaEditable(fecha);
       prepararDefectos(dia, 'complemento.x', plan);
-      dia.complemento.registro = Object.fromEntries(ejerciciosDe(dia.complemento.tipo, plan.semana).map((x) => [x.id, Array(x.series).fill(x.valor)]));
+      dia.complemento.registro = Object.fromEntries(ejerciciosDe(dia.complemento.tipo, plan.semana, PU).map((x) => [x.id, Array(x.series).fill(x.valor)]));
       dia.complemento.hecho = true;
       diaCambiado(fecha);
       repintar();
@@ -276,7 +278,7 @@ export function mostrarDia(cont, { fecha }) {
     const m = metricasDia(fecha, estado.dias, ctx);
     const pon = (k, html) => cont.querySelectorAll(`[data-calc="${k}"]`).forEach((x) => (x.innerHTML = html));
     pon('sueno', m.sueno != null ? formatoHoras(m.sueno) : '—');
-    pon('sueno-estado', m.suenoOk == null ? pill('nada', 'Sin datos') : m.suenoOk ? pill('ok', '✓ 7 h o más') : pill('no', 'Menos de 7 h'));
+    pon('sueno-estado', m.suenoOk == null ? pill('nada', 'Sin datos') : m.suenoOk ? pill('ok', `✓ ${num(PU.metas.suenoHoras, 1)} h o más`) : pill('no', `Menos de ${num(PU.metas.suenoHoras, 1)} h`));
     pon('ayuno', m.ayunoHoras != null ? formatoHoras(m.ayunoHoras) : '—');
     pon('ventana', m.ventanaHoras != null ? formatoHoras(m.ventanaHoras) : '—');
     pon('ayuno-estado', !plan.ayuno ? pill('nada', 'Sin meta') : m.ayunoExcepcion ? pill('ok', '✓ Excepción permitida') : m.ayunoOk == null ? pill('nada', 'Faltan horas') : m.ayunoOk ? pill('ok', `✓ Meta ${plan.ayuno.horas} h`) : pill('no', `Meta ${plan.ayuno.horas} h`));
@@ -337,7 +339,7 @@ function prepararDefectos(dia, camino, plan) {
   }
   if (camino.startsWith('complemento.') && !dia.complemento) {
     dia.complemento = { tipo: plan.complemento?.tipo || 'estiramientos' };
-    if (COMPLEMENTOS[dia.complemento.tipo]?.usaPeso) dia.complemento.pesoLb = 10;
+    if (rutinaDe(dia.complemento.tipo, PU)?.usaPeso) dia.complemento.pesoLb = 10;
   }
 }
 
@@ -394,7 +396,7 @@ function seccionSueno(d) {
       ${campo('Me desperté', 'sueno.despertar', d, { tipo: 'hora' })}
       <label class="campo"><span>Calidad del sueño</span>${escala('sueno.calidad', d, 5, ['Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente'])}</label>
     </div>
-    <div class="resultado"><div><b data-calc="sueno">—</b><small>horas dormidas (meta 7 h)</small></div></div>
+    <div class="resultado"><div><b data-calc="sueno">—</b><small>horas dormidas (meta ${num(PU.metas.suenoHoras, 1)} h)</small></div></div>
   </section>`;
 }
 
@@ -408,14 +410,14 @@ function seccionAyuno(d, plan) {
       ${campo('Primera comida (abre la ventana)', 'ayuno.primera', d, { tipo: 'hora', ahora: true })}
       ${campo('Última comida (cierra la ventana)', 'ayuno.ultima', d, { tipo: 'hora', ahora: true })}
     </div>
-    <div style="margin-top:8px">${casilla('Excepción: comí un guineo antes de salir a la ruta (permitido si estaba muy cansado o mareado)', 'ayuno.guineoAntes', d)}</div>
+    <div style="margin-top:8px">${casilla('Excepción: comí algo pequeño antes de entrenar (ej. un guineo) porque estaba muy cansado o mareado', 'ayuno.guineoAntes', d)}</div>
     <div class="resultado">
       <div><b data-calc="ayuno">—</b><small>de ayuno (desde la última comida de ayer)</small></div>
       <div><b data-calc="ventana">—</b><small>ventana de comida de hoy</small></div>
     </div>
     <div class="contador" style="margin-top:14px">
       <span style="color:var(--c-ayuno)">${I.agua}</span>
-      <span class="nombre">Agua <span class="suave pequeño">(vasos de ${ML_POR_VASO} ml · meta 2,5–3 L)</span></span>
+      <span class="nombre">Agua <span class="suave pequeño">(vasos de ${ML_POR_VASO} ml · meta ${PU.metas.aguaVasos || 10} vasos = ${num(((PU.metas.aguaVasos || 10) * ML_POR_VASO) / 1000, 2)} L)</span></span>
       <span class="suave num" data-calc="agua"></span>
       <button class="boton" data-sumar="agua" data-paso="-1">−</button>
       <span class="valor">${vasos}</span>
@@ -453,12 +455,10 @@ function seccionComidas(d, plan, fecha) {
       <button class="boton primario" data-accion="agregar-comida">${I.mas} Añadir comida</button>
     </div>
     ${estado.frecuentes.length ? `<div class="frecuentes"><span class="suave pequeño">Frecuentes:</span>${estado.frecuentes.map((f) => `<button class="chip" data-accion="frecuente-usar" data-id="${f.id}" title="${escapar(f.desc)}">${escapar(f.desc.length > 34 ? f.desc.slice(0, 32) + '…' : f.desc)}${f.kcal ? ` · ${f.kcal} kcal` : ''} <span data-accion="frecuente-quitar" data-id="${f.id}" title="Quitar de frecuentes" style="opacity:.5;margin-left:4px">✕</span></button>`).join('')}</div>` : ''}
-    <h3 style="margin:18px 0 10px">Frutas del día</h3>
+    ${PU.alimentos.length ? `<h3 style="margin:18px 0 10px">Alimentos que cuento</h3>
     <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-      ${contador('🍌 Guineo', 'guineo', ' <span class="suave pequeño">(1/día, 2 en días fuertes)</span>')}
-      ${contador('🍊 Naranja / mandarina', 'naranja', ' <span class="suave pequeño">(2–3/día)</span>')}
-      ${contador('Otra fruta', 'otra')}
-    </div>
+      ${PU.alimentos.map((a) => contador(`${escapar(a.emoji || '')} ${escapar(a.nombre)}`, a.id, a.nota || a.max ? ` <span class="suave pequeño">(${escapar(a.nota || `máx. ${a.max}`)})</span>` : '')).join('')}
+    </div>` : ''}
   </section>`;
 }
 
@@ -503,12 +503,12 @@ function seccionRuta(d, plan) {
 function seccionComplemento(d, plan) {
   const c = d.complemento || {};
   const tipo = c.tipo || plan.complemento?.tipo || 'estiramientos';
-  const def = COMPLEMENTOS[tipo];
-  const ejercicios = ejerciciosDe(tipo, plan.semana);
+  const def = rutinaDe(tipo, PU);
+  const ejercicios = ejerciciosDe(tipo, plan.semana, PU);
   return `<section class="tarjeta">
     ${cabecera(plan.complemento ? 'Complemento de fuerza' : 'Complemento (opcional hoy)', I.comp, '--c-comp', '<span data-calc="comp-estado"></span>')}
     <div class="campos">
-      ${seleccion('Tipo', 'complemento.tipo', d, TIPOS_COMPLEMENTO, tipo)}
+      ${seleccion('Rutina', 'complemento.tipo', d, tiposComplemento(PU), tipo)}
       ${campo('Hora de inicio', 'complemento.inicio', d, { tipo: 'hora' })}
       ${campo('Duración', 'complemento.duracion', d, { tipo: 'num', unidad: 'min', ph: '20–30' })}
       ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb', ph: '10' }) : ''}

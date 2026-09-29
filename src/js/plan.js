@@ -149,21 +149,26 @@ export const textoMeta = (e) => `${e.series} × ${e.valor}${e.unidad === 's' ? '
 
 // Ejercicios sugeridos para un tipo de complemento en una semana del plan:
 // [{ id, nombre, series, valor, unidad, lado, bloque ('principal' | 'abdomen'), meta }]
-export function ejerciciosDe(tipo, semana) {
-  const c = COMPLEMENTOS[tipo];
+// pu = plan del perfil: quita los ejercicios desactivados, usa rutinas propias y el interruptor del finalizador.
+export function ejerciciosDe(tipo, semana, pu = null) {
+  const c = rutinaDe(tipo, pu);
   if (!c) return [];
   const f = faseDeSemana(Math.max(1, semana || 1));
+  const fuera = new Set(pu?.desactivados?.[tipo] || []);
+  const fueraFin = new Set(pu?.desactivados?.finalizador || []);
+  const valorFase = (v) => (Array.isArray(v) ? v[f] : v);
   const armar = (e, bloque) => {
     const x = {
-      id: e.id, bloque, unidad: e.unidad, lado: !!e.lado, nota: e.nota || '',
+      id: e.id, bloque, unidad: e.unidad || 'reps', lado: !!e.lado, nota: e.nota || '',
       nombre: e.desdeFase && f >= e.desdeFase[0] ? e.desdeFase[1] : e.nombre,
-      series: e.series[f], valor: e.valor[f],
+      series: Number(valorFase(e.series)) || 1, valor: Number(valorFase(e.valor)) || 1,
     };
     x.meta = textoMeta(x);
     return x;
   };
-  const lista = c.ejercicios.map((e) => armar(e, 'principal'));
-  if (c.finalizador) lista.push(...FINALIZADOR.ejercicios.map((e) => armar(e, 'abdomen')));
+  const lista = c.ejercicios.filter((e) => !fuera.has(e.id)).map((e) => armar(e, 'principal'));
+  const conFinalizador = c.finalizador && (pu ? pu.finalizador !== false : true);
+  if (conFinalizador) lista.push(...FINALIZADOR.ejercicios.filter((e) => !fueraFin.has(e.id)).map((e) => armar(e, 'abdomen')));
   return lista;
 }
 
@@ -248,32 +253,129 @@ export function kmEsfuerzo(distancia, desnivel) {
   return distancia + (desnivel || 0) / 100;
 }
 
+// ---------- Plan de cada perfil (editable en "Mi plan") ----------
+// El plan sugerido reproduce el documento original; el plan en blanco no trae nada activado.
+
+export const ALIMENTOS_SUGERIDOS = [
+  { id: 'guineo', nombre: 'Guineo', emoji: '🍌', max: 2, nota: '1 al día, 2 en días fuertes' },
+  { id: 'naranja', nombre: 'Naranja / mandarina', emoji: '🍊', max: null, nota: '2–3 al día' },
+  { id: 'otra', nombre: 'Otra fruta', emoji: '🍎', max: null, nota: '' },
+];
+
+export const METAS_SUGERIDAS = { aguaVasos: 10, suenoHoras: 7, kcalMin: 1500, kcalMax: 1900 };
+
+export function planSugerido() {
+  const semana = {};
+  for (const ds of [0, 1, 2, 3, 4, 5, 6]) {
+    const r = RUTINA[ds];
+    semana[ds] = {
+      ruta: { activa: ds !== 0, tipo: ds === 0 ? 'ligera' : r.tipo, titulo: ds === 0 ? '' : r.titulo, detalle: ds === 0 ? '' : r.detalle || '', metaKm: null },
+      complemento: r.complemento,
+    };
+  }
+  return {
+    version: 1,
+    semana,
+    intervalos: true,
+    calentamiento: true,
+    finalizador: true,
+    ayuno: { activo: true, gradual: true, ventana: ['10:00', '18:00'], domingo: { activo: true, ventana: ['08:00', '19:00'] } },
+    rutinas: {},
+    desactivados: {},
+    alimentos: structuredClone(ALIMENTOS_SUGERIDOS),
+    metas: { ...METAS_SUGERIDAS },
+  };
+}
+
+export function planVacio() {
+  const p = planSugerido();
+  for (const ds of Object.keys(p.semana)) p.semana[ds] = { ruta: { activa: false, tipo: 'otra', titulo: '', detalle: '', metaKm: null }, complemento: null };
+  return { ...p, intervalos: false, calentamiento: false, finalizador: false, ayuno: { ...p.ayuno, activo: false }, alimentos: [] };
+}
+
+// Completa lo que falte con el plan sugerido (perfiles antiguos no tienen "plan").
+export function normalizarPlan(p) {
+  const base = planSugerido();
+  if (!p) return base;
+  const r = { ...base, ...p };
+  r.semana = {};
+  for (const ds of [0, 1, 2, 3, 4, 5, 6]) {
+    const d = p.semana?.[ds] || base.semana[ds];
+    r.semana[ds] = { ...base.semana[ds], ...d, ruta: { ...base.semana[ds].ruta, ...(d.ruta || {}) } };
+  }
+  r.ayuno = { ...base.ayuno, ...(p.ayuno || {}), domingo: { ...base.ayuno.domingo, ...(p.ayuno?.domingo || {}) } };
+  r.metas = { ...base.metas, ...(p.metas || {}) };
+  r.rutinas = p.rutinas || {};
+  r.desactivados = p.desactivados || {};
+  r.alimentos = Array.isArray(p.alimentos) ? p.alimentos : base.alimentos;
+  return r;
+}
+
+const aMin = (h) => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+const aHora = (m) => { const x = ((m % 1440) + 1440) % 1440; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
+
+// Ayuno de un día según el plan del perfil.
+export function ayunoConPlan(semana, ds, pu) {
+  const a = pu.ayuno;
+  if (semana < 1 || !a?.activo) return null;
+  const armar = (ventana, texto, flexible = false) => {
+    const horasVentana = (aMin(ventana[1]) - aMin(ventana[0]) + 1440) % 1440 / 60;
+    const horas = Math.round((24 - horasVentana) * 10) / 10;
+    return { protocolo: `${horas}:${Math.round((24 - horas) * 10) / 10}`, horas, ventana, texto, flexible };
+  };
+  if (ds === 0 && a.domingo?.activo) {
+    // Domingo flexible: la meta es solo 12 h (con 12–14 h está bien).
+    const d = armar(a.domingo.ventana, 'Domingo flexible: se relaja el horario, no el tipo de comida.', true);
+    return { ...d, horas: Math.min(12, d.horas), protocolo: '12–14 h' };
+  }
+  const [ini, fin] = a.ventana;
+  // Entrada gradual: semana 1 ventana 3 h antes y 1 h después; semana 2, 2 h antes.
+  if (a.gradual && semana === 1) return armar([aHora(aMin(ini) - 180), aHora(aMin(fin) + 60)], 'Semana 1 de entrada gradual.');
+  if (a.gradual && semana === 2) return armar([aHora(aMin(ini) - 120), fin], 'Semana 2 de entrada gradual.');
+  const n = armar([ini, fin], '');
+  n.texto = `No alargues el ayuno más de ${n.horas} h.`;
+  return n;
+}
+
+// Rutinas disponibles para el selector: las sugeridas + las creadas por la persona.
+export function tiposComplemento(pu) {
+  const propias = Object.entries(pu?.rutinas || {}).map(([id, r]) => ({ id, nombre: `${r.nombre} (mía)` }));
+  return [...TIPOS_COMPLEMENTO, ...propias];
+}
+
+export function rutinaDe(tipo, pu) {
+  return COMPLEMENTOS[tipo] || pu?.rutinas?.[tipo] || null;
+}
+
 // Qué toca un día: ruta, complemento, ayuno.
 // terreno = { actual: 'montana' | 'plano', desde: 'AAAA-MM-DD' }; rutaPrincipal = ruta guardada por defecto
-export function planDelDia(fecha, inicio, terreno, rutaPrincipal) {
+// pu = plan del perfil (si no se pasa, el plan sugerido)
+export function planDelDia(fecha, inicio, terreno, rutaPrincipal, pu = planSugerido()) {
   const semana = semanaDelPlan(fecha, inicio);
   const ds = diaSemana(fecha);
-  const base = RUTINA[ds];
+  const dia = pu.semana[ds];
+  const base = { ...dia.ruta, complemento: dia.complemento };
   const enPlano = terreno?.actual === 'plano' && terreno.desde && fecha >= terreno.desde;
 
   const plan = {
     fecha, semana, ds,
     antesDelPlan: semana < 1,
-    descanso: ds === 0,
-    ayuno: ayunoDelDia(semana, ds),
+    descanso: !dia.ruta.activa && !rutinaDe(dia.complemento, pu),
+    ayuno: ayunoConPlan(semana, ds, pu),
+    calentamiento: !!pu.calentamiento,
     ruta: null,
     complemento: null,
   };
   if (plan.antesDelPlan) return plan;
 
-  if (!plan.descanso) {
-    const ruta = { tipo: base.tipo, titulo: base.titulo, detalle: base.detalle || '', terreno: enPlano ? 'plano' : 'montana' };
-    if (['intervalos', 'larga'].includes(base.tipo)) {
+  if (dia.ruta.activa) {
+    const ruta = { tipo: base.tipo, titulo: base.titulo || nombreTipo(base.tipo), detalle: base.detalle || '', terreno: enPlano ? 'plano' : 'montana' };
+    if (pu.intervalos && ['intervalos', 'larga'].includes(base.tipo)) {
       ruta.intervalo = base.tipo === 'larga' && semana >= 9 ? 'Ruta completa trotando' : intervaloDeSemana(semana);
     }
     if (enPlano) {
       const adaptacion = diasEntre(terreno.desde, fecha) < 14;
-      const p = PISTA[ds];
+      const p = PISTA[ds] || PISTA[4];
       if (adaptacion) {
         ruta.titulo = `${base.titulo} (adaptación a plano)`;
         ruta.metaKm = 8;
@@ -287,15 +389,15 @@ export function planDelDia(fecha, inicio, terreno, rutaPrincipal) {
         ruta.detalle = p.detalle || 'Cambia el sentido de giro cada cierto número de vueltas.';
       }
     } else {
-      ruta.metaKm = rutaPrincipal?.distancia || 8;
+      ruta.metaKm = base.metaKm || rutaPrincipal?.distancia || 8;
       ruta.nombreRuta = rutaPrincipal?.nombre;
     }
     plan.ruta = ruta;
   }
 
-  if (base.complemento) {
-    const c = COMPLEMENTOS[base.complemento];
-    plan.complemento = { tipo: base.complemento, nombre: c.nombre, formato: c.formato, ejercicios: ejerciciosDe(base.complemento, semana) };
+  const c = rutinaDe(base.complemento, pu);
+  if (c) {
+    plan.complemento = { tipo: base.complemento, nombre: c.nombre, formato: c.formato || '', ejercicios: ejerciciosDe(base.complemento, semana, pu) };
   }
   return plan;
 }

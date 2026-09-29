@@ -2,7 +2,7 @@
 // y cada cambio se guarda solo, a los pocos milisegundos, en su archivo .json.
 
 import { retrasar, idUnico } from './util.js';
-import { INICIO_POR_DEFECTO } from './plan.js';
+import { INICIO_POR_DEFECTO, normalizarPlan } from './plan.js';
 
 export const CONFIG_BASE = {
   tema: { preset: 'oscuro', personal: {}, fondo: { tipo: 'tema' }, escalaLetra: 100, radio: 12 },
@@ -136,6 +136,7 @@ export function contexto() {
     inicio: estado.perfil?.fechaInicio || INICIO_POR_DEFECTO,
     terreno: estado.config.terreno,
     rutaPrincipal: rutaPrincipal(),
+    plan: normalizarPlan(estado.config.plan),
   };
 }
 
