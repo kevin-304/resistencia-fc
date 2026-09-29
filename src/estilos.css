@@ -386,3 +386,18 @@ dialog .acciones { display: flex; justify-content: flex-end; gap: 8px; margin-to
 .ej-tarjeta.hecho .ej-check { background: var(--ok); border-color: var(--ok); color: #fff; }
 .ej-tarjeta.hecho .ej-imagen img { opacity: .55; }
 .ej-tarjeta.hecho .ej-texto b { color: var(--ok); }
+
+/* ============ Series del complemento ============ */
+.serie-fila { display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; padding: 12px 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--superficie-2); margin-bottom: 8px; border-left: 4px solid var(--borde); }
+.serie-fila.hecho { border-left-color: var(--ok); }
+.serie-fila.hecho .serie-nombre b { color: var(--ok); }
+.serie-nombre { display: flex; flex-direction: column; gap: 2px; min-width: 220px; flex: 1 1 220px; }
+.serie-nombre small { color: var(--texto-suave); font-size: .84em; }
+.series { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; }
+.serie { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .72em; color: var(--texto-suave); font-weight: 600; }
+.serie input { width: 58px; height: 38px; text-align: center; font-family: var(--fuente-num); font-size: 1.35em; padding: 4px; }
+.serie input::placeholder { color: color-mix(in srgb, var(--texto-suave) 55%, transparent); }
+.serie-unidad { font-size: .8em; color: var(--texto-suave); align-self: center; margin: 0 2px; }
+.serie-sugerido { font-size: .84em; padding: 6px 10px; }
+.resumen-series { margin-top: 14px; font-size: .95em; }
+.resumen-series .barra-progreso { margin-top: 6px; }

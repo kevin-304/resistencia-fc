@@ -2,7 +2,7 @@
 // resúmenes semanales, rachas y alertas sanas (sección 9.8 del plan).
 
 import { horasEntre, sumarDias, diaSemana, duracionAMinutos, lunesDe, hoyISO, aMinutos, promedio, suma, diasEntre } from './util.js';
-import { planDelDia, kmEsfuerzo, semanaDelPlan } from './plan.js';
+import { planDelDia, kmEsfuerzo, semanaDelPlan, ejerciciosDe, resumenComplemento } from './plan.js';
 
 export const ETIQUETAS_COMIDA = [
   { id: 'proteina', nombre: 'Proteína', bueno: true },
@@ -60,10 +60,14 @@ export function metricasDia(fecha, dias, ctx) {
 
   // Complemento
   const c = d.complemento || {};
-  const hechos = Object.values(c.ejercicios || {}).filter(Boolean).length;
-  const total = plan.complemento?.ejercicios.length || 0;
-  m.compHecho = !!(c.hecho || (total && hechos >= total));
-  m.compParcial = !m.compHecho && hechos > 0;
+  const listaComp = ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana);
+  const rc = resumenComplemento(listaComp, c.registro || {});
+  const hechosViejos = Object.values(c.ejercicios || {}).filter(Boolean).length; // formato anterior (casillas)
+  m.compReps = rc.reps;
+  m.compSegundos = rc.segundos;
+  m.compPorcentaje = rc.conDatos ? rc.porcentaje : null;
+  m.compHecho = !!(c.hecho || (rc.total && rc.completos >= rc.total) || (listaComp.length && hechosViejos >= listaComp.length));
+  m.compParcial = !m.compHecho && (rc.conDatos > 0 || hechosViejos > 0);
 
   // Comidas y frutas
   const comidas = d.comidas || [];

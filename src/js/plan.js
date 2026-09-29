@@ -59,66 +59,134 @@ export function ayunoDelDia(semana, ds) {
 
 export const DURANTE_AYUNO = ['Agua (mínimo 2,5–3 L en el día)', 'Café negro sin azúcar', 'Té o infusiones sin azúcar', 'Agua con una pizca de sal o limón si hace calor'];
 
-// ---------- Complementos (4.2) ----------
+// ---------- Complementos de fuerza (intensidad alta, progresiva) ----------
+// Cada ejercicio tiene series y valor sugeridos por FASE del plan:
+//   fase 1 = semanas 1–2 · fase 2 = semanas 3–4 · fase 3 = semanas 5–8 · fase 4 = semana 9 en adelante
+// unidad: 'reps' (repeticiones) o 's' (segundos). lado: el valor es por lado / pierna / brazo.
+export function faseDeSemana(semana) {
+  if (semana <= 2) return 0;
+  if (semana <= 4) return 1;
+  if (semana <= 8) return 2;
+  return 3;
+}
+
+const ej = (id, nombre, series, valor, extra = {}) => ({ id, nombre, series, valor, unidad: 'reps', ...extra });
+const seg = (id, nombre, series, valor, extra = {}) => ({ id, nombre, series, valor, unidad: 's', ...extra });
+
 export const COMPLEMENTOS = {
   superior: {
-    nombre: 'Tren superior', formato: '3 vueltas · 45 s de descanso', usaPeso: true,
+    nombre: 'Tren superior + abdomen', formato: 'Descanso de 45 s entre series · mancuernas de 10 lb', usaPeso: true, finalizador: true,
     ejercicios: [
-      { nombre: 'Flexiones', meta: '8–12 (rodillas apoyadas si no salen)' },
-      { nombre: 'Remo con mancuerna', meta: '12 por brazo' },
-      { nombre: 'Fondos de tríceps en silla', meta: '10–12' },
-      { nombre: 'Press de hombro', meta: '12' },
-      { nombre: 'Plancha', meta: '30–45 s' },
-    ],
-  },
-  inferior: {
-    nombre: 'Tren inferior', formato: '3 vueltas',
-    ejercicios: [
-      { nombre: 'Sentadillas', meta: '15–20' },
-      { nombre: 'Zancadas alternas', meta: '10 por pierna' },
-      { nombre: 'Puente de glúteo', meta: '15' },
-      { nombre: 'Step-ups en banca o grada', meta: '10 por pierna' },
-      { nombre: 'Elevación de talones', meta: '20' },
-    ],
-  },
-  cardio: {
-    nombre: 'Circuito cardio cuerpo completo', formato: '40 s trabajo / 20 s descanso · 3–4 vueltas',
-    ejercicios: [
-      { nombre: 'Jumping jacks', meta: '40 s' },
-      { nombre: 'Escaladores (mountain climbers)', meta: '40 s' },
-      { nombre: 'Sentadilla rápida', meta: '40 s', desdeSemana5: 'Sentadilla con salto' },
-      { nombre: 'Burpee sin salto', meta: '40 s' },
-      { nombre: 'Plancha con toque de hombros', meta: '40 s' },
+      ej('flexiones', 'Flexiones', [4, 4, 4, 5], [12, 15, 18, 20], { nota: 'Con rodillas apoyadas si no salen completas' }),
+      ej('remo', 'Remo con mancuerna', [4, 4, 4, 4], [15, 15, 18, 20], { lado: true }),
+      ej('fondos', 'Fondos de tríceps en silla', [4, 4, 4, 4], [12, 15, 18, 20]),
+      ej('press', 'Press de hombro con mancuernas', [4, 4, 4, 4], [12, 15, 15, 18]),
+      ej('curl', 'Curl de bíceps con mancuernas', [3, 3, 4, 4], [15, 15, 15, 18]),
+      ej('remo-alto', 'Remo alto con mancuernas', [3, 3, 3, 4], [12, 15, 15, 15]),
     ],
   },
   core: {
-    nombre: 'Core', formato: '3 vueltas',
+    nombre: 'Core y abdomen intenso', formato: 'Descanso de 30 s entre series',
     ejercicios: [
-      { nombre: 'Plancha frontal', meta: '30–45 s' },
-      { nombre: 'Plancha lateral', meta: '20–30 s por lado' },
-      { nombre: 'Dead bug', meta: '10 por lado' },
-      { nombre: 'Superman', meta: '12' },
+      seg('plancha', 'Plancha frontal', [4, 4, 4, 4], [40, 45, 50, 60]),
+      seg('plancha-lat', 'Plancha lateral', [3, 3, 4, 4], [25, 30, 35, 45], { lado: true }),
+      ej('crunch-bici', 'Crunch bicicleta', [4, 4, 4, 4], [20, 25, 30, 30], { lado: true }),
+      ej('elev-piernas', 'Elevación de piernas acostado', [4, 4, 4, 4], [12, 15, 18, 20]),
+      ej('dead-bug', 'Dead bug', [3, 3, 4, 4], [12, 12, 15, 15], { lado: true }),
+      ej('escaladores', 'Escaladores (mountain climbers)', [4, 4, 4, 4], [30, 40, 45, 50], { lado: true }),
+      ej('superman', 'Superman', [3, 3, 3, 4], [15, 15, 20, 20]),
+    ],
+  },
+  inferior: {
+    nombre: 'Tren inferior + abdomen', formato: 'Descanso de 45 s entre series', finalizador: true,
+    ejercicios: [
+      ej('sentadillas', 'Sentadillas', [4, 4, 4, 5], [20, 25, 25, 30], { desdeFase: [2, 'Sentadillas con salto'] }),
+      ej('zancadas', 'Zancadas alternas', [4, 4, 4, 4], [12, 12, 15, 15], { lado: true }),
+      ej('puente', 'Puente de glúteo', [4, 4, 4, 4], [20, 25, 25, 30]),
+      ej('step-ups', 'Step-ups en banca o grada', [3, 4, 4, 4], [12, 12, 15, 15], { lado: true }),
+      seg('isometrica', 'Sentadilla isométrica en pared', [3, 3, 3, 4], [30, 40, 45, 60]),
+      ej('talones', 'Elevación de talones', [4, 4, 4, 4], [25, 30, 30, 35]),
     ],
   },
   estiramientos: {
-    nombre: 'Estiramientos', formato: '15 min · 30 s por zona',
+    nombre: 'Estiramientos + abdomen', formato: 'Recuperación: 30 s por zona, sin rebotes', finalizador: true,
     ejercicios: [
-      { nombre: 'Pantorrillas', meta: '30 s' },
-      { nombre: 'Cuádriceps', meta: '30 s' },
-      { nombre: 'Isquiotibiales', meta: '30 s' },
-      { nombre: 'Glúteo (figura 4)', meta: '30 s' },
-      { nombre: 'Flexores de cadera', meta: '30 s' },
-      { nombre: 'Espalda baja', meta: '30 s' },
+      seg('e-pantorrillas', 'Pantorrillas', [1, 1, 1, 1], [30, 30, 30, 30], { lado: true }),
+      seg('e-cuadriceps', 'Cuádriceps', [1, 1, 1, 1], [30, 30, 30, 30], { lado: true }),
+      seg('e-isquios', 'Isquiotibiales', [1, 1, 1, 1], [30, 30, 30, 30], { lado: true }),
+      seg('e-gluteo', 'Glúteo (figura 4)', [1, 1, 1, 1], [30, 30, 30, 30], { lado: true }),
+      seg('e-flexores', 'Flexores de cadera', [1, 1, 1, 1], [30, 30, 30, 30], { lado: true }),
+      seg('e-espalda', 'Espalda baja', [1, 1, 1, 1], [30, 30, 30, 30]),
+    ],
+  },
+  cardio: {
+    nombre: 'Circuito HIIT cuerpo completo + abdomen', formato: 'Ejercicios seguidos con 20 s de descanso · 1 min entre vueltas', finalizador: true,
+    ejercicios: [
+      seg('jacks', 'Jumping jacks', [4, 4, 5, 5], [40, 40, 45, 45]),
+      seg('climbers', 'Escaladores (mountain climbers)', [4, 4, 5, 5], [40, 40, 45, 45]),
+      seg('sentadilla-rapida', 'Sentadilla rápida', [4, 4, 5, 5], [40, 40, 45, 45], { desdeFase: [2, 'Sentadilla con salto'] }),
+      seg('burpee', 'Burpee sin salto', [4, 4, 5, 5], [40, 40, 45, 45], { desdeFase: [2, 'Burpee con salto'] }),
+      seg('rodillas-arriba', 'Rodillas arriba (skipping rápido)', [4, 4, 5, 5], [40, 40, 45, 45]),
+      seg('plancha-toques', 'Plancha con toque de hombros', [4, 4, 5, 5], [40, 40, 45, 45]),
     ],
   },
 };
 
+// Finalizador abdominal: se añade los días que no son de core (lunes, miércoles, jueves y viernes).
+export const FINALIZADOR = {
+  nombre: 'Finalizador abdominal', formato: 'Seguido, casi sin pausa · 30 s entre series',
+  ejercicios: [
+    ej('f-crunch', 'Crunch abdominal', [3, 3, 3, 4], [20, 25, 30, 30]),
+    ej('f-piernas', 'Elevación de piernas acostado', [3, 3, 3, 4], [12, 15, 18, 20]),
+    ej('f-giros', 'Giros rusos', [3, 3, 3, 4], [15, 20, 20, 25], { lado: true }),
+    seg('f-plancha', 'Plancha frontal', [3, 3, 3, 3], [30, 40, 45, 60]),
+  ],
+};
+
 export const TIPOS_COMPLEMENTO = Object.entries(COMPLEMENTOS).map(([id, c]) => ({ id, nombre: c.nombre }));
 
+export const textoMeta = (e) => `${e.series} × ${e.valor}${e.unidad === 's' ? ' s' : ''}${e.lado ? ' por lado' : ''}`;
+
+// Ejercicios sugeridos para un tipo de complemento en una semana del plan:
+// [{ id, nombre, series, valor, unidad, lado, bloque ('principal' | 'abdomen'), meta }]
 export function ejerciciosDe(tipo, semana) {
   const c = COMPLEMENTOS[tipo];
   if (!c) return [];
-  return c.ejercicios.map((e) => ({ nombre: semana >= 5 && e.desdeSemana5 ? e.desdeSemana5 : e.nombre, meta: e.meta }));
+  const f = faseDeSemana(Math.max(1, semana || 1));
+  const armar = (e, bloque) => {
+    const x = {
+      id: e.id, bloque, unidad: e.unidad, lado: !!e.lado, nota: e.nota || '',
+      nombre: e.desdeFase && f >= e.desdeFase[0] ? e.desdeFase[1] : e.nombre,
+      series: e.series[f], valor: e.valor[f],
+    };
+    x.meta = textoMeta(x);
+    return x;
+  };
+  const lista = c.ejercicios.map((e) => armar(e, 'principal'));
+  if (c.finalizador) lista.push(...FINALIZADOR.ejercicios.map((e) => armar(e, 'abdomen')));
+  return lista;
+}
+
+// Cuánto se hizo: registro = { idEjercicio: [valor de la serie 1, serie 2, …] }
+export function resumenComplemento(ejercicios, registro = {}) {
+  let sugerido = 0;
+  let hecho = 0;
+  let reps = 0;
+  let segundos = 0;
+  let completos = 0;
+  let conDatos = 0;
+  for (const e of ejercicios) {
+    const valores = (registro[e.id] || []).map(Number).filter((v) => v > 0);
+    const lados = e.lado ? 2 : 1;
+    const total = valores.reduce((a, b) => a + b, 0) * lados;
+    const meta = e.series * e.valor * lados;
+    sugerido += meta;
+    hecho += Math.min(total, meta);
+    if (e.unidad === 's') segundos += total; else reps += total;
+    if (valores.length) conDatos++;
+    if (valores.length >= e.series) completos++;
+  }
+  return { reps, segundos, completos, conDatos, total: ejercicios.length, porcentaje: sugerido ? Math.round((hecho / sugerido) * 100) : 0 };
 }
 
 // ---------- Calentamiento y enfriamiento (sección 3) ----------

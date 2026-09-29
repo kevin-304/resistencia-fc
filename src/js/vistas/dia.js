@@ -2,10 +2,10 @@
 // Cada cambio se guarda solo (no hay botón "Guardar").
 import { estado, contexto, diaDe, diaEditable, diaCambiado, guardarFrecuentes, rutaPrincipal } from '../estado.js';
 import { metricasDia, alertasDia, ETIQUETAS_COMIDA, TIPOS_COMIDA, ML_POR_VASO, fueraDeVentana } from '../metricas.js';
-import { TIPOS_SESION, TIPOS_COMPLEMENTO, ejerciciosDe, COMPLEMENTOS, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo } from '../plan.js';
+import { TIPOS_SESION, TIPOS_COMPLEMENTO, ejerciciosDe, COMPLEMENTOS, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo } from '../plan.js';
 import { navegar, alSalir, aviso } from '../nav.js';
 import { I } from '../iconos.js';
-import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana } from '../util.js';
+import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
 
 const PESTANAS = [
   { id: 'plan', nombre: 'Plan del día' },
@@ -86,6 +86,7 @@ export function mostrarDia(cont, { fecha }) {
     if (t.type === 'checkbox' || t.tagName === 'SELECT') return; // se atienden en "change"
     if (t.dataset.c) cambiar(t.dataset.c, leerValor(t));
     else if (t.dataset.comida) cambiarComida(t);
+    else if (t.dataset.reg) cambiarSerie(t);
   });
   cont.addEventListener('change', (e) => {
     const t = e.target;
@@ -93,7 +94,12 @@ export function mostrarDia(cont, { fecha }) {
       t.closest('.ejercicio, .ej-tarjeta')?.classList.toggle('hecho', t.checked);
       cambiar(t.dataset.c, leerValor(t));
       if (t.dataset.c === 'ruta.rutaId') alElegirRuta(t.value);
-      if (t.dataset.c === 'complemento.tipo') { fijar(diaEditable(fecha), 'complemento.ejercicios', null); diaCambiado(fecha); repintar(); }
+      if (t.dataset.c === 'complemento.tipo') {
+        const dia = diaEditable(fecha);
+        if (dia.complemento) { delete dia.complemento.ejercicios; delete dia.complemento.registro; }
+        diaCambiado(fecha);
+        repintar();
+      }
     } else if (t.dataset.comida && t.tagName === 'SELECT') cambiarComida(t);
   });
 
@@ -160,15 +166,48 @@ export function mostrarDia(cont, { fecha }) {
     }
     if (accion === 'quitar-foto') { cambiar('medidas.foto', null); repintarFoto(); }
     if (accion === 'todo-complemento') {
-      const n = plan.complemento ? ejerciciosDe(diaDe(fecha).complemento?.tipo || plan.complemento.tipo, plan.semana).length : 0;
       const dia = diaEditable(fecha);
       prepararDefectos(dia, 'complemento.x', plan);
-      dia.complemento.ejercicios = Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i}`, true]));
+      dia.complemento.registro = Object.fromEntries(ejerciciosDe(dia.complemento.tipo, plan.semana).map((x) => [x.id, Array(x.series).fill(x.valor)]));
       dia.complemento.hecho = true;
       diaCambiado(fecha);
       repintar();
     }
+    if (accion === 'serie-sugerido') {
+      const dia = diaEditable(fecha);
+      prepararDefectos(dia, 'complemento.x', plan);
+      dia.complemento.registro = { ...(dia.complemento.registro || {}), [objetivo.dataset.id]: Array(Number(objetivo.dataset.series)).fill(Number(objetivo.dataset.valor)) };
+      diaCambiado(fecha);
+      const fila = objetivo.closest('.serie-fila');
+      fila.querySelectorAll('input[data-reg]').forEach((inp, i) => { inp.value = dia.complemento.registro[objetivo.dataset.id][i] ?? ''; });
+      fila.classList.add('hecho');
+      refrescar();
+    }
+    if (accion === 'serie-mas') {
+      const fila = objetivo.closest('.serie-fila');
+      const n = fila.querySelectorAll('input[data-reg]').length;
+      const nueva = el(`<label class="serie"><span>S${n + 1}</span><input type="text" inputmode="numeric" data-reg="${objetivo.dataset.id}" data-serie="${n}" placeholder=""></label>`);
+      fila.querySelector('.serie-unidad').before(nueva);
+      nueva.querySelector('input').focus();
+    }
   });
+
+  // Repeticiones (o segundos) de una serie
+  function cambiarSerie(t) {
+    const dia = diaEditable(fecha);
+    prepararDefectos(dia, 'complemento.x', plan);
+    const reg = dia.complemento.registro = dia.complemento.registro || {};
+    const lista = reg[t.dataset.reg] = reg[t.dataset.reg] || [];
+    const v = parseInt(String(t.value).replace(/\D/g, ''), 10);
+    lista[Number(t.dataset.serie)] = Number.isFinite(v) && v > 0 ? v : null;
+    while (lista.length && lista.at(-1) == null) lista.pop();
+    if (!lista.length) delete reg[t.dataset.reg];
+    diaCambiado(fecha);
+    const fila = t.closest('.serie-fila');
+    const sugeridas = Number(fila.querySelector('[data-accion="serie-sugerido"]').dataset.series);
+    fila.classList.toggle('hecho', (reg[t.dataset.reg] || []).filter((x) => x > 0).length >= sugeridas);
+    refrescar();
+  }
 
   function buscarComida(id) {
     return (diaEditable(fecha).comidas || []).find((c) => c.id === id);
@@ -247,6 +286,7 @@ export function mostrarDia(cont, { fecha }) {
     pon('kmesf', m.rutaKmEsf != null ? num(m.rutaKmEsf, 2) : '—');
     pon('duracion', formatoDuracion(m.rutaMin));
     pon('ruta-estado', m.rutaHecha ? pill('ok', '✓ Ruta hecha') : pill('nada', 'Sin registrar'));
+    pon('comp-resumen', m.compPorcentaje == null ? '' : `<b>${m.compReps}</b> repeticiones${m.compSegundos ? ` · <b>${formatoDuracion(m.compSegundos / 60)}</b> de trabajo por tiempo` : ''} · <b>${m.compPorcentaje} %</b> de lo sugerido<div class="barra-progreso"><div style="width:${Math.min(100, m.compPorcentaje)}%;background:var(--c-comp)"></div></div>`);
     pon('comp-estado', m.compHecho ? pill('ok', '✓ Completado') : m.compParcial ? pill('nada', 'A medias') : pill('nada', 'Pendiente'));
     const dia = diaDe(fecha);
     const calent = Object.values(dia.calentamiento || {}).filter(Boolean).length;
@@ -473,18 +513,39 @@ function seccionComplemento(d, plan) {
       ${campo('Duración', 'complemento.duracion', d, { tipo: 'num', unidad: 'min', ph: '20–30' })}
       ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb', ph: '10' }) : ''}
     </div>
-    <p class="suave pequeño" style="margin:12px 0 4px">${def?.formato || ''}</p>
-    <div>
-      ${ejercicios.map((e, i) => {
-        const hecho = !!c.ejercicios?.[`e${i}`];
-        return `<label class="ejercicio ${hecho ? 'hecho' : ''}"><input type="checkbox" data-c="complemento.ejercicios.e${i}" ${hecho ? 'checked' : ''}><span class="n">${escapar(e.nombre)}</span><span class="meta">${escapar(e.meta)}</span></label>`;
-      }).join('')}
-    </div>
+    <p class="suave pequeño" style="margin:12px 0 0">Semana ${Math.max(1, plan.semana)} · ${def?.formato || ''}. Escribe en cada casilla lo que hiciste de verdad (el número gris es lo sugerido).</p>
+    ${bloqueSeries('Bloque principal', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {})}
+    ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(`🔥 ${FINALIZADOR.nombre}`, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, FINALIZADOR.formato) : ''}
+    <div class="resumen-series" data-calc="comp-resumen"></div>
     <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
       ${casilla('Completado', 'complemento.hecho', d)}
-      <button class="boton fantasma" data-accion="todo-complemento">${I.check} Marcar todo</button>
+      <button class="boton fantasma" data-accion="todo-complemento">${I.check} Todo como lo sugerido</button>
     </div>
+    <p class="suave pequeño" style="margin-top:12px">La grasa del abdomen no se quema "localmente" con abdominales: baja con el déficit de calorías y la ruta diaria. Los abdominales fortalecen el core y marcan la zona a medida que la grasa baja.</p>
   </section>`;
+}
+
+function bloqueSeries(titulo, ejercicios, registro, formato = '') {
+  if (!ejercicios.length) return '';
+  return `<h3 class="ej-grupo">${titulo}${formato ? ` <span class="suave" style="text-transform:none;letter-spacing:0;font-weight:500">· ${formato}</span>` : ''}</h3>
+    ${ejercicios.map((e) => filaSeries(e, registro[e.id] || [])).join('')}`;
+}
+
+function filaSeries(e, valores) {
+  const n = Math.max(e.series, valores.length);
+  const llenas = valores.filter((v) => Number(v) > 0).length;
+  const unidad = e.unidad === 's' ? 's' : 'reps';
+  return `<div class="serie-fila ${llenas >= e.series ? 'hecho' : ''}" data-fila="${e.id}">
+    <div class="serie-nombre"><b>${escapar(e.nombre)}</b>
+      <small>Sugerido: ${escapar(e.meta)}${e.nota ? ` · ${escapar(e.nota)}` : ''}</small></div>
+    <div class="series">
+      ${Array.from({ length: n }, (_, i) => `<label class="serie"><span>S${i + 1}</span>
+        <input type="text" inputmode="numeric" data-reg="${e.id}" data-serie="${i}" value="${valores[i] ?? ''}" placeholder="${e.valor}"></label>`).join('')}
+      <span class="serie-unidad">${unidad}${e.lado ? ' c/lado' : ''}</span>
+      <button type="button" class="boton icono fantasma" data-accion="serie-mas" data-id="${e.id}" title="Añadir otra serie">${I.mas}</button>
+      <button type="button" class="boton fantasma serie-sugerido" data-accion="serie-sugerido" data-id="${e.id}" data-series="${e.series}" data-valor="${e.valor}">${I.check} Hecho como sugerido</button>
+    </div>
+  </div>`;
 }
 
 function seccionMedidas(d, fecha) {
@@ -556,7 +617,7 @@ function tarjetaPlan(plan, d, esHoy) {
       : '<div class="grande">Descanso total</div><p class="suave" style="margin-top:4px">O caminata ligera de 20–30 min. Puedes dormir hasta 1 h más.</p>'}
     </div>
     ${c ? `<div class="plan-bloque"><h4>Complemento</h4><div class="grande" style="color:var(--c-comp)">${c.nombre}</div><p class="suave">${c.formato}</p>
-      <ul>${c.ejercicios.map((e) => `<li>${escapar(e.nombre)} – ${escapar(e.meta)}</li>`).join('')}</ul></div>` : ''}
+      <ul>${c.ejercicios.map((e) => `<li>${e.bloque === 'abdomen' ? '🔥 ' : ''}${escapar(e.nombre)} – ${escapar(e.meta)}</li>`).join('')}</ul></div>` : ''}
     ${a ? `<div class="plan-bloque"><h4>Ayuno</h4><div class="grande" style="color:var(--c-ayuno)">${a.protocolo} · ${a.ventana[0]} – ${a.ventana[1]}</div><p class="suave">${a.texto}</p>
       ${esHoy ? '<div class="cuenta-regresiva" id="cuenta-regresiva"></div>' : ''}
       <details class="desplegable" style="margin-top:8px"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map((x) => `<li>${x}</li>`).join('')}</ul></details>

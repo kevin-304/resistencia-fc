@@ -82,3 +82,9 @@ body.movil .titulo-logo { font-size: 2em; }
 .dia-envio small { color: var(--texto-suave); font-size: .82em; }
 .aviso-pill { background: color-mix(in srgb, var(--aviso) 18%, transparent); color: var(--aviso); }
 .boton-fijo { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom)); width: 100%; margin-top: 14px; box-shadow: var(--sombra); }
+
+/* Series en celular */
+body.movil .serie-fila { padding: 10px; }
+body.movil .serie-nombre { min-width: 0; flex-basis: 100%; }
+body.movil .serie input { width: 52px; height: 44px; font-size: 18px; }
+body.movil .serie-sugerido { flex-basis: 100%; }
