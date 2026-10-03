@@ -369,7 +369,7 @@ export function planDelDia(fecha, inicio, terreno, rutaPrincipal, pu = planSuger
   if (plan.antesDelPlan) return plan;
 
   if (dia.ruta.activa) {
-    const ruta = { tipo: base.tipo, titulo: base.titulo || nombreTipo(base.tipo), detalle: base.detalle || '', terreno: enPlano ? 'plano' : 'montana' };
+    const ruta = { tipo: base.tipo, titulo: base.titulo || nombreTipo(base.tipo), detalle: base.detalle || '', terreno: enPlano ? 'plano' : (rutaPrincipal?.terreno === 'plano' ? 'plano' : rutaPrincipal?.terreno === 'mixto' ? 'mixto' : 'montana') };
     if (pu.intervalos && ['intervalos', 'larga'].includes(base.tipo)) {
       ruta.intervalo = base.tipo === 'larga' && semana >= 9 ? 'Ruta completa trotando' : intervaloDeSemana(semana);
     }
@@ -400,6 +400,13 @@ export function planDelDia(fecha, inicio, terreno, rutaPrincipal, pu = planSuger
     plan.complemento = { tipo: base.complemento, nombre: c.nombre, formato: c.formato || '', ejercicios: ejerciciosDe(base.complemento, semana, pu) };
   }
   return plan;
+}
+
+// Texto corto de lo que toca un día ("Caminata · Pilates", "Descanso"…)
+export function resumenPlan(plan) {
+  if (!plan || plan.antesDelPlan) return '';
+  if (plan.descanso) return 'Descanso';
+  return [plan.ruta?.titulo, plan.complemento?.nombre].filter(Boolean).join(' · ');
 }
 
 // ---------- Peso: meta y proyección (1.1) ----------

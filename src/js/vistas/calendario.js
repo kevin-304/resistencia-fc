@@ -1,4 +1,5 @@
 // Pantalla de inicio: calendario del mes con marcas de cumplimiento en cada día.
+import { resumenPlan } from '../plan.js';
 import { estado, contexto } from '../estado.js';
 import { metricasDia, metricasRango, resumen } from '../metricas.js';
 import { navegar } from '../nav.js';
@@ -16,7 +17,7 @@ export function marcasDia(m) {
   if (p.ruta || m.rutaHecha) partes.push(marca('c-ruta', m.rutaHecha ? 'si' : pasado && p.ruta ? 'no' : '', I.ruta, 'Ruta'));
   if (p.ayuno) partes.push(marca('c-ayuno', est(m.ayunoOk), I.ayuno, 'Ayuno'));
   if (p.complemento || m.compHecho) partes.push(marca('c-comp', m.compHecho ? 'si' : m.compParcial ? 'parcial' : pasado && p.complemento ? 'no' : '', I.comp, 'Complemento'));
-  partes.push(marca('c-sueno', est(m.suenoOk), I.sueno, 'Sueño ≥ 7 h'));
+  partes.push(marca('c-sueno', est(m.suenoOk), I.sueno, 'Sueño (meta de horas)'));
   return partes.join('');
 }
 
@@ -54,7 +55,7 @@ export function mostrarCalendario(cont, params = {}) {
       <span><i style="background:var(--c-ruta)"></i>Ruta</span>
       <span><i style="background:var(--c-ayuno)"></i>Ayuno cumplido</span>
       <span><i style="background:var(--c-comp)"></i>Complemento</span>
-      <span><i style="background:var(--c-sueno)"></i>Sueño ≥ 7 h</span>
+      <span><i style="background:var(--c-sueno)"></i>Sueño cumplido</span>
       <span><i style="border:1.5px dashed var(--texto-suave)"></i>A medias</span>
       <span><i style="border:1.5px solid var(--peligro)"></i>No cumplido</span>
     </div>
@@ -83,7 +84,7 @@ function celda(fecha, ctx, hoy, mesActual) {
   let textoPlan = '';
   if (p.antesDelPlan) textoPlan = '';
   else if (p.descanso) textoPlan = 'Descanso';
-  else textoPlan = p.ruta.titulo + (p.complemento ? ` · ${p.complemento.nombre}` : '');
+  else textoPlan = resumenPlan(p);
 
   const datos = [];
   if (m.rutaKm) datos.push(`${num(m.rutaKm, 2)} km`);

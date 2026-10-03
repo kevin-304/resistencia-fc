@@ -2,7 +2,7 @@
 // Cada cambio se guarda solo (no hay botón "Guardar").
 import { estado, contexto, diaDe, diaEditable, diaCambiado, guardarFrecuentes, rutaPrincipal } from '../estado.js';
 import { metricasDia, alertasDia, ETIQUETAS_COMIDA, TIPOS_COMIDA, ML_POR_VASO, fueraDeVentana } from '../metricas.js';
-import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo } from '../plan.js';
+import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo, resumenPlan } from '../plan.js';
 import { navegar, alSalir, aviso } from '../nav.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
@@ -40,7 +40,7 @@ export function mostrarDia(cont, { fecha }) {
       <button class="boton icono" data-accion="siguiente" title="Día siguiente">${I.derecha}</button>
       <div class="titulo">
         <h1>${fechaLarga(fecha)}${fecha === hoy ? ' <span class="estado-pill ok" style="vertical-align:middle;font-size:.45em">HOY</span>' : ''}</h1>
-        <p>${plan.antesDelPlan ? 'Antes del inicio del plan' : `Semana ${plan.semana} del plan · ${plan.descanso ? 'Día de descanso' : escapar(plan.ruta.titulo)}`}</p>
+        <p>${plan.antesDelPlan ? 'Antes del inicio del plan' : `Semana ${plan.semana} del plan · ${plan.descanso ? 'Día de descanso' : escapar(resumenPlan(plan))}`}</p>
       </div>
       ${fecha !== hoy ? '<button class="boton" data-accion="hoy">Ir a hoy</button>' : ''}
     </div>
@@ -506,7 +506,7 @@ function seccionComplemento(d, plan) {
   const def = rutinaDe(tipo, PU);
   const ejercicios = ejerciciosDe(tipo, plan.semana, PU);
   return `<section class="tarjeta">
-    ${cabecera(plan.complemento ? 'Complemento de fuerza' : 'Complemento (opcional hoy)', I.comp, '--c-comp', '<span data-calc="comp-estado"></span>')}
+    ${cabecera(plan.complemento ? 'Ejercicio del día' : 'Ejercicio (opcional hoy)', I.comp, '--c-comp', '<span data-calc="comp-estado"></span>')}
     <div class="campos">
       ${seleccion('Rutina', 'complemento.tipo', d, tiposComplemento(PU), tipo)}
       ${campo('Hora de inicio', 'complemento.inicio', d, { tipo: 'hora' })}
@@ -612,9 +612,10 @@ function tarjetaPlan(plan, d, esHoy) {
       ${r ? `<div class="grande" style="color:var(--c-ruta)">${escapar(r.titulo)}</div>
         ${r.detalle ? `<p class="suave" style="margin-top:4px">${escapar(r.detalle)}</p>` : ''}
         ${r.intervalo ? `<p style="margin-top:6px"><b>Intervalo:</b> ${escapar(r.intervalo)}</p>` : ''}
-        <p style="margin-top:6px"><b>Meta:</b> ${num(r.metaKm, 1)} km${r.vueltas ? ` · ${r.vueltas} vueltas de 400 m` : r.nombreRuta ? ` · ${escapar(r.nombreRuta)}` : ''} · ${r.terreno === 'plano' ? 'plano' : 'montaña'}</p>
-        <ul>${REGLAS_RUTA.map((x) => `<li>${x}</li>`).join('')}</ul>`
-      : '<div class="grande">Descanso total</div><p class="suave" style="margin-top:4px">O caminata ligera de 20–30 min. Puedes dormir hasta 1 h más.</p>'}
+        <p style="margin-top:6px"><b>Meta:</b> ${num(r.metaKm, 1)} km${r.vueltas ? ` · ${r.vueltas} vueltas de 400 m` : r.nombreRuta ? ` · ${escapar(r.nombreRuta)}` : ''} · ${r.terreno === 'plano' ? 'plano' : r.terreno === 'mixto' ? 'mixto' : 'montaña'}</p>
+        ${PU.intervalos ? `<ul>${REGLAS_RUTA.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}`
+      : plan.descanso ? '<div class="grande">Descanso total</div><p class="suave" style="margin-top:4px">O caminata ligera de 20–30 min. Puedes dormir hasta 1 h más.</p>'
+      : '<div class="grande">Sin ruta hoy</div><p class="suave" style="margin-top:4px">Hoy toca solo el ejercicio de abajo.</p>'}
     </div>
     ${c ? `<div class="plan-bloque"><h4>Complemento</h4><div class="grande" style="color:var(--c-comp)">${c.nombre}</div><p class="suave">${c.formato}</p>
       <ul>${c.ejercicios.map((e) => `<li>${e.bloque === 'abdomen' ? '🔥 ' : ''}${escapar(e.nombre)} – ${escapar(e.meta)}</li>`).join('')}</ul></div>` : ''}
