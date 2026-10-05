@@ -62,59 +62,116 @@ async function comprimirImagen(archivo) {
   return c.toDataURL('image/jpeg', 0.8);
 }
 
-// Días que cambiaron desde el último envío (se usa en la pantalla "Enviar").
-async function marcarCambios(mes, nuevos) {
-  const anteriores = (await leer(`dias/${mes}.json`)) || {};
-  const pendientes = new Set((await leer('pendientes.json')) || []);
+// ---------- Varios perfiles en el celular ----------
+// Cada perfil guarda sus "archivos" con el prefijo  p/<id>/  (p/Nati/perfil.json, p/Nati/dias/2026-10.json…)
+const CLAVE_ACTIVO = 'rfc-perfil-activo';
+const leerActivo = () => { try { return localStorage.getItem(CLAVE_ACTIVO); } catch { return null; } };
+const fijarActivo = (id) => { try { localStorage.setItem(CLAVE_ACTIVO, id); } catch { /* nada */ } };
+const ruta = (id, rel) => `p/${id}/${rel}`;
+const limpiarId = (n) => String(n || 'Mi perfil').replace(/[/\\:*?"<>|]/g, '').trim().slice(0, 60) || 'Mi perfil';
+
+async function idsPerfiles() {
+  return [...new Set((await claves()).map((k) => /^p\/(.+)\/perfil\.json$/.exec(k)?.[1]).filter(Boolean))];
+}
+
+async function idLibre(base) {
+  const ids = new Set(await idsPerfiles());
+  let id = base;
+  let i = 2;
+  while (ids.has(id)) id = `${base} (${i++})`;
+  return id;
+}
+
+// Versión anterior: un solo perfil sin prefijo → se mueve a p/<nombre>/
+async function migrarPerfilUnico() {
+  const viejo = await leer('perfil.json');
+  if (!viejo) return;
+  const id = await idLibre(limpiarId(viejo.nombre));
+  for (const k of await claves()) {
+    if (k.startsWith('p/') || k === CLAVE_ACTIVO) continue;
+    await escribir(ruta(id, k), await leer(k));
+    await borrar(k);
+  }
+  fijarActivo(id);
+}
+const migracion = migrarPerfilUnico();
+
+async function activo() {
+  await migracion;
+  let id = leerActivo();
+  const ids = await idsPerfiles();
+  if (!id || !ids.includes(id)) { id = ids.length === 1 ? ids[0] : null; if (id) fijarActivo(id); }
+  return id;
+}
+
+// Días que cambiaron desde el último envío por WhatsApp (pantalla "Enviar").
+async function marcarCambios(id, mes, nuevos) {
+  const anteriores = (await leer(ruta(id, `dias/${mes}.json`))) || {};
+  const pendientes = new Set((await leer(ruta(id, 'pendientes.json'))) || []);
   const fechas = new Set([...Object.keys(anteriores), ...Object.keys(nuevos)]);
   for (const f of fechas) if (JSON.stringify(anteriores[f]) !== JSON.stringify(nuevos[f])) pendientes.add(f);
-  await escribir('pendientes.json', [...pendientes].sort());
+  await escribir(ruta(id, 'pendientes.json'), [...pendientes].sort());
+}
+
+async function diasDe(id) {
+  const dias = {};
+  const prefijo = `p/${id}/dias/`;
+  for (const k of await claves()) {
+    if (k.startsWith(prefijo) && /^\d{4}-\d{2}\.json$/.test(k.slice(prefijo.length))) Object.assign(dias, await leer(k));
+  }
+  return dias;
+}
+
+async function escribirEn(id, rel, valor) {
+  const m = /^dias\/(\d{4}-\d{2})\.json$/.exec(rel);
+  if (m) await marcarCambios(id, m[1], valor);
+  await escribir(ruta(id, rel), valor);
 }
 
 window.api = {
   esCelular: true,
   ubicacion: async () => {
-    const p = await leer('perfil.json');
-    return { carpeta: 'celular', perfil: p ? 'celular' : null, carpetaPerfil: 'celular', sugerida: 'celular' };
+    const id = await activo();
+    return { carpeta: 'celular', perfil: id, carpetaPerfil: id ? `celular/${id}` : null, sugerida: 'celular' };
   },
-  leer,
-  escribir: async (clave, valor) => {
-    const m = /^dias\/(\d{4}-\d{2})\.json$/.exec(clave);
-    if (m) await marcarCambios(m[1], valor);
-    await escribir(clave, valor);
-    return true;
-  },
-  leerDias: async () => {
-    const dias = {};
-    for (const k of await claves()) if (/^dias\/\d{4}-\d{2}\.json$/.test(k)) Object.assign(dias, await leer(k));
-    return dias;
-  },
+  leer: async (rel) => { const id = await activo(); return id ? leer(ruta(id, rel)) : null; },
+  escribir: async (rel, valor) => { const id = await activo(); if (!id) throw new Error('No hay perfil abierto'); await escribirEn(id, rel, valor); return true; },
+  leerDias: async () => { const id = await activo(); return id ? diasDe(id) : {}; },
   listarPerfiles: async () => {
-    const p = await leer('perfil.json');
-    return p ? [{ id: 'celular', nombre: p.nombre, sexo: p.sexo, fechaInicio: p.fechaInicio, pesoMeta: p.pesoMeta }] : [];
+    await migracion;
+    const lista = [];
+    for (const id of await idsPerfiles()) {
+      const p = (await leer(ruta(id, 'perfil.json'))) || {};
+      lista.push({ id, nombre: p.nombre || id, sexo: p.sexo, fechaInicio: p.fechaInicio, pesoMeta: p.pesoMeta, nubeId: p.nubeId });
+    }
+    return lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   },
-  crearPerfil: async () => 'celular',
-  abrirPerfil: async () => 'celular',
-  // Carga en el celular el perfil enviado desde la PC (conserva los días ya registrados aquí).
+  crearPerfil: async (nombre) => { await migracion; const id = await idLibre(limpiarId(nombre)); await escribir(ruta(id, 'perfil.json'), { nombre }); fijarActivo(id); return id; },
+  abrirPerfil: async (id) => { fijarActivo(id); return id; },
+  // Carga el perfil enviado desde la PC. Si ya existe uno con ese nombre se actualiza (sus días no se tocan).
   importarPerfil: async () => {
     const archivo = await elegirArchivo('.txt,.json,text/plain,application/json');
     if (!archivo) return null;
     const paquete = leerPaquete(await archivo.text());
     if (paquete.tipo !== 'rfc-perfil') throw new Error('Ese archivo contiene días, no un perfil. En la PC usa "Enviar perfil al celular".');
-    await escribir('perfil.json', paquete.perfil);
-    await escribir('config.json', paquete.config || {});
-    await escribir('rutas.json', paquete.rutas || []);
-    await escribir('frecuentes.json', paquete.frecuentes || []);
-    return 'celular';
+    await migracion;
+    const id = limpiarId(paquete.perfil?.nombre);
+    await escribir(ruta(id, 'perfil.json'), paquete.perfil);
+    await escribir(ruta(id, 'config.json'), paquete.config || {});
+    await escribir(ruta(id, 'rutas.json'), paquete.rutas || []);
+    await escribir(ruta(id, 'frecuentes.json'), paquete.frecuentes || []);
+    fijarActivo(id);
+    return id;
   },
   importarImagen: async () => {
     const archivo = await elegirArchivo('image/*');
     if (!archivo) return null;
+    const id = await activo();
     const clave = `fotos/${Date.now()}.jpg`;
-    await escribir(clave, await comprimirImagen(archivo));
+    await escribir(ruta(id, clave), await comprimirImagen(archivo));
     return clave;
   },
-  urlArchivo: async (clave) => (clave ? leer(clave) : null),
+  urlArchivo: async (rel) => { const id = await activo(); return rel && id ? leer(ruta(id, rel)) : null; },
   notificar: async (titulo, cuerpo) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return false;
     const reg = await navigator.serviceWorker?.getRegistration();
@@ -123,12 +180,26 @@ window.api = {
   },
   alNavegar: () => {},
   version: async () => 'celular',
-  // Propios del celular
-  pendientes: async () => (await leer('pendientes.json')) || [],
+  // ----- Para la sincronización (cualquier perfil, no solo el abierto) -----
+  perfilArchivos: async (id) => ({
+    perfil: await leer(ruta(id, 'perfil.json')),
+    config: await leer(ruta(id, 'config.json')),
+    rutas: await leer(ruta(id, 'rutas.json')),
+    frecuentes: await leer(ruta(id, 'frecuentes.json')),
+    sincro: await leer(ruta(id, 'sincro.json')),
+    dias: await diasDe(id),
+  }),
+  perfilEscribir: async (id, rel, valor) => escribirEn(id, rel, valor),
+  perfilCrearVacio: async (nombre) => { await migracion; const id = await idLibre(limpiarId(nombre)); await escribir(ruta(id, 'perfil.json'), { nombre }); return id; },
+  perfilFoto: async (id, rel) => leer(ruta(id, rel)),
+  perfilGuardarFoto: async (id, rel, dataURL) => escribir(ruta(id, rel), dataURL),
+  // ----- Envío por WhatsApp -----
+  pendientes: async () => { const id = await activo(); return (await leer(ruta(id, 'pendientes.json'))) || []; },
   marcarEnviados: async (fechas) => {
-    const p = new Set((await leer('pendientes.json')) || []);
+    const id = await activo();
+    const p = new Set((await leer(ruta(id, 'pendientes.json'))) || []);
     fechas.forEach((f) => p.delete(f));
-    await escribir('pendientes.json', [...p]);
+    await escribir(ruta(id, 'pendientes.json'), [...p]);
   },
-  borrarTodo: async () => { for (const k of await claves()) await borrar(k); },
+  borrarTodo: async () => { for (const k of await claves()) await borrar(k); try { localStorage.removeItem(CLAVE_ACTIVO); } catch { /* nada */ } },
 };

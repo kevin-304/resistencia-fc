@@ -1,5 +1,5 @@
-// Generado por scripts/construir-web.js — versión 2026-10-03T03:28:31.748Z
-const CACHE = 'rfc-1790998111749';
+// Generado por scripts/construir-web.js — versión 2026-10-05T12:54:10.036Z
+const CACHE = 'rfc-1791204850037';
 const ARCHIVOS = [
   "./",
   "estilos.css",
@@ -33,15 +33,20 @@ const ARCHIVOS = [
   "js/metricas.js",
   "js/movil.js",
   "js/nav.js",
+  "js/nube-config.js",
+  "js/nube.js",
   "js/paquetes.js",
   "js/plan.js",
   "js/tema.js",
   "js/util.js",
+  "js/vendor/firebase.js",
   "js/vistas/calendario.js",
   "js/vistas/dia.js",
   "js/vistas/enviar.js",
   "js/vistas/movil-ajustes.js",
+  "js/vistas/nube.js",
   "js/vistas/perfil.js",
+  "js/vistas/perfiles.js",
   "manifest.webmanifest",
   "movil.css",
   "movil.html",

@@ -1,8 +1,9 @@
 // Creación del perfil la primera vez (bienvenida) y edición del perfil después.
 import { estado, guardarPerfil, guardarRutas, guardarConfig, nuevaRuta, subtitulo, reiniciarEstado } from '../estado.js';
-import { pesoMetaSugerido, imc, INICIO_POR_DEFECTO, planSugerido, planVacio } from '../plan.js';
-import { aviso, navegar } from '../nav.js';
+import { pesoMetaSugerido, imc, INICIO_POR_DEFECTO, planDesdeActividades, ACTIVIDADES } from '../plan.js';
+import { aviso, navegar, confirmar } from '../nav.js';
 import { I } from '../iconos.js';
+import { nubeConfigurada } from '../nube.js';
 import { aNumero, escapar, num, hoyISO, proximoLunes, fechaLarga, diasEntre } from '../util.js';
 
 const inicioSugerido = () => {
@@ -80,7 +81,8 @@ function leerFormulario(raiz, p) {
 export async function mostrarBienvenida(cont) {
   const hayPerfiles = (await window.api.listarPerfiles()).length > 0;
   let paso = 1; // 1 = datos personales, 2 = ruta principal y plan
-  let tipoPlan = 'sugerido';
+  const actividades = new Set();
+  let conAyuno = false;
   const p = {};
   const ruta = { nombre: '', ciudad: '', terreno: '', distancia: null, desnivel: null };
 
@@ -91,12 +93,16 @@ export async function mostrarBienvenida(cont) {
       <section class="tarjeta" id="paso"></section>
       <div class="bienvenida-pie">
         ${hayPerfiles ? `<button class="boton fantasma" id="a-perfiles">${I.izquierda} Volver a los perfiles</button>` : '<span></span>'}
-        <button class="boton fantasma" id="importar">${I.carpeta} ¿Ya tienes un perfil? Importarlo</button>
+        <span class="grupo-botones">
+          ${nubeConfigurada() ? '<button class="boton fantasma" id="a-nube">☁ Ya tengo cuenta: iniciar sesión</button>' : ''}
+          <button class="boton fantasma" id="importar">${I.carpeta} ¿Ya tienes un perfil? Importarlo</button>
+        </span>
       </div>
     </div>`;
     const caja = cont.querySelector('#paso');
     cont.querySelector('#a-perfiles')?.addEventListener('click', () => navegar('perfiles'));
     cont.querySelector('#importar').addEventListener('click', () => importarYAbrir());
+    cont.querySelector('#a-nube')?.addEventListener('click', () => navegar('nube'));
 
     if (paso === 1) {
       caja.innerHTML = `<div class="tarjeta-cab"><h2>Crea tu perfil</h2></div>
@@ -116,19 +122,21 @@ export async function mostrarBienvenida(cont) {
     }
 
     if (paso === 2) {
-      caja.innerHTML = `<div class="tarjeta-cab"><h2>Tu ruta principal</h2></div>
-        <p class="suave" style="margin-bottom:14px">La ruta donde entrenas normalmente. El desnivel (metros de subida) puedes dejarlo vacío y ponerlo después, cuando lo midas con una app de GPS.</p>
-        <div class="campos">
-          <label class="campo"><span>Nombre</span><input id="r-nombre" value="${escapar(ruta.nombre)}"></label>
-          <label class="campo"><span>Ciudad</span><input id="r-ciudad" value="${escapar(ruta.ciudad)}"></label>
-          <label class="campo"><span>Terreno</span><select id="r-terreno"><option value="" ${ruta.terreno ? '' : 'selected'} disabled>Elegir…</option>${[['montana', 'Montaña'], ['plano', 'Plano'], ['mixto', 'Mixto']].map(([v, t]) => `<option value="${v}" ${ruta.terreno === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
-          <label class="campo"><span>Distancia ida y vuelta</span><div class="con-unidad"><input id="r-km" inputmode="decimal" value="${ruta.distancia != null ? String(ruta.distancia).replace('.', ',') : ''}"><em>km</em></div></label>
-          <label class="campo"><span>Desnivel positivo</span><div class="con-unidad"><input id="r-desnivel" inputmode="decimal" value="${ruta.desnivel ?? ''}"><em>m</em></div></label>
-        </div>
-        <p class="suave pequeño" style="margin:18px 0 8px;font-weight:600">¿Con qué plan empiezas?</p>
-        <div class="sexo-opciones">
-          <button type="button" data-plan="sugerido" class="${tipoPlan === 'sugerido' ? 'activo' : ''}">Plan sugerido<small>Rutina semanal, ejercicios, ayuno 16:8 y metas listas para usar</small></button>
-          <button type="button" data-plan="blanco" class="${tipoPlan === 'blanco' ? 'activo' : ''}">Plan en blanco<small>Lo armo yo desde cero en "Mi plan"</small></button>
+      caja.innerHTML = `<div class="tarjeta-cab"><h2>¿Qué entrenamiento haces?</h2></div>
+        <p class="suave" style="margin-bottom:14px">Marca todo lo que vas a hacer. Con esto armo tu semana; después la puedes ajustar en <b>Mi plan</b>.</p>
+        <div class="actividades">${ACTIVIDADES.map((a) => `<button type="button" class="actividad ${actividades.has(a.id) ? 'activo' : ''}" data-act="${a.id}">
+          <span class="emoji">${a.emoji}</span><b>${a.nombre}</b><small>${a.desc}</small></button>`).join('')}</div>
+        <label class="check" style="margin-top:14px"><input type="checkbox" id="con-ayuno" ${conAyuno ? 'checked' : ''}><span>También hago <b>ayuno intermitente</b> (16:8 con entrada gradual; se ajusta en Mi plan)</span></label>
+        <div id="bloque-ruta" class="${actividades.has('ruta') ? '' : 'oculto'}">
+          <h3 style="margin:20px 0 6px">Tu ruta principal</h3>
+          <p class="suave pequeño" style="margin-bottom:10px">Donde sales a correr o caminar. El desnivel puedes dejarlo vacío y ponerlo después.</p>
+          <div class="campos">
+            <label class="campo"><span>Nombre</span><input id="r-nombre" value="${escapar(ruta.nombre)}"></label>
+            <label class="campo"><span>Ciudad</span><input id="r-ciudad" value="${escapar(ruta.ciudad)}"></label>
+            <label class="campo"><span>Terreno</span><select id="r-terreno"><option value="" ${ruta.terreno ? '' : 'selected'} disabled>Elegir…</option>${[['montana', 'Montaña'], ['plano', 'Plano'], ['mixto', 'Mixto']].map(([v, t]) => `<option value="${v}" ${ruta.terreno === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+            <label class="campo"><span>Distancia ida y vuelta</span><div class="con-unidad"><input id="r-km" inputmode="decimal" value="${ruta.distancia != null ? String(ruta.distancia).replace('.', ',') : ''}"><em>km</em></div></label>
+            <label class="campo"><span>Desnivel positivo</span><div class="con-unidad"><input id="r-desnivel" inputmode="decimal" value="${ruta.desnivel ?? ''}"><em>m</em></div></label>
+          </div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:18px">
           <button class="boton fantasma" id="atras">${I.izquierda} Atrás</button>
@@ -141,20 +149,25 @@ export async function mostrarBienvenida(cont) {
         distancia: aNumero(caja.querySelector('#r-km').value),
         desnivel: aNumero(caja.querySelector('#r-desnivel').value),
       });
-      caja.querySelectorAll('[data-plan]').forEach((b) => b.addEventListener('click', () => {
-        tipoPlan = b.dataset.plan;
-        caja.querySelectorAll('[data-plan]').forEach((x) => x.classList.toggle('activo', x === b));
+      caja.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
+        const id = b.dataset.act;
+        if (actividades.has(id)) actividades.delete(id); else actividades.add(id);
+        b.classList.toggle('activo', actividades.has(id));
+        caja.querySelector('#bloque-ruta').classList.toggle('oculto', !actividades.has('ruta'));
       }));
+      caja.querySelector('#con-ayuno').addEventListener('change', (e) => { conAyuno = e.target.checked; });
       caja.querySelector('#atras').addEventListener('click', () => { leerRuta(); paso = 1; pintar(); });
       caja.querySelector('#terminar').addEventListener('click', async () => {
         leerRuta();
+        if (!actividades.size && !(await confirmar('¿Sin actividades?', 'No marcaste ningún entrenamiento: tu plan empezará en blanco y lo armas en "Mi plan".', 'Seguir así'))) return;
+        if (!actividades.has('ruta')) Object.assign(ruta, { nombre: 'Mi ruta', terreno: 'montana', distancia: null });
         await window.api.crearPerfil(p.nombre);
         reiniciarEstado();
         const r = nuevaRuta({ ...ruta });
         estado.perfil = { ...p, creado: hoyISO() };
         estado.rutas = [r];
         estado.config.rutaPrincipal = r.id;
-        estado.config.plan = tipoPlan === 'blanco' ? planVacio() : planSugerido();
+        estado.config.plan = planDesdeActividades([...actividades], { ayuno: conAyuno });
         estado.config.terreno = { actual: r.terreno === 'plano' ? 'plano' : 'montana', desde: r.terreno === 'plano' ? estado.perfil.fechaInicio : null };
         await guardarPerfil();
         await guardarRutas();

@@ -78,10 +78,18 @@ async function escribir(rel, obj) {
   }
 }
 
-export const guardarPerfil = () => escribir('perfil.json', estado.perfil);
-export const guardarConfig = retrasar(() => escribir('config.json', estado.config), 300);
-export const guardarRutas = () => escribir('rutas.json', estado.rutas);
-export const guardarFrecuentes = () => escribir('frecuentes.json', estado.frecuentes);
+// La sincronización con la nube se entera de cada cambio local por aquí (ver nube.js).
+export const ganchos = { cambio: null };
+const avisarCambio = (tipo, clave) => { try { ganchos.cambio?.(tipo, clave); } catch (e) { console.error(e); } };
+
+export const guardarPerfil = () => { avisarCambio('datos', 'perfil'); return escribir('perfil.json', estado.perfil); };
+const guardarConfigRetrasado = retrasar(() => escribir('config.json', estado.config), 300);
+export const guardarConfig = Object.assign(
+  () => { avisarCambio('datos', 'config'); guardarConfigRetrasado(); },
+  { ya: () => { avisarCambio('datos', 'config'); return guardarConfigRetrasado.ya(); } },
+);
+export const guardarRutas = () => { avisarCambio('datos', 'rutas'); return escribir('rutas.json', estado.rutas); };
+export const guardarFrecuentes = () => { avisarCambio('datos', 'frecuentes'); return escribir('frecuentes.json', estado.frecuentes); };
 
 const mesesPendientes = new Set();
 
@@ -114,6 +122,7 @@ export function diaEditable(fecha) {
 }
 
 export function diaCambiado(fecha) {
+  avisarCambio('dia', fecha);
   if (estado.dias[fecha] && vacio(estado.dias[fecha])) delete estado.dias[fecha];
   mesesPendientes.add(fecha.slice(0, 7));
   avisar('pendiente');

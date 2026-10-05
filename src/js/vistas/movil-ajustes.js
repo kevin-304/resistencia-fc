@@ -1,9 +1,10 @@
 // (Celular) Perfil y ajustes: actualizar el perfil desde la PC, modo claro/oscuro, borrar datos.
 import { estado, guardarConfig } from '../estado.js';
 import { aplicarTema, PRESETS } from '../tema.js';
-import { aviso, confirmar } from '../nav.js';
+import { aviso, confirmar, navegar } from '../nav.js';
 import { recargarEnPerfil } from './perfil.js';
 import { I } from '../iconos.js';
+import { tarjetaNube } from './nube.js';
 import { escapar, fechaMedia, num } from '../util.js';
 
 export async function mostrarMovilAjustes(cont) {
@@ -12,8 +13,10 @@ export async function mostrarMovilAjustes(cont) {
   const oscuro = PRESETS[estado.config.tema.preset]?.modo !== 'claro';
   cont.innerHTML = `
     <div class="cabecera"><div class="titulo"><h1>Perfil</h1><p>${escapar(p.nombre)} · plan desde el ${fechaMedia(p.fechaInicio)} · meta ${num(p.pesoMeta, 1)} kg</p></div></div>
+    <button class="boton" id="cambiar-perfil" style="margin-bottom:14px;width:100%">${I.perfil} Cambiar de perfil</button>
+    <section class="tarjeta" id="caja-nube" style="margin-bottom:14px"></section>
     <section class="tarjeta" style="margin-bottom:14px">
-      <div class="tarjeta-cab"><h2>Actualizar desde la PC</h2></div>
+      <div class="tarjeta-cab"><h2>Actualizar desde la PC (por WhatsApp)</h2></div>
       <p class="suave">Si cambiaste tu perfil, rutas o colores en la PC, envíalo de nuevo (Perfil → <b>Enviar perfil al celular</b>) y cárgalo aquí. Tus días del celular no se tocan.</p>
       <button class="boton" id="importar" style="margin-top:12px">${I.carpeta} Cargar perfil de la PC</button>
     </section>
@@ -27,6 +30,8 @@ export async function mostrarMovilAjustes(cont) {
       <button class="boton peligro" id="borrar" style="margin-top:12px">${I.basura} Borrar los datos de este celular</button>
     </section>`;
 
+  tarjetaNube(cont.querySelector('#caja-nube'));
+  cont.querySelector('#cambiar-perfil').addEventListener('click', () => navegar('perfiles'));
   cont.querySelector('#importar').addEventListener('click', async () => {
     try {
       if (await window.api.importarPerfil()) { aviso('Perfil actualizado.', 'ok'); recargarEnPerfil(); }

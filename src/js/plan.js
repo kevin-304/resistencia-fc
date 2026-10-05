@@ -130,6 +130,153 @@ export const COMPLEMENTOS = {
       seg('plancha-toques', 'Plancha con toque de hombros', [4, 4, 5, 5], [40, 40, 45, 45]),
     ],
   },
+
+  // ----- Pilates y postura -----
+  'pilates-core': {
+    actividad: 'pilates', nombre: 'Pilates: core y postura',
+    formato: 'En esterilla, lento y controlado · exhala en el esfuerzo · ombligo hacia la columna · 30 s de descanso',
+    ejercicios: [
+      ej('cien', 'The Hundred (los cien)', [1, 1, 1, 1], [50, 70, 100, 100], { nota: 'Boca arriba, piernas en mesa, cabeza y hombros despegados; bombea los brazos 5 veces al inhalar y 5 al exhalar' }),
+      ej('roll-up', 'Roll up (enrollarse vértebra a vértebra)', [2, 2, 3, 3], [6, 8, 10, 10], { nota: 'Si cuesta, dobla las rodillas o ayúdate con las manos en los muslos' }),
+      ej('una-pierna', 'Estiramiento de una pierna', [2, 3, 3, 3], [8, 10, 12, 12], { lado: true, nota: 'Abdomen activo, espalda baja pegada al suelo' }),
+      ej('criss-cross', 'Criss-cross (oblicuos)', [2, 3, 3, 3], [8, 10, 12, 15], { lado: true, nota: 'Gira desde las costillas, no tires del cuello' }),
+      ej('cisne', 'Cisne (extensión de espalda)', [2, 3, 3, 3], [8, 10, 12, 12], { nota: 'Boca abajo, sube el pecho mirando al suelo y baja los hombros lejos de las orejas: corrige la espalda encorvada' }),
+      seg('natacion', 'Natación (swimming)', [2, 3, 3, 3], [20, 30, 40, 45], { nota: 'Boca abajo, brazo y pierna contrarios suben a la vez, cuello largo' }),
+      seg('plancha-pil', 'Plancha en antebrazos', [2, 3, 3, 3], [20, 30, 40, 45], { nota: 'Con rodillas apoyadas las primeras semanas si hace falta' }),
+    ],
+  },
+  'pilates-gluteos': {
+    actividad: 'pilates', nombre: 'Pilates: glúteos, piernas y espalda', formato: 'En esterilla · controla la bajada · 30 s de descanso',
+    ejercicios: [
+      ej('puente-pil', 'Puente de hombros', [3, 3, 3, 4], [10, 12, 15, 15], { nota: 'Sube vértebra a vértebra y aprieta glúteos arriba 2 s' }),
+      ej('patada-lateral', 'Elevación lateral de pierna acostada', [2, 3, 3, 3], [10, 12, 15, 15], { lado: true }),
+      ej('almeja', 'Almeja (clamshell)', [2, 3, 3, 3], [12, 15, 15, 20], { lado: true, nota: 'De lado, rodillas dobladas; abre la rodilla sin mover la cadera' }),
+      ej('patada-glute', 'Patada de glúteo en cuatro apoyos', [2, 3, 3, 3], [10, 12, 15, 15], { lado: true }),
+      ej('bird-dog', 'Bird dog (brazo y pierna contrarios)', [2, 3, 3, 3], [8, 10, 12, 12], { lado: true, nota: 'Espalda recta como una mesa: fortalece la postura' }),
+      ej('sentadilla-pil', 'Sentadilla lenta con pausa', [2, 3, 3, 3], [10, 12, 15, 15], { nota: 'Baja en 3 segundos, pausa 1 s abajo, pecho erguido' }),
+      seg('natacion-2', 'Natación (swimming)', [2, 2, 3, 3], [20, 30, 40, 45]),
+    ],
+  },
+  postura: {
+    actividad: 'pilates', nombre: 'Postura y movilidad (10–15 min)', formato: 'Suave, sin dolor · ideal también al terminar el día después de estar sentada',
+    ejercicios: [
+      ej('retraccion', 'Juntar omóplatos (retracción escapular)', [2, 3, 3, 3], [12, 15, 15, 20], { nota: 'Sentada o de pie: lleva los hombros atrás y abajo, sostén 2 s' }),
+      ej('angeles', 'Ángeles en la pared', [2, 3, 3, 3], [8, 10, 12, 12], { nota: 'Espalda, cabeza y brazos tocando la pared; sube y baja los brazos despacio' }),
+      ej('menton', 'Mentón hacia atrás (doble mentón)', [2, 3, 3, 3], [10, 12, 15, 15], { nota: 'Corrige la cabeza adelantada al estar sentada' }),
+      ej('gato-vaca', 'Gato–vaca', [2, 2, 3, 3], [8, 10, 10, 12]),
+      seg('cobra', 'Cobra suave (extensión torácica)', [2, 2, 3, 3], [20, 30, 30, 40]),
+      seg('pecho', 'Estiramiento de pecho en el marco de una puerta', [2, 2, 2, 2], [20, 30, 30, 30], { lado: true }),
+    ],
+  },
+  'cardio-suave': {
+    actividad: 'cardio', nombre: 'Cardio suave en casa (bajo impacto)', formato: 'Sin saltos · ritmo en el que puedas hablar · 30–60 s de pausa entre series',
+    ejercicios: [
+      seg('marcha', 'Marcha en el sitio subiendo rodillas', [3, 3, 4, 4], [60, 90, 120, 120]),
+      seg('step-touch', 'Paso lateral con brazos (step touch)', [3, 3, 4, 4], [45, 60, 60, 90]),
+      seg('jacks-suave', 'Jumping jacks sin salto', [2, 3, 3, 4], [30, 40, 45, 60], { nota: 'Un pie sale al lado y los brazos suben, sin saltar' }),
+      seg('boxeo', 'Boxeo de sombra', [2, 3, 3, 4], [30, 40, 45, 60]),
+      seg('rodilla-codo', 'Rodilla al codo contrario de pie', [2, 3, 3, 4], [30, 40, 45, 60]),
+    ],
+  },
+
+  // ----- Gimnasio (ganar músculo): empuje / tirón / piernas -----
+  'gym-empuje': {
+    actividad: 'gimnasio', nombre: 'Gimnasio: pecho, hombros y tríceps', usaPeso: true,
+    formato: 'Elige un peso con el que las 2 últimas repeticiones cuesten · 90 s de descanso · sube el peso cuando completes todas las series',
+    ejercicios: [
+      ej('banca', 'Press de banca con barra', [3, 4, 4, 4], [10, 10, 8, 8]),
+      ej('inclinado', 'Press inclinado con mancuernas', [3, 3, 4, 4], [12, 10, 10, 8]),
+      ej('militar', 'Press militar', [3, 3, 4, 4], [10, 10, 8, 8]),
+      ej('laterales', 'Elevaciones laterales', [3, 3, 4, 4], [15, 12, 12, 12]),
+      ej('fondos-gym', 'Fondos en paralelas (o en máquina)', [3, 3, 3, 4], [10, 10, 12, 12]),
+      ej('triceps-polea', 'Extensión de tríceps en polea', [3, 3, 4, 4], [12, 12, 10, 10]),
+    ],
+  },
+  'gym-tiron': {
+    actividad: 'gimnasio', nombre: 'Gimnasio: espalda y bíceps', usaPeso: true,
+    formato: 'Peso exigente con buena técnica · 90 s de descanso',
+    ejercicios: [
+      ej('jalon', 'Jalón al pecho', [3, 4, 4, 4], [12, 10, 10, 8]),
+      ej('remo-barra', 'Remo con barra', [3, 4, 4, 4], [10, 10, 8, 8]),
+      ej('remo-polea', 'Remo en polea baja', [3, 3, 4, 4], [12, 12, 10, 10]),
+      ej('face-pull', 'Face pull', [3, 3, 3, 4], [15, 15, 15, 12]),
+      ej('curl-barra', 'Curl con barra', [3, 3, 4, 4], [12, 10, 10, 8]),
+      ej('martillo', 'Curl martillo', [3, 3, 3, 4], [12, 12, 12, 10]),
+    ],
+  },
+  'gym-piernas': {
+    actividad: 'gimnasio', nombre: 'Gimnasio: piernas y core', usaPeso: true,
+    formato: 'Calienta con series ligeras · 2 min de descanso en los básicos',
+    ejercicios: [
+      ej('sentadilla-barra', 'Sentadilla con barra', [3, 4, 4, 4], [10, 10, 8, 8]),
+      ej('rumano', 'Peso muerto rumano', [3, 3, 4, 4], [10, 10, 8, 8]),
+      ej('prensa', 'Prensa de piernas', [3, 3, 4, 4], [12, 12, 10, 10]),
+      ej('femoral', 'Curl femoral', [3, 3, 4, 4], [12, 12, 10, 10]),
+      ej('cuadriceps', 'Extensión de cuádriceps', [3, 3, 3, 4], [12, 12, 12, 10]),
+      ej('gemelos', 'Elevación de talones de pie', [3, 4, 4, 4], [15, 15, 12, 12]),
+      seg('plancha-gym', 'Plancha', [3, 3, 3, 3], [30, 40, 45, 60]),
+    ],
+  },
+
+  // ----- CrossFit / funcional (series = rondas) -----
+  'wod-a': {
+    actividad: 'crossfit', nombre: 'WOD A: cuerpo completo', formato: 'Cada serie es una ronda: hazla seguida y con buena técnica · 1 min de descanso entre rondas',
+    ejercicios: [
+      ej('burpees', 'Burpees', [3, 4, 5, 5], [8, 10, 12, 15]),
+      ej('swings', 'Kettlebell swings (o con mancuerna)', [3, 4, 5, 5], [12, 15, 15, 20]),
+      ej('air-squat', 'Air squats', [3, 4, 5, 5], [15, 20, 20, 25]),
+      ej('push-ups', 'Push-ups', [3, 4, 5, 5], [8, 10, 12, 15]),
+      ej('sit-ups', 'Sit-ups', [3, 4, 5, 5], [12, 15, 20, 20]),
+    ],
+  },
+  'wod-b': {
+    actividad: 'crossfit', nombre: 'WOD B: potencia', formato: 'Rondas seguidas · 1 min entre rondas',
+    ejercicios: [
+      ej('thrusters', 'Thrusters con mancuernas', [3, 4, 4, 5], [10, 10, 12, 12]),
+      ej('box-jumps', 'Box jumps (o step-ups rápidos)', [3, 4, 4, 5], [10, 12, 12, 15]),
+      ej('wall-balls', 'Wall balls (o sentadilla con lanzamiento)', [3, 4, 4, 5], [12, 15, 15, 20]),
+      ej('remo-renegado', 'Remo renegado', [3, 3, 4, 4], [8, 10, 10, 12], { lado: true }),
+      seg('hollow', 'Hollow hold', [3, 3, 4, 4], [20, 30, 30, 40]),
+    ],
+  },
+  'wod-c': {
+    actividad: 'crossfit', nombre: 'WOD C: metabólico', formato: 'Rondas seguidas, ritmo alto pero constante · 1 min entre rondas',
+    ejercicios: [
+      seg('cuerda', 'Saltos de cuerda (o simulados)', [3, 4, 4, 5], [45, 60, 60, 90]),
+      ej('lunges-peso', 'Zancadas con peso', [3, 4, 4, 5], [10, 12, 12, 14], { lado: true }),
+      ej('push-press', 'Push press con mancuernas', [3, 4, 4, 5], [10, 10, 12, 12]),
+      ej('climbers-wod', 'Mountain climbers', [3, 4, 4, 5], [20, 25, 30, 30], { lado: true }),
+      seg('plancha-wod', 'Plancha', [3, 3, 4, 4], [30, 40, 45, 60]),
+    ],
+  },
+};
+
+// A qué actividad pertenece cada rutina del plan original.
+Object.assign(COMPLEMENTOS.superior, { actividad: 'casa' });
+Object.assign(COMPLEMENTOS.core, { actividad: 'casa' });
+Object.assign(COMPLEMENTOS.inferior, { actividad: 'casa' });
+Object.assign(COMPLEMENTOS.estiramientos, { actividad: 'movilidad' });
+Object.assign(COMPLEMENTOS.cardio, { actividad: 'cardio' });
+
+// ---------- Actividades que una persona elige al crear su perfil ----------
+export const ACTIVIDADES = [
+  { id: 'ruta', nombre: 'Ruta: correr, trotar o caminar', emoji: '🏃', desc: 'Salidas al aire libre con progresión de intervalos' },
+  { id: 'cardio', nombre: 'Cardio y HIIT', emoji: '🔥', desc: 'Circuitos para quemar grasa y mejorar la condición' },
+  { id: 'casa', nombre: 'Fuerza en casa', emoji: '🏠', desc: 'Peso corporal y mancuernas: tren superior, inferior y core' },
+  { id: 'pilates', nombre: 'Pilates y postura', emoji: '🧘', desc: 'Core, glúteos, espalda y postura en esterilla' },
+  { id: 'gimnasio', nombre: 'Gimnasio (ganar músculo)', emoji: '🏋️', desc: 'Empuje / tirón / piernas con pesas y máquinas' },
+  { id: 'crossfit', nombre: 'CrossFit / funcional', emoji: '⚡', desc: 'WODs por rondas de alta intensidad' },
+  { id: 'movilidad', nombre: 'Yoga / estiramientos', emoji: '🌿', desc: 'Movilidad y recuperación' },
+];
+
+// Qué rutina toca cada día (1 = lunes … 6 = sábado) según la actividad.
+const SEMANA_POR_ACTIVIDAD = {
+  casa: { 1: 'superior', 2: 'core', 3: 'inferior', 5: 'core', 6: 'core' },
+  cardio: { 2: 'cardio', 4: 'cardio', 5: 'cardio' },
+  pilates: { 1: 'pilates-core', 2: 'postura', 3: 'pilates-gluteos', 4: 'postura', 5: 'pilates-core', 6: 'pilates-gluteos' },
+  gimnasio: { 1: 'gym-empuje', 2: 'gym-tiron', 3: 'gym-piernas', 4: 'gym-empuje', 5: 'gym-tiron', 6: 'gym-piernas' },
+  crossfit: { 1: 'wod-a', 3: 'wod-b', 5: 'wod-c' },
+  movilidad: { 4: 'estiramientos', 6: 'postura' },
 };
 
 // Finalizador abdominal: se añade los días que no son de core (lunes, miércoles, jueves y viernes).
@@ -293,6 +440,40 @@ export function planVacio() {
   return { ...p, intervalos: false, calentamiento: false, finalizador: false, ayuno: { ...p.ayuno, activo: false }, alimentos: [] };
 }
 
+export const ALIMENTOS_GENERICOS = [
+  { id: 'fruta', nombre: 'Fruta', emoji: '🍎', max: null, nota: '2–3 al día' },
+  { id: 'verdura', nombre: 'Porción de verduras', emoji: '🥦', max: null, nota: '3 o más al día' },
+  { id: 'proteina', nombre: 'Porción de proteína', emoji: '🍗', max: null, nota: 'en cada comida' },
+  { id: 'dulce', nombre: 'Dulces / postres', emoji: '🍰', max: 1, nota: 'máximo 1 al día' },
+];
+
+// Arma un plan a partir de las actividades elegidas (lista de ids de ACTIVIDADES).
+export function planDesdeActividades(actividades = [], { ayuno = false } = {}) {
+  const set = new Set(actividades);
+  const sugerido = planSugerido();
+  let p;
+  // Ruta + cardio + fuerza en casa = exactamente el plan original de Resistencia f'c.
+  if (set.has('casa') && set.has('cardio') && [...set].every((a) => ['ruta', 'casa', 'cardio'].includes(a))) {
+    p = sugerido;
+    if (!set.has('ruta')) for (const ds of [1, 2, 3, 4, 5, 6]) p.semana[ds].ruta.activa = false;
+  } else {
+    p = planVacio();
+    const otras = ACTIVIDADES.map((a) => a.id).filter((a) => a !== 'ruta' && set.has(a));
+    for (const ds of [1, 2, 3, 4, 5, 6]) {
+      const opciones = otras.map((a) => SEMANA_POR_ACTIVIDAD[a]?.[ds]).filter(Boolean);
+      p.semana[ds].complemento = opciones.length ? opciones[ds % opciones.length] : null;
+      if (set.has('ruta')) p.semana[ds].ruta = { ...sugerido.semana[ds].ruta };
+    }
+    p.calentamiento = ['ruta', 'casa', 'cardio', 'gimnasio', 'crossfit'].some((a) => set.has(a));
+    p.finalizador = set.has('casa') || set.has('cardio');
+    p.alimentos = structuredClone(ALIMENTOS_GENERICOS);
+  }
+  p.intervalos = set.has('ruta');
+  p.actividades = [...set];
+  p.ayuno = { ...sugerido.ayuno, activo: !!ayuno };
+  return p;
+}
+
 // Completa lo que falte con el plan sugerido (perfiles antiguos no tienen "plan").
 export function normalizarPlan(p) {
   const base = planSugerido();
@@ -338,9 +519,13 @@ export function ayunoConPlan(semana, ds, pu) {
 }
 
 // Rutinas disponibles para el selector: las sugeridas + las creadas por la persona.
+// Si el perfil eligió actividades, solo se ofrecen las rutinas de esas actividades (más las propias).
 export function tiposComplemento(pu) {
   const propias = Object.entries(pu?.rutinas || {}).map(([id, r]) => ({ id, nombre: `${r.nombre} (mía)` }));
-  return [...TIPOS_COMPLEMENTO, ...propias];
+  const act = pu?.actividades?.length ? new Set([...pu.actividades, 'movilidad']) : null;
+  const usadas = new Set(Object.values(pu?.semana || {}).map((d) => d.complemento));
+  const sugeridas = TIPOS_COMPLEMENTO.filter((t) => !act || act.has(COMPLEMENTOS[t.id].actividad) || usadas.has(t.id));
+  return [...sugeridas, ...propias];
 }
 
 export function rutinaDe(tipo, pu) {
