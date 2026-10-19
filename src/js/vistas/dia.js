@@ -4,6 +4,7 @@ import { estado, contexto, diaDe, diaEditable, diaCambiado, guardarFrecuentes, r
 import { metricasDia, alertasDia, ETIQUETAS_COMIDA, TIPOS_COMIDA, ML_POR_VASO, fueraDeVentana } from '../metricas.js';
 import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo, resumenPlan, planEnFecha } from '../plan.js';
 import { navegar, alSalir, aviso } from '../nav.js';
+import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
 
@@ -132,6 +133,7 @@ export function mostrarDia(cont, { fecha }) {
     }
     const accion = e.target.closest('[data-accion]')?.dataset.accion;
     const objetivo = e.target.closest('[data-accion]');
+    if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
     if (accion === 'agregar-comida') agregarComida({});
     if (accion === 'borrar-comida') {
       const dia = diaEditable(fecha);
@@ -514,6 +516,7 @@ function seccionComplemento(d, plan) {
       ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb', ph: '10' }) : ''}
     </div>
     <p class="suave pequeño" style="margin:12px 0 0">Semana ${Math.max(1, plan.semana)} · ${def?.formato || ''}. Escribe en cada casilla lo que hiciste de verdad (el número gris es lo sugerido).</p>
+    ${tarjetaGuia(tipo)}
     ${bloqueSeries('Bloque principal', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {})}
     ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(`🔥 ${FINALIZADOR.nombre}`, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, FINALIZADOR.formato) : ''}
     <div class="resumen-series" data-calc="comp-resumen"></div>

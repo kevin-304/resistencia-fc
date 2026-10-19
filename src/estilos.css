@@ -415,6 +415,22 @@ details.rutina[open] summary::before { content: '▾'; }
 .rutina-propia .tabla-plan td:first-child input { min-width: 200px; }
 
 /* ============ Actividades ============ */
+/* Guías de la rutina: vista plegada para mantener despejado el registro. */
+.guia-rutina { margin: 16px 0; border: 1px solid var(--borde); border-radius: var(--radio); padding: 12px; }
+.guia-rutina summary { cursor: pointer; font-weight: 600; line-height: 1.5; }
+.guia-rutina-contenido { display: grid; justify-items: start; gap: 12px; margin-top: 12px; }
+.guia-miniatura { display: block; padding: 0; border: 0; background: transparent; cursor: zoom-in; max-width: 420px; width: 100%; }
+.guia-miniatura img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.guia-miniatura:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
+dialog.guia-visor { width: min(1120px, 96vw); max-width: 96vw; height: 92vh; height: 92dvh; max-height: 96vh; max-height: 96dvh; padding: 0; overflow: hidden; }
+dialog.guia-visor[open] { display: flex; flex-direction: column; }
+.guia-herramientas { padding: 12px; border-bottom: 1px solid var(--borde); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; flex: none; }
+.guia-herramientas h2 { font-size: 1em; margin: 0; }
+.guia-controles { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.guia-controles .boton { min-height: 44px; min-width: 44px; }
+.guia-porcentaje { min-width: 48px; text-align: center; font-size: .85em; }
+.guia-desplazamiento { overflow: auto; min-height: 0; flex: 1; overscroll-behavior: contain; background: #fff; }
+.guia-desplazamiento img { display: block; width: 100%; max-width: none; height: auto; }
 .actividades { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 .actividad { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--borde); background: var(--superficie-2); }
 .actividad .emoji { font-size: 1.5em; line-height: 1; }
