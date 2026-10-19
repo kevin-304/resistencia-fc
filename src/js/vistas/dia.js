@@ -2,7 +2,7 @@
 // Cada cambio se guarda solo (no hay botón "Guardar").
 import { estado, contexto, diaDe, diaEditable, diaCambiado, guardarFrecuentes, rutaPrincipal } from '../estado.js';
 import { metricasDia, alertasDia, ETIQUETAS_COMIDA, TIPOS_COMIDA, ML_POR_VASO, fueraDeVentana } from '../metricas.js';
-import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo, resumenPlan } from '../plan.js';
+import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe, FINALIZADOR, CALENTAMIENTO, ENFRIAMIENTO, imagenEjercicio, REGLAS_RUTA, ZONAS_MOLESTIA, DURANTE_AYUNO, nombreTipo, resumenPlan, planEnFecha } from '../plan.js';
 import { navegar, alSalir, aviso } from '../nav.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
@@ -23,7 +23,7 @@ let PU = normalizarPlan(null); // plan del perfil abierto (se fija al mostrar el
 
 export function mostrarDia(cont, { fecha }) {
   const ctx = contexto();
-  PU = ctx.plan;
+  PU = planEnFecha(ctx.plan, fecha);
   const hoy = hoyISO();
   const m0 = metricasDia(fecha, estado.dias, ctx);
   const plan = m0.plan;

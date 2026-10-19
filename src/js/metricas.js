@@ -2,7 +2,7 @@
 // resúmenes semanales, rachas y alertas sanas (sección 9.8 del plan).
 
 import { horasEntre, sumarDias, diaSemana, duracionAMinutos, lunesDe, hoyISO, aMinutos, promedio, suma, diasEntre } from './util.js';
-import { planDelDia, kmEsfuerzo, semanaDelPlan, ejerciciosDe, resumenComplemento, normalizarPlan } from './plan.js';
+import { planDelDia, planEnFecha, kmEsfuerzo, semanaDelPlan, ejerciciosDe, resumenComplemento, normalizarPlan } from './plan.js';
 
 export const ETIQUETAS_COMIDA = [
   { id: 'proteina', nombre: 'Proteína', bueno: true },
@@ -28,7 +28,7 @@ export const ML_POR_VASO = 250;
 export function metricasDia(fecha, dias, ctx) {
   const d = dias[fecha] || {};
   const ayer = dias[sumarDias(fecha, -1)] || {};
-  const pu = ctx.plan || normalizarPlan(null);
+  const pu = planEnFecha(ctx.plan || normalizarPlan(null), fecha);
   const plan = planDelDia(fecha, ctx.inicio, ctx.terreno, ctx.rutaPrincipal, pu);
   const m = { fecha, plan, registrado: Object.keys(d).length > 0 };
   const metas = pu.metas;

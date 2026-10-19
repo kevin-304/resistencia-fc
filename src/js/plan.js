@@ -535,7 +535,14 @@ export function rutinaDe(tipo, pu) {
 // Qué toca un día: ruta, complemento, ayuno.
 // terreno = { actual: 'montana' | 'plano', desde: 'AAAA-MM-DD' }; rutaPrincipal = ruta guardada por defecto
 // pu = plan del perfil (si no se pasa, el plan sugerido)
+// Las revisiones de un perfil solo afectan las fechas desde su entrada en vigor.
+export function planEnFecha(pu, fecha) {
+  while (pu?.vigenteDesde && fecha < pu.vigenteDesde && pu.planAnterior) pu = pu.planAnterior;
+  return pu;
+}
+
 export function planDelDia(fecha, inicio, terreno, rutaPrincipal, pu = planSugerido()) {
+  pu = planEnFecha(pu, fecha);
   const semana = semanaDelPlan(fecha, inicio);
   const ds = diaSemana(fecha);
   const dia = pu.semana[ds];
