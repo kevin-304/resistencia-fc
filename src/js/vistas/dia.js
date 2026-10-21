@@ -6,19 +6,18 @@ import { TIPOS_SESION, tiposComplemento, rutinaDe, normalizarPlan, ejerciciosDe,
 import { navegar, alSalir, aviso } from '../nav.js';
 import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
 import { montarTemporizador } from '../temporizador.js';
+import { figuraReloj } from '../figura-reloj.js';
+import { ALIMENTOS, alimentosDelDia } from '../alimentos.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
 
 const PESTANAS = [
   { id: 'plan', nombre: 'Plan del día' },
   { id: 'sueno', nombre: 'Sueño' },
-  { id: 'calentamiento', nombre: 'Calentamiento' },
   { id: 'ruta', nombre: 'Ruta' },
-  { id: 'ejercicio', nombre: 'Ejercicio' },
-  { id: 'ayuno', nombre: 'Ayuno y agua' },
-  { id: 'comidas', nombre: 'Comidas' },
-  { id: 'medidas', nombre: 'Medidas' },
-  { id: 'notas', nombre: 'Notas' },
+  { id: 'ejercicio', nombre: 'Calentamiento y ejercicio' },
+  { id: 'comidas', nombre: 'Comida' },
+  { id: 'medidas', nombre: 'Medidas y notas' },
 ];
 let pestanaActual = 'plan';
 let PU = normalizarPlan(null); // plan del perfil abierto (se fija al mostrar el día) // se recuerda al pasar de un día a otro
@@ -32,6 +31,7 @@ export function mostrarDia(cont, { fecha }) {
   const d = diaDe(fecha);
   const vista = cont;
   cont = document.createElement('div');
+  cont.className = 'dia-minimal';
   vista.innerHTML = '';
   vista.appendChild(cont);
 
@@ -53,13 +53,10 @@ export function mostrarDia(cont, { fecha }) {
     <div class="dia-paneles">
       <div class="panel-pestana" data-panel="plan">${tarjetaPlan(plan, d, fecha === hoy)}</div>
       <div class="panel-pestana" data-panel="sueno">${seccionSueno(d)}</div>
-      <div class="panel-pestana" data-panel="calentamiento">${seccionCalentamiento(d, plan)}</div>
       <div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>
-      <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}</div>
-      <div class="panel-pestana" data-panel="ayuno">${seccionAyuno(d, plan)}</div>
-      <div class="panel-pestana" data-panel="comidas">${seccionComidas(d, plan, fecha)}</div>
-      <div class="panel-pestana" data-panel="medidas">${seccionMedidas(d, fecha)}</div>
-      <div class="panel-pestana" data-panel="notas">${seccionNotas(d)}</div>
+      <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}${PU.calentamiento ? plegable('Registrar calentamiento y estiramientos', seccionCalentamiento(d, plan)) : ''}</div>
+      <div class="panel-pestana" data-panel="comidas">${seccionComidas(d, plan, fecha)}${plegable('Ayuno y agua', seccionAyuno(d, plan))}</div>
+      <div class="panel-pestana" data-panel="medidas">${plegable('Medidas corporales', seccionMedidas(d, fecha), true)}${plegable('Notas y estado de ánimo', seccionNotas(d), true)}</div>
     </div>`;
 
   const mostrarPestana = (id) => {
@@ -73,7 +70,25 @@ export function mostrarDia(cont, { fecha }) {
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
     rutina: rutinaDe(tipoRutina, PU), ejercicios: ejerciciosDe(tipoRutina, plan.semana, PU),
     perfil: estado.carpeta || estado.perfil?.nombre || '', fecha, tipo: tipoRutina,
+    alComenzar: instante => registrarHoraRutina('inicio', instante),
+    alTerminar: (instante, inicio) => registrarHoraRutina('fin', instante, inicio),
   });
+
+  function registrarHoraRutina(campo, instante, inicio) {
+    const dia = diaEditable(fecha);
+    prepararDefectos(dia, 'complemento.x', plan);
+    const momento = new Date(instante);
+    dia.complemento[campo] = `${dos(momento.getHours())}:${dos(momento.getMinutes())}`;
+    dia.complemento[campo + 'ISO'] = momento.toISOString();
+    if (campo === 'inicio') { delete dia.complemento.fin; delete dia.complemento.finISO; }
+    if (campo === 'fin' && inicio) dia.complemento.duracion = Math.max(0, Math.round((instante - inicio) / 60000 * 10) / 10);
+    diaCambiado(fecha);
+    for (const k of ['inicio','fin','duracion']) {
+      const input = cont.querySelector(`[data-c="complemento.${k}"]`);
+      if (input) input.value = dia.complemento[k] ?? '';
+    }
+    refrescar();
+  }
 
   // ---------- Eventos ----------
   cont.querySelector('[data-accion="volver"]').addEventListener('click', () => navegar({ vista: 'calendario', mes: fecha.slice(0, 7) }));
@@ -139,6 +154,13 @@ export function mostrarDia(cont, { fecha }) {
     }
     const accion = e.target.closest('[data-accion]')?.dataset.accion;
     const objetivo = e.target.closest('[data-accion]');
+    if (accion === 'catalogo-agregar') {
+      const id = cont.querySelector('[data-catalogo]').value;
+      if (!ALIMENTOS.some(a=>a.id===id)) return;
+      const dia = diaEditable(fecha);
+      dia.alimentosContados = [...new Set([...(dia.alimentosContados || []), id])];
+      diaCambiado(fecha); repintarComidas();
+    }
     if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
     if (accion === 'agregar-comida') agregarComida({});
     if (accion === 'borrar-comida') {
@@ -394,6 +416,9 @@ function casilla(texto, camino, d) {
 function cabecera(titulo, icono, colorVar, extra = '') {
   return `<div class="tarjeta-cab"><span class="icono-sec" style="background:color-mix(in srgb, var(${colorVar}) 18%, transparent);color:var(${colorVar})">${icono}</span><h2>${titulo}</h2>${extra}</div>`;
 }
+function plegable(titulo, contenido, abierto = false) {
+  return `<details class="card-plegable" ${abierto ? 'open' : ''}><summary>${titulo}</summary><div class="card-contenido">${contenido}</div></details>`;
+}
 
 // ---------- Secciones ----------
 function seccionSueno(d) {
@@ -463,10 +488,8 @@ function seccionComidas(d, plan, fecha) {
       <button class="boton primario" data-accion="agregar-comida">${I.mas} Añadir comida</button>
     </div>
     ${estado.frecuentes.length ? `<div class="frecuentes"><span class="suave pequeño">Frecuentes:</span>${estado.frecuentes.map((f) => `<button class="chip" data-accion="frecuente-usar" data-id="${f.id}" title="${escapar(f.desc)}">${escapar(f.desc.length > 34 ? f.desc.slice(0, 32) + '…' : f.desc)}${f.kcal ? ` · ${f.kcal} kcal` : ''} <span data-accion="frecuente-quitar" data-id="${f.id}" title="Quitar de frecuentes" style="opacity:.5;margin-left:4px">✕</span></button>`).join('')}</div>` : ''}
-    ${PU.alimentos.length ? `<h3 style="margin:18px 0 10px">Alimentos que cuento</h3>
-    <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-      ${PU.alimentos.map((a) => contador(`${escapar(a.emoji || '')} ${escapar(a.nombre)}`, a.id, a.nota || a.max ? ` <span class="suave pequeño">(${escapar(a.nota || `máx. ${a.max}`)})</span>` : '')).join('')}
-    </div>` : ''}
+    ${plegable('Frutas y otros alimentos', `<div class="catalogo-agregar"><label class="campo"><span>Añadir al registro de hoy</span><select data-catalogo><option value="">Selecciona un alimento</option>${ALIMENTOS.map(a=>`<option value="${a.id}">${a.emoji} ${a.nombre}</option>`).join('')}</select></label><button type="button" class="boton" data-accion="catalogo-agregar">Añadir</button></div>
+      <div class="alimentos-cards">${alimentosDelDia(PU,d).map((a) => contador(`${escapar(a.emoji || '')} ${escapar(a.nombre)}`, a.id, a.nota || a.max ? ` <span class="suave pequeño">(${escapar(a.nota || `máx. ${a.max}`)})</span>` : '')).join('')}</div>`, true)}
   </section>`;
 }
 
@@ -515,37 +538,38 @@ function seccionComplemento(d, plan) {
   const ejercicios = ejerciciosDe(tipo, plan.semana, PU);
   return `<section class="tarjeta">
     ${cabecera(plan.complemento ? 'Ejercicio del día' : 'Ejercicio (opcional hoy)', I.comp, '--c-comp', '<span data-calc="comp-estado"></span>')}
-    <div class="campos">
-      ${seleccion('Rutina', 'complemento.tipo', d, tiposComplemento(PU), tipo)}
-      ${campo('Hora de inicio', 'complemento.inicio', d, { tipo: 'hora' })}
-      ${campo('Duración', 'complemento.duracion', d, { tipo: 'num', unidad: 'min', ph: '20–30' })}
-      ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb', ph: '10' }) : ''}
-    </div>
-    <p class="suave pequeño" style="margin:12px 0 0">Semana ${Math.max(1, plan.semana)} · ${def?.formato || ''}. Escribe en cada casilla lo que hiciste de verdad (el número gris es lo sugerido).</p>
     <div data-temporizador></div>
-    ${tarjetaGuia(tipo)}
-    ${bloqueSeries('Bloque principal', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {})}
-    ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(`🔥 ${FINALIZADOR.nombre}`, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, FINALIZADOR.formato) : ''}
+    <div data-rutina-completa>${tarjetaGuia(tipo, true)}</div>
+    ${plegable('Horario y ajustes', `<p class="suave pequeño">Inicio y fin se registran al comenzar y finalizar la rutina. Puedes corregirlos aquí.</p><div class="campos">
+      ${seleccion('Rutina', 'complemento.tipo', d, tiposComplemento(PU), tipo)}
+      ${campo('Inicio', 'complemento.inicio', d, { tipo: 'hora' })}
+      ${campo('Fin', 'complemento.fin', d, { tipo: 'hora' })}
+      ${campo('Duración real', 'complemento.duracion', d, { tipo: 'num', unidad: 'min' })}
+      ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb' }) : ''}
+    </div>`)}
+    ${plegable('Registrar mis series', `<p class="suave pequeño">Anota las repeticiones o segundos que realmente hiciste en cada serie.</p>
+      ${bloqueSeries('Ejercicios del día', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {}, '', tipo, ejercicios)}
+      ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(FINALIZADOR.nombre, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, '', tipo, ejercicios) : ''}`, true)}
     <div class="resumen-series" data-calc="comp-resumen"></div>
     <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
       ${casilla('Completado', 'complemento.hecho', d)}
       <button class="boton fantasma" data-accion="todo-complemento">${I.check} Todo como lo sugerido</button>
     </div>
-    <p class="suave pequeño" style="margin-top:12px">La grasa del abdomen no se quema "localmente" con abdominales: baja con el déficit de calorías y la ruta diaria. Los abdominales fortalecen el core y marcan la zona a medida que la grasa baja.</p>
   </section>`;
 }
 
-function bloqueSeries(titulo, ejercicios, registro, formato = '') {
+function bloqueSeries(titulo, ejercicios, registro, formato = '', tipo, todos = ejercicios) {
   if (!ejercicios.length) return '';
   return `<h3 class="ej-grupo">${titulo}${formato ? ` <span class="suave" style="text-transform:none;letter-spacing:0;font-weight:500">· ${formato}</span>` : ''}</h3>
-    ${ejercicios.map((e) => filaSeries(e, registro[e.id] || [])).join('')}`;
+    <div class="series-cards">${ejercicios.map((e) => filaSeries(e, registro[e.id] || [], tipo, todos)).join('')}</div>`;
 }
 
-function filaSeries(e, valores) {
+function filaSeries(e, valores, tipo, todos) {
   const n = Math.max(e.series, valores.length);
   const llenas = valores.filter((v) => Number(v) > 0).length;
   const unidad = e.unidad === 's' ? 's' : 'reps';
   return `<div class="serie-fila ${llenas >= e.series ? 'hecho' : ''}" data-fila="${e.id}">
+    <div class="serie-ilustracion">${figuraReloj({ ...e, ejercicioId:e.id }, tipo, todos)}</div>
     <div class="serie-nombre"><b>${escapar(e.nombre)}</b>
       <small>Sugerido: ${escapar(e.meta)}${e.nota ? ` · ${escapar(e.nota)}` : ''}</small></div>
     <div class="series">

@@ -20,10 +20,10 @@ export function guiaParaRutina(tipo) {
   return { dia, src: `img/rutina-60min/${archivo}`, titulo: `Guía ilustrada del ${dia}` };
 }
 
-export function tarjetaGuia(tipo) {
+export function tarjetaGuia(tipo, abierta = false) {
   const guia = guiaParaRutina(tipo);
   if (!guia) return '';
-  return `<details class="guia-rutina">
+  return `<details class="guia-rutina" ${abierta ? 'open' : ''}>
     <summary>${escapar(guia.titulo)} <span class="suave pequeño">· ejercicios, tiempos y descansos</span></summary>
     <div class="guia-rutina-contenido">
       <button type="button" class="boton" data-accion="guia-ampliar" data-rutina="${escapar(tipo)}">Ampliar imagen</button>

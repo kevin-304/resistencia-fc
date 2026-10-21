@@ -415,6 +415,58 @@ details.rutina[open] summary::before { content: '▾'; }
 .rutina-propia .tabla-plan td:first-child input { min-width: 200px; }
 
 /* ============ Actividades ============ */
+/* Superficies simples y controles compactos; conserva los colores personalizados. */
+.tarjeta { box-shadow: none; padding: 16px; }
+.cabecera { gap: 10px; margin-bottom: 14px; }
+.rejilla { gap: 12px; }
+.card-plegable { margin: 12px 0; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); overflow: clip; }
+.card-plegable > summary, .reloj-ajustes > summary, .reloj-ayuda > summary { cursor: pointer; padding: 12px; font-weight: 600; font-size: .92em; }
+.card-plegable > summary:focus-visible, .reloj-ajustes > summary:focus-visible { outline: 2px solid var(--acento); outline-offset: -3px; }
+.card-contenido { padding: 0 12px 12px; }
+.card-contenido > .tarjeta { padding: 0; border: 0; background: transparent; }
+.dia-minimal .dia-paneles { max-width: 1180px; }
+.dia-minimal [data-panel="medidas"].activo { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,300px),1fr)); gap: 12px; align-items: start; }
+.dia-minimal .pestanas { gap: 5px; margin-bottom: 12px; }
+.dia-minimal .pestanas button { padding: 9px 11px; }
+.dia-minimal .tarjeta-cab { margin-bottom: 12px; }
+.dia-minimal .campos { gap: 10px; }
+.series-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 10px; }
+.series-cards .serie-fila { display: grid; grid-template-columns: 90px minmax(0,1fr); align-items: center; gap: 10px; margin: 0; padding: 12px; border-left-width: 1px; min-width: 0; }
+.series-cards .serie-fila.hecho { border-color: var(--ok); }
+.series-cards .serie-nombre { min-width: 0; flex: none; }
+.series-cards .serie-nombre small { line-height: 1.4; }
+.series-cards .series { grid-column: 1 / -1; flex: none; gap: 6px; }
+.series-cards .serie-sugerido { font-size: .8em; white-space: normal; }
+.serie-ilustracion { display: grid; place-items: center; background: #fff; border-radius: 8px; overflow: hidden; min-height: 130px; }
+.serie-ilustracion .reloj-figura { height: 130px; max-width: 100%; border-radius: 0; }
+.serie-ilustracion p { padding: 12px; color: #606975; }
+.alimentos-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 8px; }
+.alimentos-cards .contador { flex-wrap: wrap; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; gap: 6px; }
+.catalogo-agregar { display: flex; align-items: end; gap: 8px; margin-bottom: 10px; }
+.catalogo-agregar .campo { flex: 1; min-width: 0; }
+.catalogo-agregar select { width: 100%; }
+.dia-minimal .temporizador { margin: 0 0 12px; border: 0; background: transparent; padding: 0; }
+.dia-minimal .reloj-cabecera h3 { display: none; }
+.dia-minimal .reloj-cabecera { justify-content: flex-end; margin-bottom: 7px; }
+.dia-minimal .reloj-botones { margin-bottom: 6px; }
+.boton.comenzar-verde { background: #15803d; border-color: #15803d; color: #fff; font-weight: 700; }
+.boton.comenzar-verde:hover { background: #166534; border-color: #166534; }
+.reloj-ajustes, .reloj-ayuda { border: 0; color: var(--texto-suave); }
+.reloj-ajustes > summary, .reloj-ayuda > summary { padding: 8px 0; font-size: .82em; }
+.reloj-ajustes .reloj-opciones { padding-top: 8px; }
+.dia-minimal [data-reloj-sesion][hidden] { display: none !important; }
+.dia-minimal .reloj-panel { margin-top: 10px; border-width: 1px; padding: 12px; }
+.dia-minimal .reloj-mensaje:empty { display: none; }
+.dia-minimal .guia-rutina-contenido { justify-items: center; }
+.dia-minimal .guia-miniatura { max-width: 480px; }
+.dia-minimal .ej-galeria { grid-template-columns: repeat(auto-fit,minmax(min(100%,145px),1fr)); gap: 8px; }
+@media (max-width:600px) {
+  .dia-minimal .tarjeta { padding: 12px; }
+  .dia-minimal .card-contenido > .tarjeta { padding: 0; }
+  .series-cards { grid-template-columns: 1fr; }
+  .dia-minimal .pestanas button { font-size: .83em; }
+  .dia-minimal .reloj-botones .boton { flex: 1 1 auto; }
+}
 /* Temporizador guiado compartido por escritorio y celular. */
 .temporizador { margin: 18px 0; padding: 16px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie-2); min-width: 0; }
 .reloj-cabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
