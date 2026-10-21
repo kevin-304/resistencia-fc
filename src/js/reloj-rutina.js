@@ -3,6 +3,37 @@ const entero = (v, defecto, max = 3600) => Number.isFinite(Number(v)) && Number(
 const paso = (nombre, segundos, extra = {}) => ({ nombre, segundos, bloque: 'Rutina', clase: 'trabajo', ...extra });
 const objetivo = e => `${e.valor}${e.unidad === 's' ? ' s' : ' repeticiones'}${e.lado ? ' por lado' : ''}`;
 
+// Ocho estaciones de 50 s + 10 s de transición: exactamente ocho minutos.
+export const CALENTAMIENTO_GUIADO = [
+  ['Marcha subiendo rodillas', 'marcha', 'Marcha suave y aumenta el ritmo poco a poco.'],
+  ['Círculos de hombros adelante y atrás', 'hombros', '25 s hacia delante y 25 s hacia atrás, sin forzar.'],
+  ['Círculos de cadera', 'cadera', 'Movimientos pequeños y controlados; cambia el sentido a mitad.'],
+  ['Círculos de tobillos', 'tobillos', 'Apóyate si lo necesitas. Cambia de tobillo a los 25 s.', true],
+  ['Balanceo de pierna adelante/atrás', 'balanceo-frontal', 'Balanceo suave, con apoyo estable y sin arquear la espalda.', true],
+  ['Balanceo de pierna lateral', 'balanceo-lateral', 'Recorrido cómodo y tronco estable.', true],
+  ['Sentadillas lentas', 'sentadillas', 'Baja solo hasta donde controles y vuelve a subir despacio.'],
+  ['Talones al glúteo', 'talones-gluteo', 'Alterna las piernas caminando, sin saltar.'],
+];
+export const ENFRIAMIENTO_GUIADO = [
+  ['Marcha suave', 'marcha', 'Reduce el ritmo de forma gradual.'],
+  ['Pantorrillas', 'est-pantorrillas', 'Talón apoyado; estira suavemente, sin rebotes.', true],
+  ['Cuádriceps', 'est-cuadriceps', 'Apóyate para mantener el equilibrio; no tires con fuerza.', true],
+  ['Isquiotibiales', 'est-isquiotibiales', 'Inclina el tronco desde la cadera con la espalda larga.', true],
+  ['Glúteo (figura 4)', 'est-gluteo', 'Tumbado: tobillo sobre el muslo contrario, por encima de la rodilla. Acerca ese muslo sin forzar.', true],
+  ['Espalda baja', 'est-espalda', 'Relaja la espalda y respira con normalidad, sin forzar.'],
+];
+function movilidadGuiada(lista, bloque, duracion, pausa) {
+  return lista.flatMap(([nombre, imagen, indicacion, lado]) => [
+    ...intervalo({ nombre, id: `movilidad-${imagen}`, unidad: 's', valor: duracion, lado, nota: indicacion }, duracion, { bloque, imagen: `img/ejercicios/${imagen}.webp` }),
+    paso('Descanso y preparación', pausa, { bloque, clase: 'descanso' }),
+  ]);
+}
+
+export function avisoCuenta(reloj) {
+  const segundos = Math.ceil(reloj.restanteMs / 1000);
+  return reloj.enMarcha && !reloj.terminado && segundos >= 1 && segundos <= 3 ? `${reloj.indice}:${reloj.descansoSerie}:${segundos}` : null;
+}
+
 function intervalo(e, segundos, extra = {}) {
   const lados = e.lado || /\b\d+\s*s por lado/i.test(e.nota || '');
   const base = { ejercicioId: e.id, indicacion: e.nota || '', objetivo: objetivo(e), ...extra };
@@ -23,7 +54,7 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
   const etapas = [];
   const agregar = (...p) => etapas.push(...p);
   if (es60) {
-    if (modo === 'completa') agregar(paso('Calentamiento: marcha y movilidad dinámica', 480, { bloque: 'Calentamiento', indicacion: 'Movilidad suave de hombros, cadera y tobillos; practica los movimientos del día.' }));
+    if (modo === 'completa') agregar(...movilidadGuiada(CALENTAMIENTO_GUIADO, 'Calentamiento', 50, 10));
     if (['completa', 'principal'].includes(modo)) {
       const rondas = Math.max(...principales.map(e => entero(e.series, 3, 20)));
       const estaciones = principales.reduce((n, e) => n + entero(e.series, 3, 20), 0);
@@ -49,7 +80,7 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
     if (['completa', 'cardio'].includes(modo)) {
       for (const e of cardio) agregar(...intervalo(e, 40, { bloque: 'Cardio de cierre', vuelta: 1, vueltas: 1 }), paso('Descanso y cambio', 20, { bloque: 'Cardio de cierre', clase: 'descanso' }));
     }
-    if (modo === 'completa') agregar(paso('Vuelta a la calma', 300, { bloque: 'Enfriamiento', indicacion: 'Baja el ritmo y estira suavemente, sin rebotes ni dolor.' }));
+    if (modo === 'completa') agregar(...movilidadGuiada(ENFRIAMIENTO_GUIADO, 'Enfriamiento', 40, 10));
   } else {
     // Otras rutinas: conserva sus series y segundos. Las repeticiones usan una
     // ventana orientativa editable: el reloj nunca inventa repeticiones hechas.
@@ -74,6 +105,8 @@ export class RelojRutina {
       this.restanteMs = Math.min(guardado.restanteMs, (etapas[this.indice]?.segundos || 0) * 1000);
       this.transcurridoMs = guardado.transcurridoMs;
       this.descansoSerie = !!guardado.descansoSerie;
+      this.extraMs = Number.isFinite(guardado.extraMs) ? Math.max(0, Math.min(guardado.extraMs, 86400000)) : 0;
+      this.restanteMs = Math.min(guardado.restanteMs, ((etapas[this.indice]?.segundos || 0) * 1000) + this.extraMs);
       // Volver a abrir nunca arranca el reloj sin un gesto del usuario.
     }
   }
@@ -86,6 +119,7 @@ export class RelojRutina {
     this.enMarcha = false;
     this.ultimo = null;
     this.descansoSerie = false;
+    this.extraMs = 0;
   }
   iniciar(ahora) {
     if (this.terminado || this.enMarcha) return;
@@ -119,7 +153,14 @@ export class RelojRutina {
     this.actualizar(ahora);
     if (this.indice === indice && this.etapa?.clase === 'serie') this.descansoSerie = true;
   }
-  guardar() { return { indice: this.indice, restanteMs: this.restanteMs, transcurridoMs: this.transcurridoMs, descansoSerie: this.descansoSerie }; }
+  ampliarDescanso(segundos, ahora) {
+    this.actualizar(ahora);
+    if (this.terminado || !(this.etapa.clase === 'descanso' || this.descansoSerie)) return false;
+    const ms = entero(segundos, 30, 300) * 1000;
+    this.restanteMs += ms; this.extraMs += ms;
+    return true;
+  }
+  guardar() { return { indice: this.indice, restanteMs: this.restanteMs, transcurridoMs: this.transcurridoMs, descansoSerie: this.descansoSerie, extraMs: this.extraMs }; }
 }
 
 export function textoReloj(segundos) {

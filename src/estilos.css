@@ -426,6 +426,10 @@ details.rutina[open] summary::before { content: '▾'; }
 .reloj-opciones .check { padding-bottom: 8px; }
 .reloj-panel { text-align: center; padding: 18px 12px; border-radius: 12px; background: var(--superficie); border: 2px solid var(--c-comp); }
 .reloj-panel.reloj-descanso { border-color: var(--ok); }
+.reloj-visual { margin: 12px auto; max-width: 100%; }
+.reloj-figura { display: block; width: auto; max-width: 100%; height: 235px; margin: auto; border-radius: 10px; background: #fff; object-fit: contain; }
+.reloj-visual:empty { display: none; }
+@media (max-width: 600px) { .reloj-figura { height: 190px; } }
 .reloj-etiqueta { font-size: .85em; font-weight: 700; color: var(--texto-suave); }
 .reloj-nombre { font-size: clamp(1.1rem, 2vw, 1.55rem); font-weight: 700; margin-top: 6px; overflow-wrap: anywhere; }
 .reloj-vuelta { min-height: 1.5em; margin-top: 4px; color: var(--texto-suave); font-size: .9em; }
