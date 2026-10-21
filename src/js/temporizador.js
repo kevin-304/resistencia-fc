@@ -25,6 +25,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   let ultimoTick = Date.now();
 
   function preparar(recuperar = true) {
+    ultimaPintada = '';
     sesion = construirSesion(rutina, ejercicios, { modo, trabajo, descanso });
     if (!sesion.es60) modo = 'completa';
     firma = JSON.stringify(sesion.etapas);
