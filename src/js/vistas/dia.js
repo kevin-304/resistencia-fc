@@ -657,7 +657,7 @@ function tarjetaPlan(plan, d, esHoy) {
       ${esHoy ? '<div class="cuenta-regresiva" id="cuenta-regresiva"></div>' : ''}
       <details class="desplegable" style="margin-top:8px"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map((x) => `<li>${x}</li>`).join('')}</ul></details>
     </div>` : ''}
-    ${r ? `<p class="suave pequeño" style="margin-top:6px">Antes de salir: pestaña <b>Calentamiento</b> (10 min) y al volver, el enfriamiento (5 min).</p>` : ''}
+    ${r ? `<p class="suave pequeño" style="margin-top:6px">Las guías de preparación y vuelta a la calma están en <b>Calentamiento y ejercicio</b>.</p>` : ''}
   </section>`;
 }
 
