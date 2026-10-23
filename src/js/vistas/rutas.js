@@ -4,6 +4,7 @@ import { metricasRango } from '../metricas.js';
 import { PISTA } from '../plan.js';
 import { aviso, confirmar } from '../nav.js';
 import { I } from '../iconos.js';
+import { plegarBloque, conectarTarjetas } from '../tarjetas.js';
 import { hoyISO, sumarDias, num, aNumero, escapar, promedio, fechaMedia, DIAS, diasEntre } from '../util.js';
 
 let editando = null; // id de la ruta en edición
@@ -15,7 +16,7 @@ export function mostrarRutas(cont) {
   const enAdaptacion = t.actual === 'plano' && t.desde && diasEntre(t.desde, hoy) < 14 && hoy >= t.desde;
 
   cont.innerHTML = `
-    <div class="cabecera"><div class="titulo"><h1>Rutas y terreno</h1><p>Tus rutas guardadas y cómo se adapta el plan si pasas de la montaña a una pista plana.</p></div>
+    <div class="cabecera"><div class="titulo"><h1>Rutas y terreno</h1><p>Tus salidas, en un lugar.</p></div>
       <button class="boton primario" id="nueva">${I.mas} Nueva ruta</button></div>
 
     <div class="rejilla rejilla-2" style="align-items:start">
@@ -92,6 +93,17 @@ export function mostrarRutas(cont) {
     guardarRutas();
   }));
   cont.querySelector('[data-listo]')?.addEventListener('click', () => { editando = null; mostrarRutas(cont); });
+  const rejilla=cont.querySelector('.rejilla-2');rejilla.classList.add('secciones-grid');
+  [...rejilla.children].forEach((seccion,i)=>{
+    // Las explicaciones de equivalencia y pista se consultan por separado.
+    if(i===1){
+      const cabeceras=[...seccion.querySelectorAll(':scope > .tarjeta-cab')].slice(1);
+      for(const cab of cabeceras){const grupo=document.createElement('div');cab.before(grupo);let siguiente=cab.nextElementSibling;grupo.appendChild(cab);while(siguiente&&!siguiente.classList.contains('tarjeta-cab')){const proximo=siguiente.nextElementSibling;grupo.appendChild(siguiente);siguiente=proximo;}plegarBloque(grupo,cab.textContent.trim());}
+    }
+    const tarjeta=plegarBloque(seccion,i===0?'Mis rutas':'Terreno y equivalencias',i===0?`${estado.rutas.length} rutas guardadas`:'Montaña o plano',i===0&&!!editando);
+    tarjeta.dataset.seccion=i===0?'rutas':'terreno';
+  });
+  conectarTarjetas(cont);
 }
 
 function filaRuta(r) {
@@ -110,13 +122,13 @@ function filaRuta(r) {
       <div style="display:flex;gap:8px;margin-top:12px"><button class="boton primario" data-listo>Listo</button><button class="boton fantasma peligro" data-borrar="${r.id}">${I.basura} Borrar ruta</button></div>
     </div>`;
   }
-  return `<div class="hito">
-    <span class="icono-hito" style="${principal ? 'background:var(--acento);color:var(--acento-texto)' : ''}">${I.rutas}</span>
+  return `<details class="card-plegable ruta-card"><summary><b>${escapar(r.nombre)}</b><span class="suave pequeño">${terreno}${r.distancia != null?' · '+num(r.distancia,2)+' km':''}${principal?' · Principal':''}</span></summary><div class="card-contenido"><div class="hito">
+    <span class="icono-hito">${I.rutas}</span>
     <div class="detalle"><div><b>${escapar(r.nombre)}</b>${principal ? ' <span class="estado-pill ok">Principal</span>' : ''}</div>
       <div class="suave pequeño">${terreno} · ${r.distancia != null ? num(r.distancia, 2) + ' km' : 'distancia ?'} · desnivel ${r.desnivel != null ? num(r.desnivel, 0) + ' m' : 'por medir'}${r.ciudad ? ' · ' + escapar(r.ciudad) : ''}</div></div>
     ${principal ? '' : `<button class="boton fantasma" data-principal="${r.id}">Hacer principal</button>`}
     <button class="boton" data-editar="${r.id}">Editar</button>
-  </div>`;
+  </div></div></details>`;
 }
 
 // Promedios de las salidas en montaña de las últimas 4 semanas.

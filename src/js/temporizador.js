@@ -164,6 +164,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     if (texto) mensaje = texto;
     liberarPantalla(); guardar(); pintar();
   }
+  caja.addEventListener('pausar-rutina',()=>{if(reloj.enMarcha)pausar('Rutina en pausa.');});
   el('iniciar').addEventListener('click', () => {
     if (reloj.enMarcha) { pausar('Reloj en pausa.'); return; }
     despertarAudio().then(() => { if (!desmontado && reloj.enMarcha) avisar(); });

@@ -8,6 +8,7 @@ import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
 import { montarTemporizador } from '../temporizador.js';
 import { figuraReloj } from '../figura-reloj.js';
 import { ALIMENTOS, alimentosDelDia } from '../alimentos.js';
+import { tarjetaSeccion, conectarTarjetas } from '../tarjetas.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
 
@@ -19,10 +20,13 @@ const PESTANAS = [
   { id: 'comidas', nombre: 'Comida' },
   { id: 'medidas', nombre: 'Medidas y notas' },
 ];
-let pestanaActual = 'plan';
+let pestanaActual = null;
+let ultimaFecha = null;
 let PU = normalizarPlan(null); // plan del perfil abierto (se fija al mostrar el día) // se recuerda al pasar de un día a otro
 
 export function mostrarDia(cont, { fecha }) {
+  if (ultimaFecha !== fecha) pestanaActual = null;
+  ultimaFecha = fecha;
   const ctx = contexto();
   PU = planEnFecha(ctx.plan, fecha);
   const hoy = hoyISO();
@@ -46,11 +50,8 @@ export function mostrarDia(cont, { fecha }) {
       </div>
       ${fecha !== hoy ? '<button class="boton" data-accion="hoy">Ir a hoy</button>' : ''}
     </div>
-    <nav class="pestanas" id="pestanas">
-      ${PESTANAS.filter((t) => t.id !== 'calentamiento' || PU.calentamiento).map((t) => `<button data-pestana="${t.id}" class="${t.id === pestanaActual ? 'activa' : ''}"><span class="punto" data-punto="${t.id}"></span>${t.nombre}</button>`).join('')}
-    </nav>
-    <div class="alertas" id="alertas" style="margin-bottom:16px"></div>
-    <div class="dia-paneles">
+    <details class="avisos-dia"><summary>Recordatorios del día</summary><div class="alertas" id="alertas"></div></details>
+    <div class="dia-paneles secciones-grid">
       <div class="panel-pestana" data-panel="plan">${tarjetaPlan(plan, d, fecha === hoy)}</div>
       <div class="panel-pestana" data-panel="sueno">${seccionSueno(d)}</div>
       <div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>
@@ -59,13 +60,18 @@ export function mostrarDia(cont, { fecha }) {
       <div class="panel-pestana" data-panel="medidas">${plegable('Medidas corporales', seccionMedidas(d, fecha), true)}${plegable('Notas y estado de ánimo', seccionNotas(d), true)}</div>
     </div>`;
 
-  const mostrarPestana = (id) => {
-    pestanaActual = id;
-    cont.querySelectorAll('#pestanas button').forEach((b) => b.classList.toggle('activa', b.dataset.pestana === id));
-    cont.querySelectorAll('.panel-pestana').forEach((p) => p.classList.toggle('activo', p.dataset.panel === id));
-  };
-  cont.querySelectorAll('#pestanas button').forEach((b) => b.addEventListener('click', () => mostrarPestana(b.dataset.pestana)));
-  mostrarPestana(PESTANAS.some((t) => t.id === pestanaActual) ? pestanaActual : 'plan');
+  const detalles = {plan:['Tu programación',I.plan],sueno:['Descanso y horarios',I.sueno],ruta:['Distancia y salida',I.rutas],ejercicio:['Rutina guiada y series',I.comp],comidas:['Comidas, ayuno y agua',I.comida],medidas:['Progreso y cómo te sientes',I.balanza]};
+  cont.querySelectorAll('.panel-pestana').forEach(panel=>{
+    const id=panel.dataset.panel, opcion=PESTANAS.find(t=>t.id===id);
+    const caja=document.createElement('div');
+    caja.innerHTML=tarjetaSeccion(id,opcion.nombre,detalles[id][0],detalles[id][1],'',pestanaActual===id?'open':'');
+    const tarjeta=caja.firstElementChild;
+    const resumen=tarjeta.querySelector('summary');resumen.dataset.pestana=id;
+    resumen.querySelector('.seccion-titulo').insertAdjacentHTML('beforeend',`<span class="punto" data-punto="${id}"></span>`);
+    panel.before(tarjeta);tarjeta.querySelector('.seccion-contenido').appendChild(panel);
+    tarjeta.addEventListener('toggle',()=>{if(tarjeta.open)pestanaActual=id;else {if(pestanaActual===id)pestanaActual=null;if(id==='ejercicio')cont.querySelector('[data-temporizador]')?.dispatchEvent(new Event('pausar-rutina'));}});
+  });
+  conectarTarjetas(cont);
   const tipoRutina = d.complemento?.tipo || plan.complemento?.tipo || 'estiramientos';
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
     rutina: rutinaDe(tipoRutina, PU), ejercicios: ejerciciosDe(tipoRutina, plan.semana, PU),
@@ -547,9 +553,9 @@ function seccionComplemento(d, plan) {
       ${campo('Duración real', 'complemento.duracion', d, { tipo: 'num', unidad: 'min' })}
       ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb' }) : ''}
     </div>`)}
-    ${plegable('Registrar mis series', `<p class="suave pequeño">Anota las repeticiones o segundos que realmente hiciste en cada serie.</p>
+    ${plegable('Registrar mis series', `<p class="suave pequeño">Anota lo que realmente hiciste.</p>
       ${bloqueSeries('Ejercicios del día', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {}, '', tipo, ejercicios)}
-      ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(FINALIZADOR.nombre, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, '', tipo, ejercicios) : ''}`, true)}
+      ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(FINALIZADOR.nombre, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, '', tipo, ejercicios) : ''}`)}
     <div class="resumen-series" data-calc="comp-resumen"></div>
     <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
       ${casilla('Completado', 'complemento.hecho', d)}

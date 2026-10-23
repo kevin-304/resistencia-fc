@@ -7,6 +7,7 @@ import {
 } from '../plan.js';
 import { aviso, confirmar } from '../nav.js';
 import { I } from '../iconos.js';
+import { tarjetaSeccion, conectarTarjetas, plegarBloque, tablaEnTarjetas } from '../tarjetas.js';
 import { escapar, hoyISO, idUnico, aNumero, DIAS } from '../util.js';
 
 const PESTANAS = [
@@ -19,28 +20,41 @@ const PESTANAS = [
 ];
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 
-let pestana = 'actividades';
+let pestana = null;
 
-export function mostrarMiPlan(cont) {
+export function mostrarMiPlan(cont, opciones = {}) {
+  pestana = opciones.abierta || null;
   const pu = normalizarPlan(estado.config.plan);
   const semanaActual = Math.max(1, semanaDelPlan(hoyISO(), contexto().inicio));
 
   const guardar = () => { estado.config.plan = pu; guardarConfig(); };
-  const repintar = () => { const y = document.getElementById('vista').scrollTop; mostrarMiPlan(cont); document.getElementById('vista').scrollTop = y; };
+  const repintar = () => { const y = document.getElementById('vista').scrollTop; mostrarMiPlan(cont, {abierta:pestana}); document.getElementById('vista').scrollTop = y; };
   const guardarYRepintar = () => { guardar(); repintar(); };
 
   cont.innerHTML = `
     <div class="cabecera">
-      <div class="titulo"><h1>Mi plan</h1><p>Arma tu propia rutina semanal. Todo lo que cambies aquí se usa en el día a día, en el calendario y en las estadísticas.</p></div>
-      <div class="grupo-botones">
+      <div class="titulo"><h1>Mi plan</h1><p>Configura solo lo que necesitas.</p></div>
+      <details class="acciones-secundarias"><summary>Opciones del plan</summary><div class="grupo-botones">
         <button class="boton" id="sugerido">Usar plan sugerido</button>
         <button class="boton" id="blanco">Empezar en blanco</button>
-      </div>
+      </div></details>
     </div>
-    <nav class="pestanas">${PESTANAS.map((t) => `<button data-p="${t.id}" class="${t.id === pestana ? 'activa' : ''}">${t.nombre}</button>`).join('')}</nav>
-    <div id="panel"></div>`;
+    <div class="secciones-grid">${PESTANAS.map(t=>{
+      const datos={actividades:['Elige cómo entrenas',I.comp],semana:['Organiza los días',I.calendario],rutinas:['Crea y adapta ejercicios',I.plan],ayuno:['Tu ventana de comida',I.ayuno],alimentos:['Lo que quieres registrar',I.comida],metas:['Objetivos personales',I.balanza]};
+      return tarjetaSeccion(t.id,t.nombre,datos[t.id][0],datos[t.id][1],`<div data-panel-plan="${t.id}"></div>`,pestana===t.id?'open':'');
+    }).join('')}</div>`;
 
-  cont.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => { pestana = b.dataset.p; repintar(); }));
+  const dibujar=(tarjeta)=>{
+    const id=tarjeta.dataset.seccion,panel=tarjeta.querySelector('[data-panel-plan]');
+    if(panel.dataset.cargado)return;
+    panel.dataset.cargado='si';
+    ({ actividades: panelActividades, semana: panelSemana, rutinas: panelRutinas, ayuno: panelAyuno, alimentos: panelAlimentos, metas: panelMetas })[id](panel, pu, { guardar, guardarYRepintar, semanaActual });
+    panel.querySelectorAll('.tabla-plan').forEach(tablaEnTarjetas);
+    panel.querySelectorAll(':scope > section.tarjeta').forEach((s,i)=>{if(i>0)plegarBloque(s,s.querySelector('h2')?.textContent||'Más opciones');});
+    panel.querySelectorAll('.rutina-propia').forEach((s,i)=>plegarBloque(s,pu.rutinas[Object.keys(pu.rutinas)[i]]?.nombre||`Rutina ${i+1}`));
+  };
+  cont.querySelectorAll('.secciones-grid > details').forEach(t=>{t.addEventListener('toggle',()=>{if(t.open){pestana=t.dataset.seccion;dibujar(t);}else if(pestana===t.dataset.seccion)pestana=null;});if(t.open)dibujar(t);});
+  conectarTarjetas(cont);
   cont.querySelector('#sugerido').addEventListener('click', async () => {
     if (!(await confirmar('¿Usar el plan sugerido?', 'Tu semana, ayuno, alimentos y metas vuelven al plan de Resistencia f\'c. Tus rutinas propias se conservan y tus registros no se tocan.', 'Usar sugerido'))) return;
     estado.config.plan = { ...planSugerido(), rutinas: pu.rutinas };
@@ -55,8 +69,6 @@ export function mostrarMiPlan(cont) {
     repintar();
   });
 
-  const panel = cont.querySelector('#panel');
-  ({ actividades: panelActividades, semana: panelSemana, rutinas: panelRutinas, ayuno: panelAyuno, alimentos: panelAlimentos, metas: panelMetas })[pestana](panel, pu, { guardar, guardarYRepintar, semanaActual });
 }
 
 // ---------- Actividades ----------
@@ -65,12 +77,11 @@ function panelActividades(panel, pu, { guardar, guardarYRepintar }) {
   panel.innerHTML = `
     <section class="tarjeta">
       <div class="tarjeta-cab"><h2>¿Qué entrenamiento haces?</h2></div>
-      <p class="suave" style="margin-bottom:14px">Las rutinas que se ofrecen en la pestaña Semana salen de lo que marques aquí. Si cambias tus actividades puedes rearmar la semana automáticamente.</p>
+      <p class="suave pequeño" style="margin-bottom:14px">Elige tus actividades y ajusta tu semana.</p>
       <div class="actividades">${ACTIVIDADES.map((a) => `<button type="button" class="actividad ${elegidas.has(a.id) ? 'activo' : ''}" data-act="${a.id}">
         <span class="emoji">${a.emoji}</span><b>${a.nombre}</b><small>${a.desc}</small></button>`).join('')}</div>
       <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center">
         <button class="boton primario" id="rearmar">Rearmar mi semana con estas actividades</button>
-        <span class="suave pequeño">Cambia la pestaña Semana. Tu ayuno, alimentos, metas, rutinas propias y registros no se tocan.</span>
       </div>
     </section>`;
   panel.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {

@@ -535,3 +535,60 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .actividad .emoji { font-size: 1.5em; line-height: 1; }
 .actividad small { color: var(--texto-suave); font-size: .82em; line-height: 1.3; }
 .actividad.activo { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 12%, var(--superficie-2)); }
+
+/* Navegación por tarjetas: superficies neutras y contenido progresivo. */
+.secciones-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; align-items: start; }
+.seccion-card { min-width: 0; border: 1px solid var(--borde); border-radius: 16px; background: var(--superficie); overflow: clip; }
+.seccion-card[open] { grid-column: 1 / -1; }
+.seccion-card > summary { display: flex; align-items: center; gap: 14px; min-height: 96px; padding: 20px; cursor: pointer; list-style: none; }
+.seccion-card > summary::-webkit-details-marker { display: none; }
+.seccion-card > summary:hover { background: color-mix(in srgb,var(--texto) 3%,transparent); }
+.seccion-card[open] > summary { border-bottom: 1px solid var(--borde); }
+.seccion-icono { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--superficie-2); color: var(--texto-suave); }
+.seccion-icono:empty { display: none; }
+.seccion-icono svg { width: 21px; height: 21px; }
+.seccion-titulo { position: relative; min-width: 0; flex: 1; }
+.seccion-titulo b { display: block; font-size: 1.02em; font-weight: 650; line-height: 1.35; }
+.seccion-titulo small { display: block; margin-top: 5px; color: var(--texto-suave); font-size: .82em; font-weight: 400; }
+.seccion-titulo .punto { display: none; }
+.seccion-flecha { color: var(--texto-suave); font-size: 1.2em; }
+.seccion-card[open] > summary .seccion-flecha { transform: rotate(180deg); }
+.seccion-contenido { padding: 18px; min-width: 0; }
+.seccion-contenido > .tarjeta, .seccion-contenido > .panel-pestana > .tarjeta, [data-panel-plan] > .tarjeta { border: 0; padding: 0; background: transparent; }
+.seccion-contenido > .panel-pestana { display: block; animation: none; }
+.seccion-contenido > .panel-pestana > .tarjeta > .tarjeta-cab { display: none; }
+.seccion-contenido > .tarjeta > .tarjeta-cab:first-child { display: none; }
+.seccion-contenido .card-plegable { border-radius: 12px; }
+.seccion-card .seccion-card { margin-top: 12px; border-radius: 12px; }
+.seccion-card .seccion-card > summary { min-height: 62px; padding: 14px; }
+.editor-cards { display: grid; gap: 10px; }
+.editor-cards > .seccion-card { margin: 0; }
+.editor-cards input, .editor-cards select { min-width: 0 !important; max-width: 100%; width: 100%; }
+.acciones-secundarias { font-size: .85em; color: var(--texto-suave); }
+.acciones-secundarias summary { padding: 10px; cursor: pointer; }
+.acciones-secundarias .grupo-botones { padding: 8px 0; }
+.avisos-dia { margin: 0 0 16px; font-size: .82em; color: var(--texto-suave); }
+.avisos-dia > summary { cursor: pointer; padding: 5px 0; }
+.avisos-dia .alertas { margin-top: 10px; }
+.ruta-card > summary { display: flex; flex-direction: column; gap: 4px; }
+.ruta-card .hito { flex-wrap: wrap; }
+.seccion-contenido .rutina-resumen { margin-bottom: 18px; }
+.boton.primario, .pestanas button.activa, .segmentado button.activo { background: var(--texto); color: var(--superficie); border-color: transparent; box-shadow: none; }
+.boton.primario:hover { background: color-mix(in srgb,var(--texto) 85%,var(--superficie)); }
+.pestanas button:hover { border-color: var(--borde); }
+#menu button.activo, #menu-movil button.activo { background: color-mix(in srgb,var(--barra-texto) 10%,transparent); color: var(--barra-texto); }
+.actividad.activo { border-color: var(--texto-suave); background: var(--superficie-2); color: var(--texto); }
+.actividad.activo::after { content: 'Seleccionado'; color: var(--texto-suave); font-size: .75em; }
+.actividad small { display: none; }
+.ej-tarjeta:hover { border-color: var(--texto-suave); transform: none; }
+.dia-minimal .icono-sec { background: var(--superficie-2) !important; color: var(--texto-suave) !important; }
+.dia-minimal .reloj-panel { border-color: var(--borde); }
+.dia-minimal .reloj-panel.reloj-descanso { border-color: var(--borde); background: var(--superficie-2); }
+.dia-minimal .reloj-progreso progress { accent-color: var(--texto-suave); }
+.seccion-card :focus-visible { outline: 2px solid var(--texto-suave); outline-offset: 3px; }
+@media(max-width:650px) {
+  .secciones-grid { grid-template-columns: 1fr; gap: 10px; }
+  .seccion-card > summary { min-height: 84px; padding: 16px; gap: 12px; }
+  .seccion-contenido { padding: 14px; }
+  .seccion-icono { width: 36px; height: 36px; border-radius: 10px; }
+}
