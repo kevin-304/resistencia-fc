@@ -2,11 +2,11 @@ import {crearPreparacion} from './preparacion-sesion.js';
 import {escapar,idUnico} from './util.js';
 import {figuraReloj} from './figura-reloj.js';
 import {COMPLEMENTOS,imagenEjercicio} from './plan.js';
-export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar,alComenzar,alCancelar}){
+export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar,alComenzar,alCancelar,editarAlInicio=false}){
  const p=crearPreparacion(rutina,ejercicios,ajustes),catalogo=[...new Set(Object.values(COMPLEMENTOS).flatMap(r=>(r.ejercicios||[]).map(e=>e.nombre)))];
  const grupos=modo==='calentamiento'?['calentamiento','enfriamiento']:['ejercicios','enfriamiento'];
  const nombres={calentamiento:'Calentamiento',ejercicios:'Rutina',enfriamiento:'Enfriamiento'};
- let editando=false;
+ let editando=editarAlInicio;
  const guardar=()=>alCambiar?.(structuredClone(p));
  function render(){
   cont.innerHTML=`<div class="prep-cab"><h3>${modo==='calentamiento'?'Calentamiento':'Rutina'}</h3><button type="button" class="boton" data-prep-editar>${editando?'Listo':'Modificar'}</button></div>

@@ -795,3 +795,20 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .guia-ejercicios .reloj-figura { max-height: 150px; width: 100%; height: auto; margin-top: 8px; }
 .reloj-preparacion [data-prep-error]:empty { display: none; }
 .ruta-campos > .campo:nth-child(6) > span { white-space: nowrap; }
+.anadir-comida {margin:0 0 14px;}
+.anadir-comida>summary {display:inline-flex;cursor:pointer;list-style:none;}
+.anadir-comida>summary::-webkit-details-marker,.categoria-comida>summary::-webkit-details-marker {display:none;}
+.menu-comidas {display:flex;flex-wrap:wrap;gap:5px;padding:10px 0;}
+.menu-comidas button {border:0;background:transparent;color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font:inherit;}
+.menu-comidas button:hover,.menu-comidas button:focus-visible {background:#626a75;color:white;}
+.categoria-comida>summary {display:flex;align-items:center;gap:7px;list-style:none;border:0;border-radius:8px;transition:background .12s,color .12s;}
+.categoria-comida>summary svg {width:23px;height:23px;flex-shrink:0;}
+.categoria-comida>summary:hover,.categoria-comida>summary:focus-visible,.categoria-comida[open]>summary {background:#626a75;color:#fff;}
+.comida-agarre {display:inline-flex;flex-shrink:0;align-items:center;border:0;padding:7px 3px;background:transparent;color:#727987;cursor:grab;touch-action:none;user-select:none;}
+.comida-agarre:active {cursor:grabbing;}
+.comida-arrastrando {opacity:.55;}
+.comida-guardar {display:flex;justify-content:flex-end;margin-top:12px;}
+.ayuno-simple>summary {cursor:pointer;font-weight:650;margin-bottom:12px;}
+.temporizador .reloj-eleccion,.temporizador .reloj-inicio-rutina {display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:18px;justify-content:center;}
+.temporizador .reloj-eleccion .boton,.temporizador .reloj-inicio-rutina .boton {width:100%;min-width:0;}
+@media(max-width:520px) {.temporizador .reloj-eleccion,.temporizador .reloj-inicio-rutina {gap:12px;} .temporizador .reloj-eleccion .boton,.temporizador .reloj-inicio-rutina .boton {font-size:.85em;padding:8px;}}

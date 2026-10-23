@@ -55,7 +55,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
 
   caja.innerHTML = `<section class="temporizador" aria-label="Temporizador guiado de la rutina">
     <div class="reloj-eleccion" data-reloj-inicio-cal>
-      <button type="button" class="boton" data-reloj-calentar>Comenzar calentamiento</button>
+      <button type="button" class="boton" data-reloj-modificar-cal>Modificar calentamiento</button><button type="button" class="boton comenzar-verde" data-reloj-calentar>Comenzar calentamiento</button>
     </div>
     <details class="reloj-cal-resumen" data-reloj-resumen-cal hidden><summary>Calentamiento <small>Finalizado</small></summary><ul>${[...new Set(calentamiento.etapas.filter(e=>e.clase!=='descanso').map(e=>e.nombre))].map(n=>`<li>${escapar(n)}</li>`).join('')}</ul></details>
     <div class="reloj-preparacion" data-reloj-preparacion hidden></div>
@@ -79,7 +79,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     </div>
     <div class="reloj-progreso"><progress data-reloj-progreso max="100" value="0" aria-label="Avance de la sesión"></progress><span data-reloj-transcurrido></span></div>
     </div>
-    <div class="reloj-inicio-rutina" data-reloj-inicio-rutina><button type="button" class="boton comenzar-verde" data-reloj-rutina>Comenzar rutina</button></div>
+    <div class="reloj-inicio-rutina" data-reloj-inicio-rutina><button type="button" class="boton" data-reloj-modificar-rutina>Modificar rutina</button><button type="button" class="boton comenzar-verde" data-reloj-rutina>Comenzar rutina</button></div>
     <p class="suave pequeño reloj-mensaje" data-reloj-mensaje role="status"></p>
   </section>`;
   const el = nombre => caja.querySelector(`[data-reloj-${nombre}]`);
@@ -209,7 +209,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   el('anterior').addEventListener('click', () => { reloj.anterior(Date.now()); finalNotificado = false; mensaje = ''; ultimoAviso = null; guardar(); pintar(); });
   function elegirSesion(nuevo) {
     pausar();modo=nuevo;previsualizando=true;ultimaPintada='';pintar();
-    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,
+    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,editarAlInicio:true,
       alCambiar:p=>{ajustes=p;alEditar?.(p);},
       alCancelar:()=>{previsualizando=false;preparar(true);pintar();},
       alComenzar:p=>{
@@ -220,8 +220,11 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
       }
     });
   }
-  el('calentar').addEventListener('click',()=>elegirSesion('calentamiento'));
-  el('rutina').addEventListener('click',()=>elegirSesion('entrenamiento'));
+  el('modificar-cal').addEventListener('click',()=>elegirSesion('calentamiento'));
+  el('calentar').addEventListener('click',()=>comenzarDirecto('calentamiento'));
+  el('modificar-rutina').addEventListener('click',()=>elegirSesion('entrenamiento'));
+  el('rutina').addEventListener('click',()=>comenzarDirecto('entrenamiento'));
+  function comenzarDirecto(nuevo){pausar();modo=nuevo;previsualizando=false;preparar(true);if(reloj.terminado)preparar(false);guardarOpciones();pintar();el('iniciar').click();}
   el('finalizar').addEventListener('click', () => {
     finalManual=true;reloj.pausar(Date.now()); reloj.indice = sesion.etapas.length; reloj.restanteMs = 0;
     liberarPantalla(); mensaje = 'Sesión finalizada.'; pintar(); guardar();

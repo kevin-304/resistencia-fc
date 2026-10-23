@@ -8,9 +8,11 @@ import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
 import { montarTemporizador } from '../temporizador.js';
 import { figuraReloj } from '../figura-reloj.js';
 import { ALIMENTOS, alimentosDelDia } from '../alimentos.js';
-import { comidasVisibles, comidasPredeterminadas, selectorAlimentos, actualizarDescripcion, CATEGORIAS_COMIDA, contadorAyuno } from '../comidas.js';
+import { comidasVisibles, comidasPredeterminadas, selectorAlimentos, actualizarDescripcion, CATEGORIAS_COMIDA, contadorAyuno, guardarComida, reordenarComidas } from '../comidas.js';
 import { tarjetaSeccion, conectarTarjetas } from '../tarjetas.js';
 import { resumenRutina } from '../resumen-rutina.js';
+import { iconoArrastrar } from '../iconos-alimentos.js';
+import { conectarOrdenComidas } from '../orden-comidas.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
 
@@ -56,7 +58,7 @@ export function mostrarDia(cont, { fecha }) {
     <div class="dia-paneles secciones-grid">
       ${rutaVisible ? `<div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>` : ''}
       <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}</div>
-      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionAyuno(d, plan, fecha)}${seccionComidas(d, plan, fecha)}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
+      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionComidas(d, plan, fecha)}${seccionAyuno(d, plan, fecha)}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
       <div class="panel-pestana" data-panel="plan"><div class="plan-sueno"><div>${tarjetaPlan(plan,d,fecha===hoy)}</div><div class="sueno-compacto">${seccionSueno(d)}</div></div></div>
     </div>`;
 
@@ -73,11 +75,12 @@ export function mostrarDia(cont, { fecha }) {
     tarjeta.addEventListener('toggle',()=>{if(tarjeta.open)pestanaActual=id;else {if(pestanaActual===id)pestanaActual=null;if(id==='ejercicio')cont.querySelector('[data-temporizador]')?.dispatchEvent(new Event('pausar-rutina'));}});
   });
   conectarTarjetas(cont);
+  alSalir(conectarOrdenComidas(cont,ids=>{const dia=diaEditable(fecha);dia.comidas=reordenarComidas(comidasVisibles(dia),ids);diaCambiado(fecha);}));
   const tipoRutina = d.complemento?.tipo || plan.complemento?.tipo || 'estiramientos';
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
     rutina: rutinaDe(tipoRutina, PU), ejercicios: ejerciciosDe(tipoRutina, plan.semana, PU),
     ajustes:d.preparacion||null,
-    alEditar:p=>{diaEditable(fecha).preparacion=p;diaCambiado(fecha);const guia=cont.querySelector('[data-guia-ejercicios]');if(guia)guia.outerHTML=guiaEjercicios(p.ejercicios,tipoRutina);const programa=cont.querySelector('.plan-dia');if(programa)programa.outerHTML=tarjetaPlan(plan,diaDe(fecha),fecha===hoy);},
+    alEditar:p=>{diaEditable(fecha).preparacion=p;diaCambiado(fecha);const programa=cont.querySelector('.plan-dia');if(programa)programa.outerHTML=tarjetaPlan(plan,diaDe(fecha),fecha===hoy);},
     perfil: estado.carpeta || estado.perfil?.nombre || '', fecha, tipo: tipoRutina,
     alComenzar: (instante,datos) => registrarHoraRutina('inicio', instante,null,datos),
     alTerminar: (instante, inicio, datos) => registrarHoraRutina('fin', instante, inicio,datos),
@@ -173,7 +176,14 @@ export function mostrarDia(cont, { fecha }) {
       diaCambiado(fecha); repintarComidas();
     }
     if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
-    if (accion === 'agregar-comida') agregarComida({});
+    if (accion === 'agregar-comida') agregarComida({tipo:objetivo.dataset.tipo});
+    if (accion === 'configurar-ayuno') {const caja=cont.querySelector('[data-ayuno-config]');caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();}
+    if (accion === 'guardar-comida') {
+      const c=buscarComida(objetivo.dataset.idComida);if(!c)return;guardarComida(c);
+      const rol=c.tipo==='primera-comida'?'primera':c.tipo==='ultima-comida'?'ultima':null;
+      if(rol){const dia=diaEditable(fecha);(dia.ayuno||={})[rol]=c.hora;cont.querySelector(`[data-c="ayuno.${rol}"]`).value=c.hora;}
+      diaCambiado(fecha);repintarComidas(null,c.id);
+    }
     if (accion === 'borrar-comida') {
       const dia = diaEditable(fecha);
       dia.comidas = comidasVisibles(dia).filter((c) => c.id !== b.dataset.idComida);
@@ -263,6 +273,7 @@ export function mostrarDia(cont, { fecha }) {
     const k = t.dataset.k;
     let v = t.value;
     if (k === 'kcal') v = aNumero(v);
+    if (k === 'hora') c.horaManual=!!v;
     if (v === '' || v == null) delete c[k]; else c[k] = v;
     if(k==='textoLibre')actualizarDescripcion(c);
     if(k==='tipo')t.closest('.comida').querySelector('summary b').textContent=TIPOS_COMIDA.find(x=>x.id===c.tipo)?.nombre||'Comida';
@@ -280,10 +291,8 @@ export function mostrarDia(cont, { fecha }) {
     const dia = diaEditable(fecha);
     dia.comidas = comidasVisibles(dia);
     const tipo = datos.tipo || 'intermedia';
-    const ahora = new Date();
     const nuevaId=idUnico();
-    dia.comidas.push({ id: nuevaId, tipo, hora: fecha === hoyISO() ? `${dos(ahora.getHours())}:${dos(ahora.getMinutes())}` : '', etiquetas: [], ...datos, tipo });
-    dia.comidas.sort((a, b) => (a.hora || '99') < (b.hora || '99') ? -1 : 1);
+    dia.comidas.push({ id: nuevaId, tipo, hora: '', borrador:true, etiquetas: [], ...datos, tipo });
     diaCambiado(fecha);
     repintarComidas(nuevaId);
   }
@@ -305,11 +314,11 @@ export function mostrarDia(cont, { fecha }) {
     vista.scrollTop = top;
   }
 
-  function repintarComidas(abrirId=null) {
+  function repintarComidas(abrirId=null,cerrarId=null) {
     const viejo = cont.querySelector('#sec-comidas');
     const abiertas=[...viejo.querySelectorAll('details.comida[open]')].map(x=>x.dataset.comidaId);if(abrirId)abiertas.push(abrirId);
     viejo.outerHTML = seccionComidas(diaDe(fecha), plan, fecha);
-    cont.querySelectorAll('details.comida').forEach(x=>{x.open=abiertas.includes(x.dataset.comidaId);});
+    cont.querySelectorAll('details.comida').forEach(x=>{x.open=x.dataset.comidaId!==cerrarId&&abiertas.includes(x.dataset.comidaId);});
     refrescar();
   }
 
@@ -449,20 +458,20 @@ function seccionSueno(d) {
 }
 
 function seccionAyuno(d,plan,fecha){
- return `<section class="tarjeta ayuno-simple"><h3>Ayuno y agua</h3><div class="horas-comida">
+ return `<details class="tarjeta ayuno-simple" data-ayuno-config><summary>Ayuno y agua</summary><div class="horas-comida">
  ${campo('Primera comida','ayuno.primera',d,{tipo:'hora'})}${campo('Última comida','ayuno.ultima',d,{tipo:'hora'})}</div>
  ${fecha===hoyISO()&&plan.ayuno?'<div id="cuenta-regresiva" class="ayuno-contador"></div>':''}
  <details class="desplegable"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map(x=>`<li>${x}</li>`).join('')}</ul></details>
- <div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
+ <div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></details>`;
 }
 
 function seccionComidas(d,plan,fecha){
- return `<section class="tarjeta" id="sec-comidas"><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><b>${escapar(TIPOS_COMIDA.find(t=>t.id===c.tipo)?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
+ return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas">${TIPOS_COMIDA.map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}<button type="button" data-accion="configurar-ayuno">Ayuno</button></div></details><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida draggable="true" aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===c.tipo)?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
  <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===c.tipo?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
  <label class="campo"><span>Hora</span><input type="time" data-comida="${escapar(c.id)}" data-k="hora" value="${escapar(c.hora||'')}"></label>
  <label class="campo"><span>Calorías</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal??''}"></label></div>
- ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label></details>`).join('')}</div>
- <button type="button" class="boton" data-accion="agregar-comida">${I.mas} Añadir comida</button></section>`;
+ ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label><div class="comida-guardar"><button type="button" class="boton comenzar-verde" data-accion="guardar-comida" data-id-comida="${escapar(c.id)}">Guardar</button></div></details>`).join('')}</div>
+ </section>`;
 }
 
 function seccionRuta(d, plan) {
@@ -492,7 +501,7 @@ function guiaEjercicios(ejercicios,tipo){
 }
 function seccionComplemento(d,plan){
  const tipo=d.complemento?.tipo||plan.complemento?.tipo||'estiramientos',ejercicios=d.preparacion?.ejercicios||ejerciciosDe(tipo,plan.semana,PU);
- return `<section class="tarjeta"><div data-temporizador></div>${guiaEjercicios(ejercicios,tipo)}</section>`;
+ return `<section class="tarjeta"><div data-temporizador></div></section>`;
 }
 
 function bloqueSeries(titulo, ejercicios, registro, formato = '', tipo, todos = ejercicios) {
