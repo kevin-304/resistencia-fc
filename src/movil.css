@@ -7,28 +7,48 @@ body.movil {
 }
 body.movil #vista {
   overflow: visible;
-  padding: 14px 14px calc(92px + env(safe-area-inset-bottom));
-  min-height: 100vh;
+  padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
+  min-height: calc(100dvh - 60px);
 }
 
-/* Barra de navegación inferior */
+/* Cabecera y menú lateral modal; el fondo queda inactivo mientras está abierto. */
+.cabecera-movil { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: calc(7px + env(safe-area-inset-top)) 12px 7px; background: var(--barra); color: var(--barra-texto); border-bottom: 1px solid var(--borde); }
+.cabecera-movil > span:first-of-type { font-weight: 650; font-size: .95em; }
+.cabecera-movil b { color: var(--barra-activo); }
+#titulo-movil { margin-left: auto; font-size: .74em; opacity: .7; text-align: right; }
+.boton-menu { width: 44px; height: 44px; flex: none; border: 0; border-radius: 9px; background: transparent; color: inherit; display: grid; place-items: center; cursor: pointer; font-size: 1.15em; }
+.boton-menu:focus-visible { outline: 2px solid var(--barra-activo); }
+.boton-menu svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+body.menu-abierto { overflow: hidden; }
+dialog.menu-lateral { inset: 0 auto 0 0; margin: 0; padding: 16px 12px calc(16px + env(safe-area-inset-bottom)); width: min(320px,87vw); max-width: 87vw; height: 100%; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0 16px 16px 0; background: var(--barra); color: var(--barra-texto); overflow-y: auto; box-shadow: 10px 0 32px #0004; }
+dialog.menu-lateral[open] { display: flex; flex-direction: column; animation: abrir-lateral .18s ease-out; }
+.menu-lateral::backdrop { background: #0008; }
+@keyframes abrir-lateral { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { dialog.menu-lateral[open] { animation: none; } }
+.menu-lateral-cab { display: flex; align-items: center; gap: 10px; padding: calc(4px + env(safe-area-inset-top)) 0 14px; }
+.menu-lateral-cab img { width: 42px; height: 42px; border-radius: 10px; }
+.menu-lateral-cab > div { flex: 1; min-width: 0; }
+.menu-lateral-cab small { display: block; opacity: .7; margin-top: 4px; overflow-wrap: anywhere; }
 #menu-movil {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  background: var(--barra); border-top: 1px solid color-mix(in srgb, var(--barra-texto) 12%, transparent);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 10px;
 }
 #menu-movil button {
-  all: unset; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0;
-  color: var(--barra-texto); opacity: .75; font-size: .74em; font-weight: 600; border-radius: 10px;
+  display: flex; width: 100%; align-items: center; gap: 12px; padding: 11px 12px; min-height: 46px; border: 0; background: transparent; text-align: left; cursor: pointer;
+  color: var(--barra-texto); font: inherit; font-size: .94em; border-radius: 9px;
 }
-#menu-movil button svg { width: 23px; height: 23px; }
+#menu-movil button svg { width: 20px; height: 20px; flex: none; }
 #menu-movil button.activo { color: var(--barra-activo); opacity: 1; background: color-mix(in srgb, var(--barra-activo) 14%, transparent); }
+.menu-grupo { border-top: 1px solid color-mix(in srgb,var(--barra-texto) 12%,transparent); padding-top: 8px; }
+.menu-grupo summary { padding: 8px 10px; font-size: .76em; opacity: .7; cursor: pointer; }
+#menu-movil button:focus-visible { outline: 2px solid var(--barra-activo); }
+body.movil .tabla-plan { display: block; max-width: 100%; overflow-x: auto; }
+body.movil .rutina-propia .tabla-plan td:first-child input { min-width: 150px; }
 
 /* Cabeceras más compactas */
 body.movil .cabecera { gap: 8px; margin-bottom: 12px; }
 body.movil .cabecera .titulo { min-width: 0; flex-basis: 100%; order: 5; }
 body.movil h1 { font-size: 1.3em; }
+body.movil .mi-rutina-cab > .boton { order: 6; }
 body.movil .tarjeta { padding: 14px; }
 body.movil .rejilla-2, body.movil .rejilla-3, body.movil .rejilla-4 { grid-template-columns: 1fr; }
 body.movil .campos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -37,7 +57,7 @@ body.movil textarea { font-size: 16px; }
 body.movil .boton { min-height: 42px; }
 body.movil .estrellas { flex-wrap: wrap; }
 body.movil .estrellas button { width: 38px; height: 38px; }
-body.movil #avisos-flotantes { left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); }
+body.movil #avisos-flotantes { left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); }
 body.movil .aviso-flotante { max-width: none; }
 
 /* Pestañas del día: una fila que se desliza */
@@ -81,7 +101,7 @@ body.movil .titulo-logo { font-size: 2em; }
 .dia-envio > span:nth-of-type(1) { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .dia-envio small { color: var(--texto-suave); font-size: .82em; }
 .aviso-pill { background: color-mix(in srgb, var(--aviso) 18%, transparent); color: var(--aviso); }
-.boton-fijo { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom)); width: 100%; margin-top: 14px; box-shadow: var(--sombra); }
+.boton-fijo { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); width: 100%; margin-top: 14px; box-shadow: var(--sombra); }
 
 /* Series en celular */
 body.movil .serie-fila { padding: 10px; }

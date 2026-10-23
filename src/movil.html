@@ -14,10 +14,12 @@
 </head>
 <body class="movil">
   <div id="fondo-app"></div>
+  <header id="cabecera-movil" class="cabecera-movil oculto"><button type="button" class="boton-menu" id="abrir-menu" aria-label="Abrir menú" aria-controls="menu-lateral" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><span>Resistencia <b>f'c</b></span><span id="titulo-movil"></span></header>
   <main id="vista"></main>
-  <nav id="menu-movil"></nav>
+  <dialog id="menu-lateral" class="menu-lateral" aria-labelledby="titulo-menu"><div class="menu-lateral-cab"><img src="../build/icon.png" alt=""><div><b id="titulo-menu">Resistencia f'c</b><small id="perfil-menu"></small></div><button type="button" class="boton-menu" id="cerrar-menu" aria-label="Cerrar menú">✕</button></div><nav id="menu-movil" aria-label="Menú principal"></nav></dialog>
   <div id="avisos-flotantes"></div>
   <div id="presentacion" class="presentacion"></div>
+  <script src="js/vendor/chart.js"></script>
   <script type="module" src="js/movil.js"></script>
 </body>
 </html>

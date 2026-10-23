@@ -415,6 +415,21 @@ details.rutina[open] summary::before { content: '▾'; }
 .rutina-propia .tabla-plan td:first-child input { min-width: 200px; }
 
 /* ============ Actividades ============ */
+.rutina-dias { display: flex; gap: 7px; overflow-x: auto; padding: 3px 1px 12px; margin-bottom: 12px; }
+.rutina-dias .boton { flex: 1 0 auto; min-height: 44px; }
+.rutina-dias .activo { background: color-mix(in srgb,var(--acento) 14%,var(--superficie)); border-color: var(--acento); color: var(--acento); }
+.rutina-dia-panel { max-width: 1180px; }
+.rutina-resumen { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.rutina-resumen h2 { margin: 4px 0; }
+.rutina-ejercicios { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,300px),1fr)); gap: 10px; align-items: start; }
+.rutina-ejercicio.card-plegable { margin: 0; }
+.rutina-ejercicio > summary { display: flex; gap: 10px; align-items: center; list-style: none; }
+.rutina-ejercicio > summary::after { content: '+'; margin-left: auto; font-size: 1.3em; }
+.rutina-ejercicio[open] > summary::after { content: '−'; }
+.rutina-ejercicio summary small { display: block; color: var(--texto-suave); margin-top: 4px; font-weight: 400; }
+.rutina-numero { border-radius: 7px; padding: 6px 9px; background: var(--superficie-2); color: var(--texto-suave); }
+.rutina-figura { padding-bottom: 10px; }
+.rutina-figura .reloj-figura { height: 210px; }
 /* Superficies simples y controles compactos; conserva los colores personalizados. */
 .tarjeta { box-shadow: none; padding: 16px; }
 .cabecera { gap: 10px; margin-bottom: 14px; }
