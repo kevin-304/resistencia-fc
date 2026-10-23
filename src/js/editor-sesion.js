@@ -2,14 +2,14 @@ import {crearPreparacion} from './preparacion-sesion.js';
 import {escapar,idUnico} from './util.js';
 import {figuraReloj} from './figura-reloj.js';
 import {COMPLEMENTOS,imagenEjercicio} from './plan.js';
-export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar,alComenzar,alCancelar,editarAlInicio=false}){
+export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar,alComenzar,alCancelar,editarAlInicio=false,controlesExternos=false}){
  const p=crearPreparacion(rutina,ejercicios,ajustes),catalogo=[...new Set(Object.values(COMPLEMENTOS).flatMap(r=>(r.ejercicios||[]).map(e=>e.nombre)))];
  const grupos=modo==='calentamiento'?['calentamiento','enfriamiento']:['ejercicios','enfriamiento'];
  const nombres={calentamiento:'Calentamiento',ejercicios:'Rutina',enfriamiento:'Enfriamiento'};
  let editando=editarAlInicio;
  const guardar=()=>alCambiar?.(structuredClone(p));
  function render(){
-  cont.innerHTML=`<div class="prep-cab"><h3>${modo==='calentamiento'?'Calentamiento':'Rutina'}</h3><button type="button" class="boton" data-prep-editar>${editando?'Listo':'Modificar'}</button></div>
+  cont.innerHTML=`${controlesExternos?'':`<div class="prep-cab"><h3>${modo==='calentamiento'?'Calentamiento':'Rutina'}</h3><button type="button" class="boton" data-prep-editar>${editando?'Listo':'Modificar'}</button></div>`}
    ${grupos.map(g=>`<section class="prep-grupo">${g===grupos[0]?'':`<h4>${nombres[g]}</h4>`}<div class="prep-lista">${p[g].map((e,i)=>`<details class="prep-ejercicio"><summary><b>${escapar(e.nombre)}</b><small>${e.series||1} × ${e.valor} ${e.unidad==='reps'?'reps':'s'}</small></summary><div class="prep-figura">${figuraReloj({...e,ejercicioId:e.id},'',p.ejercicios)}</div>${editando?`<div class="campos prep-campos">
    <label class="campo prep-nombre"><span>Ejercicio</span><input data-prep-g="${g}" data-prep-i="${i}" data-prep-k="nombre" value="${escapar(e.nombre)}"></label>
    ${g==='ejercicios'?`<label class="campo"><span>Bloque</span><select data-prep-g="${g}" data-prep-i="${i}" data-prep-k="bloque">${['Principal','Abdomen','Cardio'].map(b=>`<option ${e.bloque===b?'selected':''}>${b}</option>`).join('')}</select></label>`:''}
@@ -20,7 +20,7 @@ export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar
    <label class="check"><input type="checkbox" data-prep-g="${g}" data-prep-i="${i}" data-prep-k="lado" ${e.lado?'checked':''}>Cambiar de lado</label>
    <button class="boton fantasma peligro" type="button" data-prep-quitar="${g}:${i}">Quitar</button></div>`:''}</details>`).join('')}</div>
    ${editando?`<div class="prep-agregar"><input data-prep-nuevo="${g}" list="prep-catalogo" placeholder="Nombre del ejercicio"><button type="button" class="boton" data-prep-agregar="${g}" aria-label="Añadir ejercicio">+</button></div>`:''}</section>`).join('')}
-   <datalist id="prep-catalogo">${catalogo.map(n=>`<option value="${escapar(n)}">`).join('')}</datalist><div class="prep-acciones"><button type="button" class="boton fantasma" data-prep-cancelar>Volver</button><button type="button" class="boton comenzar-verde" data-prep-comenzar>${modo==='calentamiento'?'Comenzar calentamiento':'Comenzar rutina'}</button></div><p data-prep-error role="status"></p>`;
+   <datalist id="prep-catalogo">${catalogo.map(n=>`<option value="${escapar(n)}">`).join('')}</datalist>${controlesExternos?'':`<div class="prep-acciones"><button type="button" class="boton fantasma" data-prep-cancelar>Volver</button><button type="button" class="boton comenzar-verde" data-prep-comenzar>${modo==='calentamiento'?'Comenzar calentamiento':'Comenzar rutina'}</button></div>`}<p data-prep-error role="status"></p>`;
  }
  cont.onclick=e=>{
   if(e.target.closest('[data-prep-editar]')){editando=!editando;render();return;}

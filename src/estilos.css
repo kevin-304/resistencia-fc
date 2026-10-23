@@ -812,3 +812,6 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .temporizador .reloj-eleccion,.temporizador .reloj-inicio-rutina {display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:18px;justify-content:center;}
 .temporizador .reloj-eleccion .boton,.temporizador .reloj-inicio-rutina .boton {width:100%;min-width:0;}
 @media(max-width:520px) {.temporizador .reloj-eleccion,.temporizador .reloj-inicio-rutina {gap:12px;} .temporizador .reloj-eleccion .boton,.temporizador .reloj-inicio-rutina .boton {font-size:.85em;padding:8px;}}
+.temporizador.reloj-editando .reloj-eleccion,.temporizador.reloj-editando .reloj-inicio-rutina {justify-content:space-between;grid-template-columns:minmax(0,260px) minmax(0,260px);}
+.temporizador .reloj-preparacion {margin-bottom:24px;}
+.temporizador .reloj-eleccion .boton,.temporizador .reloj-inicio-rutina .boton {white-space:normal;line-height:1.2;text-align:center;}

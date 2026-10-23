@@ -168,8 +168,10 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     const activa=!!iniciadoEn && !calTerminada && !previsualizando;
     el('controles').hidden = !activa;
     el('sesion').hidden = !activa;
-    el('inicio-cal').hidden = activa || !!resumenCal || previsualizando;
-    el('inicio-rutina').hidden = activa || previsualizando;
+    el('inicio-cal').hidden = activa || (!!resumenCal && !(previsualizando && modo==='calentamiento'));
+    el('inicio-rutina').hidden = activa;
+    for(const [n,m] of [['modificar-cal','calentamiento'],['modificar-rutina','entrenamiento']])el(n).setAttribute('aria-expanded',String(previsualizando&&modo===m));
+    caja.querySelector('.temporizador').classList.toggle('reloj-editando',previsualizando);
     el('preparacion').hidden = !previsualizando;
     el('resumen-cal').hidden = !resumenCal;
     el('anterior').hidden = !iniciadoEn;
@@ -208,8 +210,10 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   });
   el('anterior').addEventListener('click', () => { reloj.anterior(Date.now()); finalNotificado = false; mensaje = ''; ultimoAviso = null; guardar(); pintar(); });
   function elegirSesion(nuevo) {
-    pausar();modo=nuevo;previsualizando=true;ultimaPintada='';pintar();
-    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,editarAlInicio:true,
+    if(previsualizando&&modo===nuevo){previsualizando=false;preparar(true);pintar();return;}
+    pausar();modo=nuevo;previsualizando=true;ultimaPintada='';
+    el(nuevo==='calentamiento'?'inicio-cal':'inicio-rutina').after(el('preparacion'));pintar();
+    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,editarAlInicio:true,controlesExternos:true,
       alCambiar:p=>{ajustes=p;alEditar?.(p);},
       alCancelar:()=>{previsualizando=false;preparar(true);pintar();},
       alComenzar:p=>{
