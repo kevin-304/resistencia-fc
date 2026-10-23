@@ -1,42 +1,39 @@
-import { contexto, diaDe } from '../estado.js';
-import { planDelDia, planEnFecha, normalizarPlan, rutinaDe, ejerciciosDe } from '../plan.js';
-import { navegar } from '../nav.js';
-import { hoyISO, lunesDe, sumarDias, DIAS, escapar } from '../util.js';
-import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
-import { figuraReloj } from '../figura-reloj.js';
-import { tarjetaSeccion, conectarTarjetas } from '../tarjetas.js';
-import { resumenRutina } from '../resumen-rutina.js';
-import { I } from '../iconos.js';
+import {estado,contexto,guardarConfig} from '../estado.js';
+import {normalizarPlan,ACTIVIDADES,TIPOS_SESION} from '../plan.js';
+import {montarPreparacion} from '../editor-sesion.js';
+import {ORDEN_SEMANA,entrenaDia,prepararSemana,preparacionSemanal,guardarDiaSemanal,marcarDia,elegirActividades} from '../semana-editable.js';
+import {tarjetaSeccion,conectarTarjetas} from '../tarjetas.js';
+import {hoyISO,DIAS,escapar} from '../util.js';
+import {I} from '../iconos.js';
 
-export function mostrarMiRutina(cont) {
-  const ctx=contexto(), lunes=lunesDe(hoyISO());
-  const dias=[1,2,3,4,5,6,0].map(ds=>{
-    const fecha=sumarDias(lunes,ds===0?6:ds-1);
-    const pu=normalizarPlan(planEnFecha(ctx.plan,fecha));
-    const plan=planDelDia(fecha,ctx.inicio,ctx.terreno,ctx.rutaPrincipal,pu);
-    const dia=diaDe(fecha),ajustes=dia.preparacion||null;
-    const tipo=dia.complemento?.tipo||pu.semana[ds]?.complemento, rutina=rutinaDe(tipo,pu);
-    return {ds,fecha,pu,plan,tipo,rutina,ajustes,ejercicios:ajustes?.ejercicios||ejerciciosDe(tipo,plan.semana,pu)};
-  });
-  cont.innerHTML=`<div class="cabecera mi-rutina-cab"><div class="titulo"><h1>Mi rutina</h1></div><button class="boton" data-editar-plan>Editar mi plan</button></div>
-    <div class="secciones-grid rutina-semana">${dias.map(d=>tarjetaSeccion(String(d.ds),DIAS[d.ds],d.rutina?`${d.ejercicios.length} ejercicios`:'Descanso',I.comp,`<div data-contenido-dia="${d.ds}"></div>`)).join('')}</div>`;
-  for(const d of dias){
-    const tarjeta=cont.querySelector(`[data-seccion="${d.ds}"]`);
-    tarjeta.querySelector('summary').dataset.dia=d.ds;
-    tarjeta.addEventListener('toggle',()=>{
-      if(!tarjeta.open || tarjeta.dataset.cargada)return;
-      tarjeta.dataset.cargada='si';
-      const panel=tarjeta.querySelector('[data-contenido-dia]');
-      panel.innerHTML=`<div class="rutina-resumen"><div><h2>${escapar(d.rutina?.nombre || 'Día de descanso')}</h2></div><button class="boton comenzar-verde" data-abrir-dia>${d.fecha===hoyISO()?'Entrenar hoy':'Abrir este día'}</button></div>
-        ${d.rutina?resumenRutina(d.rutina,d.ejercicios,d.ajustes):''}
-        ${!d.ajustes&&d.rutina?.formato?`<details class="card-plegable"><summary>Indicaciones</summary><p class="card-contenido suave pequeño">${escapar(d.rutina.formato)}</p></details>`:''}
-        ${d.plan.ruta?`<details class="card-plegable"><summary>Ruta · ${escapar(d.plan.ruta.titulo)}</summary><div class="card-contenido suave pequeño">${escapar(d.plan.ruta.detalle||'Registra la salida en este día.')}</div></details>`:''}
-        ${d.ajustes?'':tarjetaGuia(d.tipo)}
-        ${d.ejercicios.length?`<div class="rutina-ejercicios">${d.ejercicios.map((e,i)=>`<details class="rutina-ejercicio card-plegable"><summary><span class="rutina-numero">${i+1}</span><span>${escapar(e.nombre)}<small>${escapar(d.ajustes?`${e.series} × ${e.valor} ${e.unidad==='s'?'s':'reps'}`:e.meta)}</small></span></summary><div class="card-contenido"><div class="rutina-figura">${figuraReloj({...e,ejercicioId:e.id},d.tipo,d.ejercicios)}</div>${e.nota?`<p class="suave pequeño">${escapar(e.nota)}</p>`:''}</div></details>`).join('')}</div>`:'<p class="suave">Sin ejercicios programados.</p>'}`;
-      panel.querySelector('[data-abrir-dia]').addEventListener('click',()=>navegar({vista:'dia',fecha:d.fecha}));
-      panel.querySelectorAll('[data-accion="guia-ampliar"]').forEach(b=>b.addEventListener('click',()=>abrirGuia(d.tipo)));
-    });
+export function mostrarMiRutina(cont){
+ const ctx=contexto(),hoy=hoyISO();let p=normalizarPlan(estado.config.plan);
+ if(!Array.isArray(p.actividades))p.actividades=Object.values(p.semana).some(d=>d.ruta.activa)?['ruta','cardio']:[];
+ // El plan histórico de Kevin combina circuitos con movimientos de peso corporal.
+ if(/^kevin\b/i.test(estado.perfil?.nombre||'')&&p.actividades.every(a=>['ruta','casa','cardio'].includes(a))&&p.actividades.includes('cardio'))p.actividades=['ruta','cardio'];
+ p=prepararSemana(p,hoy);
+ const abiertas=new Set();
+ const guardar=()=>{estado.config.plan=p;guardarConfig();};
+ function render(){
+  cont.innerHTML=`<div class="cabecera"><div class="titulo"><h1>Mi rutina</h1></div></div>
+   <section class="tarjeta semana-config"><h2>Actividades</h2><div class="semana-actividades">${ACTIVIDADES.map(a=>`<label class="semana-opcion"><input type="checkbox" data-actividad="${a.id}" ${p.actividades.includes(a.id)?'checked':''}><span>${escapar(a.nombre)}</span></label>`).join('')}</div></section>
+   <section class="tarjeta semana-config"><h2>Días de entrenamiento</h2><p class="suave pequeño">Marca los días que vas a hacer ejercicio; deja vacíos los de descanso.</p><div class="semana-dias">${ORDEN_SEMANA.map(ds=>`<label class="semana-opcion"><input type="checkbox" data-entrena="${ds}" ${entrenaDia(p.semana[ds])?'checked':''}><span>${DIAS[ds]}</span></label>`).join('')}</div></section>
+   <div class="secciones-grid rutina-semana">${ORDEN_SEMANA.map(ds=>tarjetaSeccion(String(ds),DIAS[ds],entrenaDia(p.semana[ds])?'Editar ejercicios':'Descanso',I.comp,`<div data-editor-semana="${ds}"></div>`,abiertas.has(ds)?'open':'')).join('')}</div>`;
+  cont.querySelectorAll('[data-actividad]').forEach(i=>i.addEventListener('change',()=>{const elegidas=[...cont.querySelectorAll('[data-actividad]:checked')].map(x=>x.dataset.actividad);elegirActividades(p,elegidas);guardar();render();}));
+  cont.querySelectorAll('[data-entrena]').forEach(i=>i.addEventListener('change',()=>{marcarDia(p,Number(i.dataset.entrena),i.checked);guardar();render();}));
+  for(const ds of ORDEN_SEMANA){
+   const tarjeta=cont.querySelector(`[data-seccion="${ds}"]`);let cargada=false;
+   const dibujar=()=>{if(cargada)return;cargada=true;const panel=tarjeta.querySelector('[data-editor-semana]'),d=p.semana[ds];
+    if(!entrenaDia(d)){panel.innerHTML='<p class="suave">Descanso</p>';return;}
+    panel.innerHTML=`${p.actividades.includes('ruta')?`<div class="semana-ruta"><label class="check"><input type="checkbox" data-ruta-semana ${d.ruta.activa?'checked':''}>Ruta</label><label class="campo"><span>Tipo de sesión</span><select data-tipo-ruta>${TIPOS_SESION.map(t=>`<option value="${t.id}" ${t.id===d.ruta.tipo?'selected':''}>${escapar(t.nombre)}</option>`).join('')}</select></label></div>`:''}<div data-edicion-ejercicios></div>`;
+    panel.querySelector('[data-ruta-semana]')?.addEventListener('change',e=>{p.semana[ds].ruta.activa=e.target.checked;guardar();});
+    panel.querySelector('[data-tipo-ruta]')?.addEventListener('change',e=>{p.semana[ds].ruta.tipo=e.target.value;guardar();});
+    montarPreparacion(panel.querySelector('[data-edicion-ejercicios]'),{modo:'semana',rutina:null,ejercicios:[],ajustes:preparacionSemanal(p,ds,hoy,ctx.inicio),editarAlInicio:true,controlesExternos:true,actividades:p.actividades,
+     alCambiar:preparacion=>{guardarDiaSemanal(p,ds,preparacion);guardar();}});
+   };
+   tarjeta.addEventListener('toggle',()=>{if(tarjeta.open){abiertas.add(ds);dibujar();}else abiertas.delete(ds);});if(tarjeta.open)dibujar();
   }
   conectarTarjetas(cont);
-  cont.querySelector('[data-editar-plan]').addEventListener('click',()=>navegar('miplan'));
+ }
+ render();
 }

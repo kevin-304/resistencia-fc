@@ -266,11 +266,17 @@ export const ACTIVIDADES = [
   { id: 'pilates', nombre: 'Pilates y postura', emoji: '🧘', desc: 'Core, glúteos, espalda y postura en esterilla' },
   { id: 'gimnasio', nombre: 'Gimnasio (ganar músculo)', emoji: '🏋️', desc: 'Empuje / tirón / piernas con pesas y máquinas' },
   { id: 'crossfit', nombre: 'CrossFit / funcional', emoji: '⚡', desc: 'WODs por rondas de alta intensidad' },
+  { id: 'ciclismo', nombre: 'Ciclismo', emoji: '', desc: 'Bicicleta exterior o estática' },
+  { id: 'natacion', nombre: 'Natación', emoji: '', desc: 'Estilos y técnica en piscina' },
+  { id: 'deportes', nombre: 'Otros deportes', emoji: '', desc: 'Técnica, coordinación y práctica deportiva' },
   { id: 'movilidad', nombre: 'Yoga / estiramientos', emoji: '🌿', desc: 'Movilidad y recuperación' },
 ];
 
 // Qué rutina toca cada día (1 = lunes … 6 = sábado) según la actividad.
 const SEMANA_POR_ACTIVIDAD = {
+  ciclismo: {1:'ciclismo',2:'ciclismo',3:'ciclismo',4:'ciclismo',5:'ciclismo',6:'ciclismo'},
+  natacion: {1:'natacion',2:'natacion',3:'natacion',4:'natacion',5:'natacion',6:'natacion'},
+  deportes: {1:'deportes',2:'deportes',3:'deportes',4:'deportes',5:'deportes',6:'deportes'},
   casa: { 1: 'superior', 2: 'core', 3: 'inferior', 5: 'core', 6: 'core' },
   cardio: { 2: 'cardio', 4: 'cardio', 5: 'cardio' },
   pilates: { 1: 'pilates-core', 2: 'postura', 3: 'pilates-gluteos', 4: 'postura', 5: 'pilates-core', 6: 'pilates-gluteos' },
@@ -289,6 +295,13 @@ export const FINALIZADOR = {
     seg('f-plancha', 'Plancha frontal', [3, 3, 3, 3], [30, 40, 45, 60]),
   ],
 };
+
+// Plantillas editables para registrar disciplinas adicionales.
+for(const [id,nombre,ejercicios] of [
+ ['ciclismo','Ciclismo',['Pedaleo suave','Pedaleo continuo','Pedaleo de recuperación']],
+ ['natacion','Natación',['Técnica de respiración en piscina','Nado libre','Nado suave']],
+ ['deportes','Práctica deportiva',['Coordinación de pies','Práctica de técnica deportiva','Movilidad suave']],
+])COMPLEMENTOS[id]={nombre,actividad:id,finalizador:false,ejercicios:ejercicios.map((nombre,i)=>({id:`${id}-${i}`,nombre,unidad:'s',series:1,valor:60}))};
 
 export const TIPOS_COMPLEMENTO = Object.entries(COMPLEMENTOS).map(([id, c]) => ({ id, nombre: c.nombre }));
 

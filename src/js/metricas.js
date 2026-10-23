@@ -69,7 +69,8 @@ export function metricasDia(fecha, dias, ctx) {
 
   // Complemento
   const c = d.complemento || {};
-  const listaComp = Array.isArray(d.preparacion?.ejercicios)?d.preparacion.ejercicios:ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana, pu);
+  const preparacion=d.preparacion||pu.semana[plan.ds]?.preparacion;
+  const listaComp = Array.isArray(preparacion?.ejercicios)?preparacion.ejercicios:ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana, pu);
   const rc = resumenComplemento(listaComp, c.registro || {});
   const hechosViejos = Object.values(c.ejercicios || {}).filter(Boolean).length; // formato anterior (casillas)
   m.compReps = rc.reps;

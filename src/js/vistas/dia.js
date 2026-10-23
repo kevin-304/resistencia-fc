@@ -79,7 +79,8 @@ export function mostrarDia(cont, { fecha }) {
   const tipoRutina = d.complemento?.tipo || plan.complemento?.tipo || 'estiramientos';
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
     rutina: rutinaDe(tipoRutina, PU), ejercicios: ejerciciosDe(tipoRutina, plan.semana, PU),
-    ajustes:d.preparacion||null,
+    ajustes:d.preparacion||PU.semana[plan.ds]?.preparacion||null,
+    actividades:PU.actividades||[],
     alEditar:p=>{diaEditable(fecha).preparacion=p;diaCambiado(fecha);const programa=cont.querySelector('.plan-dia');if(programa)programa.outerHTML=tarjetaPlan(plan,diaDe(fecha),fecha===hoy);},
     perfil: estado.carpeta || estado.perfil?.nombre || '', fecha, tipo: tipoRutina,
     alComenzar: (instante,datos) => registrarHoraRutina('inicio', instante,null,datos),
@@ -500,6 +501,7 @@ function guiaEjercicios(ejercicios,tipo){
  return `<details class="guia-rutina" data-guia-ejercicios><summary>Guía ilustrada de ejercicios</summary><div class="guia-ejercicios">${ejercicios.map(e=>`<article><b>${escapar(e.nombre)}</b>${figuraReloj({...e,ejercicioId:e.id},tipo,ejercicios)}</article>`).join('')}</div></details>`;
 }
 function seccionComplemento(d,plan){
+ if(!plan.complemento&&!d.complemento&&!d.preparacion)return '<section class="tarjeta"><p class="suave">Descanso</p></section>';
  const tipo=d.complemento?.tipo||plan.complemento?.tipo||'estiramientos',ejercicios=d.preparacion?.ejercicios||ejerciciosDe(tipo,plan.semana,PU);
  return `<section class="tarjeta"><div data-temporizador></div></section>`;
 }
@@ -583,7 +585,7 @@ function tarjetaPlan(plan,d,esHoy){
  const r=plan.ruta,c=plan.complemento,tipo=d.complemento?.tipo||c?.tipo;
  const ruta=estado.rutas.find(x=>x.id===d.ruta?.rutaId);
  return `<section class="tarjeta plan-dia">${r?`<div class="plan-bloque"><h3>Ruta</h3><b>${escapar(ruta?.nombre||r.titulo)}</b><p class="suave pequeño">${escapar(r.intervalo||r.detalle||'')}${r.metaKm?` · ${num(r.metaKm,1)} km`:''}</p></div>`:''}
- ${c?`<div class="plan-bloque"><h3>Ejercicios</h3>${resumenRutina(rutinaDe(tipo,PU),ejerciciosDe(tipo,plan.semana,PU),d.preparacion)}</div>`:'<p>Descanso</p>'}</section>`;
+ ${c?`<div class="plan-bloque"><h3>Ejercicios</h3>${resumenRutina(rutinaDe(tipo,PU),ejerciciosDe(tipo,plan.semana,PU),d.preparacion||PU.semana[plan.ds]?.preparacion)}</div>`:'<p>Descanso</p>'}</section>`;
 }
 
 function pintarCuentaRegresiva(caja,plan,fecha){

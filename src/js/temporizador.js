@@ -9,7 +9,7 @@ import { escapar } from './util.js';
 const leer = clave => { try { return JSON.parse(sessionStorage.getItem(clave)); } catch { return null; } };
 const escribir = (clave, valor) => { try { sessionStorage.setItem(clave, JSON.stringify(valor)); } catch { /* El reloj funciona aunque no haya almacenamiento disponible. */ } };
 
-export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, tipo, alComenzar, alTerminar, ajustes: ajustesIniciales, alEditar }) {
+export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, tipo, alComenzar, alTerminar, ajustes: ajustesIniciales, alEditar, actividades=[] }) {
   if (!caja || !ejercicios.length) return;
   const clave = `rfc-reloj:${perfil}:${fecha}:${tipo}`;
   let ajustes=ajustesIniciales||(!construirSesion(rutina,ejercicios).es60?crearPreparacion(rutina,ejercicios):null),previsualizando=false;
@@ -213,7 +213,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     if(previsualizando&&modo===nuevo){previsualizando=false;preparar(true);pintar();return;}
     pausar();modo=nuevo;previsualizando=true;ultimaPintada='';
     el(nuevo==='calentamiento'?'inicio-cal':'inicio-rutina').after(el('preparacion'));pintar();
-    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,editarAlInicio:true,controlesExternos:true,
+    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,editarAlInicio:true,controlesExternos:true,actividades,
       alCambiar:p=>{ajustes=p;alEditar?.(p);},
       alCancelar:()=>{previsualizando=false;preparar(true);pintar();},
       alComenzar:p=>{

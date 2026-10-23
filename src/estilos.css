@@ -815,3 +815,15 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .temporizador.reloj-editando .reloj-eleccion,.temporizador.reloj-editando .reloj-inicio-rutina {justify-content:space-between;grid-template-columns:minmax(0,260px) minmax(0,260px);}
 .temporizador .reloj-preparacion {margin-bottom:24px;}
 .temporizador .reloj-eleccion .boton,.temporizador .reloj-inicio-rutina .boton {white-space:normal;line-height:1.2;text-align:center;}
+.semana-config {margin-bottom:16px;}
+.semana-config h2 {font-size:1.05em;margin-bottom:12px;}
+.semana-actividades {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;}
+.semana-dias {display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.semana-opcion {display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--borde,#dce0e6);border-radius:9px;cursor:pointer;}
+.semana-opcion input {accent-color:#15803d;width:17px;height:17px;flex-shrink:0;}
+.semana-ruta {display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:18px;}
+.prep-agregar {display:flex;flex-wrap:wrap;gap:8px;}
+.prep-agregar select {flex:0 1 220px;min-width:0;}
+.prep-agregar input {flex:1 1 180px;min-width:0;}
+@media(max-width:520px){.semana-dias {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.prep-agregar select {flex-basis:100%;}}
+@media(max-width:520px){.semana-actividades {grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}.semana-actividades .semana-opcion {padding:9px 8px;gap:7px;font-size:.86em;min-height:48px;}}
