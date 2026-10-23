@@ -9,6 +9,7 @@ import { montarTemporizador } from '../temporizador.js';
 import { figuraReloj } from '../figura-reloj.js';
 import { ALIMENTOS, alimentosDelDia } from '../alimentos.js';
 import { tarjetaSeccion, conectarTarjetas } from '../tarjetas.js';
+import { resumenRutina } from '../resumen-rutina.js';
 import { I } from '../iconos.js';
 import { hoyISO, sumarDias, fechaLarga, obtener, fijar, aNumero, escapar, num, formatoHoras, formatoRitmo, formatoDuracion, aMinutos, deMinutos, dos, idUnico, diaSemana, el } from '../util.js';
 
@@ -66,6 +67,7 @@ export function mostrarDia(cont, { fecha }) {
     const caja=document.createElement('div');
     caja.innerHTML=tarjetaSeccion(id,opcion.nombre,detalles[id][0],detalles[id][1],'',pestanaActual===id?'open':'');
     const tarjeta=caja.firstElementChild;
+    if(id==='ejercicio')tarjeta.classList.add('seccion-entrenar');
     const resumen=tarjeta.querySelector('summary');resumen.dataset.pestana=id;
     resumen.querySelector('.seccion-titulo').insertAdjacentHTML('beforeend',`<span class="punto" data-punto="${id}"></span>`);
     panel.before(tarjeta);tarjeta.querySelector('.seccion-contenido').appendChild(panel);
@@ -657,8 +659,8 @@ function tarjetaPlan(plan, d, esHoy) {
       : plan.descanso ? '<div class="grande">Descanso total</div><p class="suave" style="margin-top:4px">O caminata ligera de 20–30 min. Puedes dormir hasta 1 h más.</p>'
       : '<div class="grande">Sin ruta hoy</div><p class="suave" style="margin-top:4px">Hoy toca solo el ejercicio de abajo.</p>'}
     </div>
-    ${c ? `<div class="plan-bloque"><h4>Complemento</h4><div class="grande" style="color:var(--c-comp)">${c.nombre}</div><p class="suave">${c.formato}</p>
-      <ul>${c.ejercicios.map((e) => `<li>${e.bloque === 'abdomen' ? '🔥 ' : ''}${escapar(e.nombre)} – ${escapar(e.meta)}</li>`).join('')}</ul></div>` : ''}
+    ${c ? `<div class="plan-bloque"><h4>Rutina del día</h4><div class="grande">${escapar(c.nombre)}</div>${resumenRutina(rutinaDe(c.tipo,PU),c.ejercicios)}
+      <details class="desplegable"><summary>Ver ejercicios e indicaciones</summary><p class="suave pequeño">${escapar(c.formato)}</p><ul>${c.ejercicios.map(e=>`<li>${escapar(e.nombre)} · ${escapar(e.meta)}</li>`).join('')}</ul></details></div>` : ''}
     ${a ? `<div class="plan-bloque"><h4>Ayuno</h4><div class="grande" style="color:var(--c-ayuno)">${a.protocolo} · ${a.ventana[0]} – ${a.ventana[1]}</div><p class="suave">${a.texto}</p>
       ${esHoy ? '<div class="cuenta-regresiva" id="cuenta-regresiva"></div>' : ''}
       <details class="desplegable" style="margin-top:8px"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map((x) => `<li>${x}</li>`).join('')}</ul></details>

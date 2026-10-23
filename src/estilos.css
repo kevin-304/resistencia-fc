@@ -592,3 +592,33 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
   .seccion-contenido { padding: 14px; }
   .seccion-icono { width: 36px; height: 36px; border-radius: 10px; }
 }
+
+/* Lista compacta y estados de texto sin pastillas de color. */
+.secciones-grid { grid-template-columns: minmax(0,1fr); gap: 8px; }
+.seccion-card > summary { min-height: 70px; padding: 12px 16px; gap: 12px; }
+.seccion-titulo { text-align: center; }
+.seccion-titulo small { margin-top: 3px; }
+.seccion-icono { background: transparent; width: 30px; height: 32px; border-radius: 0; }
+.seccion-card[open] > summary { border-bottom: 0; }
+.seccion-contenido { padding: 4px 16px 16px; }
+.seccion-entrenar { border: 2px solid var(--texto-suave); }
+.seccion-entrenar > summary .seccion-titulo b { font-size: 1.12em; font-weight: 750; }
+.seccion-entrenar > summary .seccion-titulo small { color: var(--texto); }
+.plan-bloque { border: 0; padding: 8px 0; }
+.plan-bloque h4 { margin-bottom: 4px; }
+.estado-pill, .estado-pill.ok, .estado-pill.no, .estado-pill.nada { background: transparent; border: 0; border-radius: 0; padding: 0; }
+.chip, .chip.activo, .chip.bueno.activo, .chip.limitar.activo { background: transparent; border-color: transparent; border-radius: 0; }
+.chip.activo { color: var(--acento); font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
+.chip.bueno.activo { color: var(--ok); }
+.chip.limitar.activo { color: var(--peligro); }
+.resumen-etapas { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin: 12px 0 6px; }
+.resumen-etapas > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.resumen-etapas b { font-size: .82em; color: var(--texto-suave); font-weight: 550; }
+.resumen-etapas strong { font-size: 1.15em; font-weight: 700; }
+.resumen-etapas small { color: var(--texto-suave); font-size: .78em; }
+.cierre-rutina { margin: 6px 0 12px; }
+@media(max-width:650px) {
+  .seccion-card > summary { min-height: 68px; padding: 10px 12px; }
+  .seccion-contenido { padding: 4px 12px 12px; }
+  .resumen-etapas { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+}
