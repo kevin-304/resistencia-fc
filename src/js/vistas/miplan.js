@@ -33,7 +33,7 @@ export function mostrarMiPlan(cont, opciones = {}) {
 
   cont.innerHTML = `
     <div class="cabecera">
-      <div class="titulo"><h1>Mi plan</h1><p>Configura solo lo que necesitas.</p></div>
+      <div class="titulo"><h1>Mi plan</h1></div>
       <details class="acciones-secundarias"><summary>Opciones del plan</summary><div class="grupo-botones">
         <button class="boton" id="sugerido">Usar plan sugerido</button>
         <button class="boton" id="blanco">Empezar en blanco</button>

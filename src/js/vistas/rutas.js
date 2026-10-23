@@ -16,7 +16,7 @@ export function mostrarRutas(cont) {
   const enAdaptacion = t.actual === 'plano' && t.desde && diasEntre(t.desde, hoy) < 14 && hoy >= t.desde;
 
   cont.innerHTML = `
-    <div class="cabecera"><div class="titulo"><h1>Rutas y terreno</h1><p>Tus salidas, en un lugar.</p></div>
+    <div class="cabecera"><div class="titulo"><h1>Rutas y terreno</h1></div>
       <button class="boton primario" id="nueva">${I.mas} Nueva ruta</button></div>
 
     <div class="rejilla rejilla-2" style="align-items:start">

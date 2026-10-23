@@ -51,7 +51,7 @@ export function mostrarDia(cont, { fecha }) {
       </div>
       ${fecha !== hoy ? '<button class="boton" data-accion="hoy">Ir a hoy</button>' : ''}
     </div>
-    <details class="avisos-dia"><summary>Recordatorios del día</summary><div class="alertas" id="alertas"></div></details>
+    <details class="avisos-dia"><summary>Avisos</summary><div class="alertas" id="alertas"></div></details>
     <div class="dia-paneles secciones-grid">
       <div class="panel-pestana" data-panel="plan">${tarjetaPlan(plan, d, fecha === hoy)}</div>
       <div class="panel-pestana" data-panel="sueno">${seccionSueno(d)}</div>
@@ -61,7 +61,7 @@ export function mostrarDia(cont, { fecha }) {
       <div class="panel-pestana" data-panel="medidas">${plegable('Medidas corporales', seccionMedidas(d, fecha), true)}${plegable('Notas y estado de ánimo', seccionNotas(d), true)}</div>
     </div>`;
 
-  const detalles = {plan:['Tu programación',I.plan],sueno:['Descanso y horarios',I.sueno],ruta:['Distancia y salida',I.rutas],ejercicio:['Rutina guiada y series',I.comp],comidas:['Comidas, ayuno y agua',I.comida],medidas:['Progreso y cómo te sientes',I.balanza]};
+  const detalles = {plan:['',I.plan],sueno:['',I.sueno],ruta:['',I.rutas],ejercicio:['',I.comp],comidas:['',I.comida],medidas:['',I.balanza]};
   cont.querySelectorAll('.panel-pestana').forEach(panel=>{
     const id=panel.dataset.panel, opcion=PESTANAS.find(t=>t.id===id);
     const caja=document.createElement('div');
@@ -547,15 +547,16 @@ function seccionComplemento(d, plan) {
   return `<section class="tarjeta">
     ${cabecera(plan.complemento ? 'Ejercicio del día' : 'Ejercicio (opcional hoy)', I.comp, '--c-comp', '<span data-calc="comp-estado"></span>')}
     <div data-temporizador></div>
-    <div data-rutina-completa>${tarjetaGuia(tipo, true)}</div>
-    ${plegable('Horario y ajustes', `<p class="suave pequeño">Inicio y fin se registran al comenzar y finalizar la rutina. Puedes corregirlos aquí.</p><div class="campos">
+    <details class="desplegable"><summary>Mis registros</summary>
+    <div data-rutina-completa>${tarjetaGuia(tipo, false)}</div>
+    ${plegable('Horario', `<div class="campos">
       ${seleccion('Rutina', 'complemento.tipo', d, tiposComplemento(PU), tipo)}
       ${campo('Inicio', 'complemento.inicio', d, { tipo: 'hora' })}
       ${campo('Fin', 'complemento.fin', d, { tipo: 'hora' })}
       ${campo('Duración real', 'complemento.duracion', d, { tipo: 'num', unidad: 'min' })}
       ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb' }) : ''}
     </div>`)}
-    ${plegable('Registrar mis series', `<p class="suave pequeño">Anota lo que realmente hiciste.</p>
+    ${plegable('Mis series', `
       ${bloqueSeries('Ejercicios del día', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {}, '', tipo, ejercicios)}
       ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(FINALIZADOR.nombre, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, '', tipo, ejercicios) : ''}`)}
     <div class="resumen-series" data-calc="comp-resumen"></div>
@@ -563,6 +564,7 @@ function seccionComplemento(d, plan) {
       ${casilla('Completado', 'complemento.hecho', d)}
       <button class="boton fantasma" data-accion="todo-complemento">${I.check} Todo como lo sugerido</button>
     </div>
+    </details>
   </section>`;
 }
 
@@ -660,12 +662,12 @@ function tarjetaPlan(plan, d, esHoy) {
       : '<div class="grande">Sin ruta hoy</div><p class="suave" style="margin-top:4px">Hoy toca solo el ejercicio de abajo.</p>'}
     </div>
     ${c ? `<div class="plan-bloque"><h4>Rutina del día</h4><div class="grande">${escapar(c.nombre)}</div>${resumenRutina(rutinaDe(c.tipo,PU),c.ejercicios)}
-      <details class="desplegable"><summary>Ver ejercicios e indicaciones</summary><p class="suave pequeño">${escapar(c.formato)}</p><ul>${c.ejercicios.map(e=>`<li>${escapar(e.nombre)} · ${escapar(e.meta)}</li>`).join('')}</ul></details></div>` : ''}
+      <details class="desplegable"><summary>Ejercicios</summary><p class="suave pequeño">${escapar(c.formato)}</p><ul>${c.ejercicios.map(e=>`<li>${escapar(e.nombre)} · ${escapar(e.meta)}</li>`).join('')}</ul></details></div>` : ''}
     ${a ? `<div class="plan-bloque"><h4>Ayuno</h4><div class="grande" style="color:var(--c-ayuno)">${a.protocolo} · ${a.ventana[0]} – ${a.ventana[1]}</div><p class="suave">${a.texto}</p>
       ${esHoy ? '<div class="cuenta-regresiva" id="cuenta-regresiva"></div>' : ''}
       <details class="desplegable" style="margin-top:8px"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map((x) => `<li>${x}</li>`).join('')}</ul></details>
     </div>` : ''}
-    ${r ? `<p class="suave pequeño" style="margin-top:6px">Las guías de preparación y vuelta a la calma están en <b>Calentamiento y ejercicio</b>.</p>` : ''}
+
   </section>`;
 }
 

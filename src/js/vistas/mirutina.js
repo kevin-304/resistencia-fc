@@ -17,7 +17,7 @@ export function mostrarMiRutina(cont) {
     const tipo=pu.semana[ds]?.complemento, rutina=rutinaDe(tipo,pu);
     return {ds,fecha,pu,plan,tipo,rutina,ejercicios:ejerciciosDe(tipo,plan.semana,pu)};
   });
-  cont.innerHTML=`<div class="cabecera mi-rutina-cab"><div class="titulo"><h1>Mi rutina</h1><p>Abre un día para ver tu entrenamiento.</p></div><button class="boton" data-editar-plan>Editar mi plan</button></div>
+  cont.innerHTML=`<div class="cabecera mi-rutina-cab"><div class="titulo"><h1>Mi rutina</h1></div><button class="boton" data-editar-plan>Editar mi plan</button></div>
     <div class="secciones-grid rutina-semana">${dias.map(d=>tarjetaSeccion(String(d.ds),DIAS[d.ds],d.rutina?`${d.ejercicios.length} ejercicios`:'Descanso',I.comp,`<div data-contenido-dia="${d.ds}"></div>`)).join('')}</div>`;
   for(const d of dias){
     const tarjeta=cont.querySelector(`[data-seccion="${d.ds}"]`);

@@ -53,9 +53,13 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
   const es60 = !!rutina?.bloquesMinutos && principales.length === 5 && abdomen.length === 3 && cardio.length === 5;
   const etapas = [];
   const agregar = (...p) => etapas.push(...p);
+  if (modo === 'calentamiento') {
+    agregar(...movilidadGuiada(CALENTAMIENTO_GUIADO, 'Calentamiento', 50, 10));
+    return { etapas, es60, totalSegundos: 480 };
+  }
   if (es60) {
     if (modo === 'completa') agregar(...movilidadGuiada(CALENTAMIENTO_GUIADO, 'Calentamiento', 50, 10));
-    if (['completa', 'principal'].includes(modo)) {
+    if (['completa', 'entrenamiento', 'principal'].includes(modo)) {
       const rondas = Math.max(...principales.map(e => entero(e.series, 3, 20)));
       const estaciones = principales.reduce((n, e) => n + entero(e.series, 3, 20), 0);
       const ventana = entero(rutina.bloquesMinutos.principal, 30, 180) * 60 / estaciones;
@@ -71,16 +75,16 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
         }
       }
     }
-    if (['completa', 'abdomen'].includes(modo)) {
+    if (['completa', 'entrenamiento', 'abdomen'].includes(modo)) {
       for (let v = 1; v <= 4; v++) for (const e of abdomen) {
         const extra = { bloque: 'Abdomen', vuelta: v, vueltas: 4 };
         agregar(...intervalo(e, 40, extra), paso('Descanso', 20, { ...extra, clase: 'descanso' }));
       }
     }
-    if (['completa', 'cardio'].includes(modo)) {
+    if (['completa', 'entrenamiento', 'cardio'].includes(modo)) {
       for (const e of cardio) agregar(...intervalo(e, 40, { bloque: 'Cardio de cierre', vuelta: 1, vueltas: 1 }), paso('Descanso y cambio', 20, { bloque: 'Cardio de cierre', clase: 'descanso' }));
     }
-    if (modo === 'completa') agregar(...movilidadGuiada(ENFRIAMIENTO_GUIADO, 'Enfriamiento', 40, 10));
+    if (['completa','entrenamiento'].includes(modo)) agregar(...movilidadGuiada(ENFRIAMIENTO_GUIADO, 'Enfriamiento', 40, 10));
   } else {
     // Otras rutinas: conserva sus series y segundos. Las repeticiones usan una
     // ventana orientativa editable: el reloj nunca inventa repeticiones hechas.
@@ -148,6 +152,21 @@ export class RelojRutina {
     if (this.terminado) { this.enMarcha = false; this.ultimo = null; }
   }
   siguiente(ahora) { this.actualizar(ahora); if (!this.terminado) this.avanzarInterno(); }
+  anterior(ahora) {
+    this.actualizar(ahora);
+    if (this.indice <= 0) return false;
+    this.indice--; this.descansoSerie = false;
+    this.restanteMs = this.etapa.segundos * 1000;
+    this.ultimo = this.enMarcha ? ahora : null;
+    return true;
+  }
+  ampliarTiempo(segundos, ahora) {
+    this.actualizar(ahora);
+    if (this.terminado) return false;
+    const ms = entero(segundos,30,300) * 1000;
+    this.restanteMs += ms; this.extraMs += ms;
+    return true;
+  }
   terminarSerie(ahora) {
     const indice = this.indice;
     this.actualizar(ahora);
