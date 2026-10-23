@@ -1,3 +1,4 @@
+import {montarExtrasPerfil} from '../identidad-perfil.js';
 // (Celular) Perfil y ajustes: actualizar el perfil desde la PC, modo claro/oscuro, borrar datos.
 import { estado, guardarConfig } from '../estado.js';
 import { aplicarTema, PRESETS } from '../tema.js';
@@ -13,7 +14,7 @@ export async function mostrarMovilAjustes(cont) {
   const oscuro = PRESETS[estado.config.tema.preset]?.modo !== 'claro';
   cont.innerHTML = `
     <div class="cabecera"><div class="titulo"><h1>Perfil</h1><p>${escapar(p.nombre)} · plan desde el ${fechaMedia(p.fechaInicio)} · meta ${num(p.pesoMeta, 1)} kg</p></div></div>
-    <button class="boton" id="cambiar-perfil" style="margin-bottom:14px;width:100%">${I.perfil} Cambiar de perfil</button>
+    <div data-extras-perfil></div><button class="boton" id="cambiar-perfil" style="margin-bottom:14px;width:100%">${I.perfil} Cambiar de perfil</button>
     <section class="tarjeta" id="caja-nube" style="margin-bottom:14px"></section>
     <section class="tarjeta" style="margin-bottom:14px">
       <div class="tarjeta-cab"><h2>Actualizar desde la PC (por WhatsApp)</h2></div>
@@ -31,6 +32,7 @@ export async function mostrarMovilAjustes(cont) {
     </section>`;
 
   tarjetaNube(cont.querySelector('#caja-nube'));
+  montarExtrasPerfil(cont.querySelector('[data-extras-perfil]'));
   cont.querySelector('#cambiar-perfil').addEventListener('click', () => navegar('perfiles'));
   cont.querySelector('#importar').addEventListener('click', async () => {
     try {

@@ -19,7 +19,7 @@ export function guardarDiaSemanal(p,ds,preparacion){
 }
 export function marcarDia(p,ds,activo){
  const d=p.semana[ds];
- if(!activo){if(entrenaDia(d))d.descansoGuardado={ruta:structuredClone(d.ruta),complemento:d.complemento,preparacion:structuredClone(d.preparacion)};d.ruta.activa=false;d.complemento=null;delete d.preparacion;return;}
+ if(!activo){if(entrenaDia(d))d.descansoGuardado={ruta:structuredClone(d.ruta),complemento:d.complemento,preparacion:structuredClone(d.preparacion),actividadesDia:structuredClone(d.actividadesDia),ordenActividades:structuredClone(d.ordenActividades)};d.ruta.activa=false;d.complemento=null;delete d.preparacion;return;}
  if(d.descansoGuardado){Object.assign(d,structuredClone(d.descansoGuardado));delete d.descansoGuardado;d.ruta.activa=!!p.actividades?.includes('ruta')&&!!d.ruta.activa;if(entrenaDia(d))return;}
  const actividades=p.actividades||[],base=planDesdeActividades(actividades),tipo=base.semana[ds]?.complemento||Object.values(base.semana).find(x=>x.complemento)?.complemento;
  d.ruta={...planSugerido().semana[ds===0?1:ds].ruta,activa:actividades.includes('ruta')};

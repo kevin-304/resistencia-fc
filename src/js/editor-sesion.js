@@ -3,9 +3,9 @@ import {escapar,idUnico} from './util.js';
 import {figuraReloj} from './figura-reloj.js';
 import {imagenEjercicio} from './plan.js';
 import {CATALOGO_EJERCICIOS,ejerciciosCatalogo} from './catalogo-ejercicios.js';
-export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar,alComenzar,alCancelar,editarAlInicio=false,controlesExternos=false,actividades=[]}){
+export function montarPreparacion(cont,{modo,rutina,ejercicios,ajustes,alCambiar,alComenzar,alCancelar,editarAlInicio=false,controlesExternos=false,actividades=[],grupos:gruposElegidos=null}){
  const p=crearPreparacion(rutina,ejercicios,ajustes),uid=idUnico(),categorias={};
- const grupos=modo==='semana'?['calentamiento','ejercicios','enfriamiento']:modo==='calentamiento'?['calentamiento','enfriamiento']:['ejercicios','enfriamiento'];
+ const grupos=gruposElegidos|| (modo==='semana'?['calentamiento','ejercicios','enfriamiento']:modo==='calentamiento'?['calentamiento','enfriamiento']:['ejercicios','enfriamiento']);
  const nombres={calentamiento:'Calentamiento',ejercicios:'Rutina',enfriamiento:'Enfriamiento'};
  let editando=editarAlInicio;
  const guardar=()=>alCambiar?.(structuredClone(p));

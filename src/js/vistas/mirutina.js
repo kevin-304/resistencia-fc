@@ -1,3 +1,8 @@
+import {iconoActividad} from '../iconos-actividades.js';
+import {bloquesDia,aplicarBloques,nombreActividad} from '../bloques-actividad.js';
+import {conectarOrdenComidas} from '../orden-comidas.js';
+import {iconoArrastrar} from '../iconos-alimentos.js';
+import {alSalir} from '../nav.js';
 import {estado,contexto,guardarConfig} from '../estado.js';
 import {normalizarPlan,ACTIVIDADES,TIPOS_SESION} from '../plan.js';
 import {montarPreparacion} from '../editor-sesion.js';
@@ -16,20 +21,28 @@ export function mostrarMiRutina(cont){
  const guardar=()=>{estado.config.plan=p;guardarConfig();};
  function render(){
   cont.innerHTML=`<div class="cabecera"><div class="titulo"><h1>Mi rutina</h1></div></div>
-   <section class="tarjeta semana-config"><h2>Actividades</h2><div class="semana-actividades">${ACTIVIDADES.map(a=>`<label class="semana-opcion"><input type="checkbox" data-actividad="${a.id}" ${p.actividades.includes(a.id)?'checked':''}><span>${escapar(a.nombre)}</span></label>`).join('')}</div></section>
+   <section class="tarjeta semana-config"><h2>Actividades</h2><div class="semana-actividades">${ACTIVIDADES.map(a=>`<label class="semana-opcion"><input type="checkbox" data-actividad="${a.id}" ${p.actividades.includes(a.id)?'checked':''}>${iconoActividad(a.id,estado.perfil?.sexo)}<span>${escapar(a.nombre)}</span></label>`).join('')}</div></section>
    <section class="tarjeta semana-config"><h2>Días de entrenamiento</h2><p class="suave pequeño">Marca los días que vas a hacer ejercicio; deja vacíos los de descanso.</p><div class="semana-dias">${ORDEN_SEMANA.map(ds=>`<label class="semana-opcion"><input type="checkbox" data-entrena="${ds}" ${entrenaDia(p.semana[ds])?'checked':''}><span>${DIAS[ds]}</span></label>`).join('')}</div></section>
-   <div class="secciones-grid rutina-semana">${ORDEN_SEMANA.map(ds=>tarjetaSeccion(String(ds),DIAS[ds],entrenaDia(p.semana[ds])?'Editar ejercicios':'Descanso',I.comp,`<div data-editor-semana="${ds}"></div>`,abiertas.has(ds)?'open':'')).join('')}</div>`;
-  cont.querySelectorAll('[data-actividad]').forEach(i=>i.addEventListener('change',()=>{const elegidas=[...cont.querySelectorAll('[data-actividad]:checked')].map(x=>x.dataset.actividad);elegirActividades(p,elegidas);guardar();render();}));
+   <div class="secciones-grid rutina-semana">${ORDEN_SEMANA.filter(ds=>entrenaDia(p.semana[ds])).map(ds=>tarjetaSeccion(String(ds),DIAS[ds],entrenaDia(p.semana[ds])?'Editar ejercicios':'Descanso',I.comp,`<div data-editor-semana="${ds}"></div>`,abiertas.has(ds)?'open':'')).join('')}</div>`;
+  cont.querySelectorAll('[data-actividad]').forEach(i=>i.addEventListener('change',()=>{const elegidas=[...cont.querySelectorAll('[data-actividad]:checked')].map(x=>x.dataset.actividad);elegirActividades(p,elegidas);for(const ds of ORDEN_SEMANA.filter(ds=>entrenaDia(p.semana[ds]))){const {base}=bloquesDia(p,ds,hoy,ctx.inicio);aplicarBloques(p,ds,base);}guardar();render();}));
   cont.querySelectorAll('[data-entrena]').forEach(i=>i.addEventListener('change',()=>{marcarDia(p,Number(i.dataset.entrena),i.checked);guardar();render();}));
   for(const ds of ORDEN_SEMANA){
-   const tarjeta=cont.querySelector(`[data-seccion="${ds}"]`);let cargada=false;
+   const tarjeta=cont.querySelector(`[data-seccion="${ds}"]`);if(!tarjeta)continue;let cargada=false;
    const dibujar=()=>{if(cargada)return;cargada=true;const panel=tarjeta.querySelector('[data-editor-semana]'),d=p.semana[ds];
     if(!entrenaDia(d)){panel.innerHTML='<p class="suave">Descanso</p>';return;}
-    panel.innerHTML=`${p.actividades.includes('ruta')?`<div class="semana-ruta"><label class="check"><input type="checkbox" data-ruta-semana ${d.ruta.activa?'checked':''}>Ruta</label><label class="campo"><span>Tipo de sesión</span><select data-tipo-ruta>${TIPOS_SESION.map(t=>`<option value="${t.id}" ${t.id===d.ruta.tipo?'selected':''}>${escapar(t.nombre)}</option>`).join('')}</select></label></div>`:''}<div data-edicion-ejercicios></div>`;
-    panel.querySelector('[data-ruta-semana]')?.addEventListener('change',e=>{p.semana[ds].ruta.activa=e.target.checked;guardar();});
-    panel.querySelector('[data-tipo-ruta]')?.addEventListener('change',e=>{p.semana[ds].ruta.tipo=e.target.value;guardar();});
-    montarPreparacion(panel.querySelector('[data-edicion-ejercicios]'),{modo:'semana',rutina:null,ejercicios:[],ajustes:preparacionSemanal(p,ds,hoy,ctx.inicio),editarAlInicio:true,controlesExternos:true,actividades:p.actividades,
-     alCambiar:preparacion=>{guardarDiaSemanal(p,ds,preparacion);guardar();}});
+    const {base,orden}=bloquesDia(p,ds,hoy,ctx.inicio);
+    panel.innerHTML=`<p class="suave pequeño">Arrastra las actividades para cambiar su orden.</p><div class="bloques-actividades">${orden.map(id=>`<details class="bloque-actividad" data-bloque-id="${id}"><summary><button type="button" class="comida-agarre" draggable="true" data-arrastrar-bloque aria-label="Reordenar actividad">${iconoArrastrar}</button>${iconoActividad(id==='calentamiento'||id==='enfriamiento'?'movilidad':id,estado.perfil?.sexo)}<b>${escapar(nombreActividad(id))}</b></summary><div data-bloque-editor="${id}"></div></details>`).join('')}</div>`;
+    const actualizar=()=>{aplicarBloques(p,ds,base);guardar();};
+    for(const id of orden){const caja=panel.querySelector(`[data-bloque-editor="${id}"]`);
+     if(id==='ruta'){
+      caja.innerHTML=`<div class="semana-ruta"><label class="check"><input type="checkbox" data-ruta-semana ${d.ruta.activa?'checked':''}>Ruta activa</label><label class="campo"><span>Tipo de sesión</span><select data-tipo-ruta>${TIPOS_SESION.map(t=>`<option value="${t.id}" ${t.id===d.ruta.tipo?'selected':''}>${escapar(t.nombre)}</option>`).join('')}</select></label></div>`;
+      caja.querySelector('[data-ruta-semana]').onchange=e=>{d.ruta.activa=e.target.checked;guardar();};caja.querySelector('[data-tipo-ruta]').onchange=e=>{d.ruta.tipo=e.target.value;guardar();};continue;
+     }
+     const movilidad=['calentamiento','enfriamiento'].includes(id),grupo=movilidad?id:'ejercicios';
+     montarPreparacion(caja,{modo:'bloque',rutina:null,ejercicios:[],ajustes:{calentamiento:base.calentamiento,enfriamiento:base.enfriamiento,ejercicios:movilidad?[]:d.actividadesDia[id]},grupos:[grupo],editarAlInicio:true,controlesExternos:true,actividades:movilidad?['movilidad']:[id],
+      alCambiar:preparacion=>{if(movilidad)base[id]=preparacion[id];else d.actividadesDia[id]=preparacion.ejercicios;actualizar();}});
+    }
+    alSalir(conectarOrdenComidas(panel,ids=>{d.ordenActividades=ids;actualizar();},{asaSelector:'[data-arrastrar-bloque]',filaSelector:'.bloque-actividad',idClave:'bloqueId'}));
    };
    tarjeta.addEventListener('toggle',()=>{if(tarjeta.open){abiertas.add(ds);dibujar();}else abiertas.delete(ds);});if(tarjeta.open)dibujar();
   }

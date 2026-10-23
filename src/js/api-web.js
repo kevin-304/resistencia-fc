@@ -136,6 +136,9 @@ window.api = {
   },
   leer: async (rel) => { const id = await activo(); return id ? leer(ruta(id, rel)) : null; },
   escribir: async (rel, valor) => { const id = await activo(); if (!id) throw new Error('No hay perfil abierto'); await escribirEn(id, rel, valor); return true; },
+  guardarReporteAuto:async(nombre,bytes,carpeta)=>{const id=await activo();if(carpeta!==`celular/${id}`||!/^Semana-\d{4}-\d{2}-\d{2}\.pdf$/.test(nombre))throw Error('Perfil o reporte inválido');await escribir(ruta(id,'reportes/'+nombre),{bytes:new Uint8Array(bytes),actualizado:new Date().toISOString()});return true;},
+  listarReportesAuto:async()=>{const id=await activo(),prefijo=ruta(id,'reportes/');const lista=[];for(const k of await claves())if(k.startsWith(prefijo)&&/Semana-\d{4}-\d{2}-\d{2}\.pdf$/.test(k)){const v=await leer(k);lista.push({nombre:k.slice(prefijo.length),actualizado:v.actualizado});}return lista.sort((a,b)=>b.nombre.localeCompare(a.nombre));},
+  abrirReporteAuto:async(nombre)=>{const id=await activo();if(!/^Semana-\d{4}-\d{2}-\d{2}\.pdf$/.test(nombre))return;const v=await leer(ruta(id,'reportes/'+nombre));if(!v)throw Error('No se encontró el reporte');const url=URL.createObjectURL(new Blob([v.bytes],{type:'application/pdf'})),a=document.createElement('a');a.href=url;a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);},
   leerDias: async () => { const id = await activo(); return id ? diasDe(id) : {}; },
   listarPerfiles: async () => {
     await migracion;

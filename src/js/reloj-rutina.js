@@ -33,6 +33,7 @@ function movilidadGuiada(lista, bloque, duracion, pausa) {
 }
 
 function etapasPersonalizadas(ejercicios) {
+ if(ejercicios.some(e=>e.actividad)){const orden=[...new Set(ejercicios.map(e=>e.actividad||'rutina'))];return orden.flatMap(a=>etapasPersonalizadas(ejercicios.filter(e=>(e.actividad||'rutina')===a).map(({actividad,...e})=>e)).map(e=>({...e,actividad:a})));}
  const grupos=['Principal','Abdomen','Cardio','Rutina'];
  return grupos.flatMap(bloque=>{
   const lista=ejercicios.filter(e=>(e.bloque||'Principal')===bloque);

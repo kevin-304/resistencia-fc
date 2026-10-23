@@ -1,3 +1,4 @@
+import {mostrarSemanales} from './vistas/semanales.js';
 // Arranque de la versión celular. Primero se instala window.api (almacenamiento del teléfono).
 import './api-web.js';
 import { estado, cargar, alGuardar, guardarTodoYa } from './estado.js';
@@ -13,7 +14,6 @@ import { mostrarMovilAjustes } from './vistas/movil-ajustes.js';
 import { mostrarPerfiles } from './vistas/perfiles.js';
 import { mostrarNube } from './vistas/nube.js';
 import { mostrarMiRutina } from './vistas/mirutina.js';
-import { mostrarMiPlan } from './vistas/miplan.js';
 import { mostrarEstadisticas } from './vistas/estadisticas.js';
 import { mostrarRutas } from './vistas/rutas.js';
 import { mostrarPersonalizacion } from './vistas/personalizacion.js';
@@ -24,7 +24,7 @@ const MENU = [
   { id: 'calendario', nombre: 'Calendario', icono: I.calendario },
   { id: 'mirutina', nombre: 'Mi rutina', icono: I.comp },
   { id: 'estadisticas', nombre: 'Estadísticas', icono: I.estadisticas },
-  { id: 'miplan', nombre: 'Mi plan', icono: I.plan },
+  { id:'reporte',nombre:'Reportes PDF',icono:I.reporte },
   { id: 'rutas', nombre: 'Rutas y terreno', icono: I.rutas },
   { id: 'enviar', nombre: 'Enviar', icono: I.descargar },
   { id: 'ajustes', nombre: 'Perfil', icono: I.perfil },
@@ -33,6 +33,7 @@ const MENU = [
 ];
 
 const VISTAS = {
+  reporte:mostrarSemanales,
   dia: mostrarDia,
   calendario: mostrarCalendario,
   enviar: mostrarEnviar,
@@ -41,7 +42,7 @@ const VISTAS = {
   perfiles: mostrarPerfiles,
   nube: mostrarNube,
   mirutina: mostrarMiRutina,
-  miplan: mostrarMiPlan,
+  miplan: mostrarMiRutina,
   estadisticas: mostrarEstadisticas,
   rutas: mostrarRutas,
   personalizacion: mostrarPersonalizacion,
@@ -81,7 +82,7 @@ function irA(destino) {
 async function iniciar() {
   const menu = document.getElementById('menu-movil');
   const grupo=(titulo,ids)=>`<details class="menu-grupo" open><summary>${titulo}</summary>${MENU.filter(m=>ids.includes(m.id)).map(m=>`<button type="button" data-ir="${m.id}">${m.icono}<span>${m.nombre}</span></button>`).join('')}</details>`;
-  menu.innerHTML = grupo('Mi entrenamiento',['hoy','calendario','mirutina','estadisticas'])+grupo('Plan y datos',['miplan','rutas','enviar'])+grupo('Mi cuenta',['ajustes','personalizacion','perfiles']);
+  menu.innerHTML = grupo('Mi entrenamiento',['hoy','calendario','mirutina','estadisticas'])+grupo('Plan y datos',['rutas','reporte','enviar'])+grupo('Mi cuenta',['ajustes','personalizacion','perfiles']);
   menu.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => navegar(b.dataset.ir)));
   const lateral=document.getElementById('menu-lateral');
   document.getElementById('abrir-menu').addEventListener('click',abrirMenu);

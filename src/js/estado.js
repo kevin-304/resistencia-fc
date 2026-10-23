@@ -1,3 +1,4 @@
+import {programarReportes} from './reportes-semanales.js';
 // Estado de la aplicación: todo lo leído de la carpeta de datos vive aquí en memoria
 // y cada cambio se guarda solo, a los pocos milisegundos, en su archivo .json.
 
@@ -54,6 +55,7 @@ export async function cargar() {
   estado.rutas = rutas || [];
   estado.frecuentes = frecuentes || [];
   estado.dias = dias || {};
+  if(perfil)programarReportes(estado,window.api);
   return !!perfil;
 }
 
@@ -72,6 +74,7 @@ async function escribir(rel, obj) {
   try {
     await window.api.escribir(rel, obj);
     avisar('guardado');
+    if(rel==='perfil.json'||rel==='config.json'||rel.startsWith('dias/'))programarReportes(estado,window.api);
   } catch (e) {
     console.error(e);
     avisar('error', e.message);

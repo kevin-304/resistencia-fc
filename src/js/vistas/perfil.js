@@ -1,3 +1,5 @@
+import {montarExtrasPerfil} from '../identidad-perfil.js';
+import {iconoActividad} from '../iconos-actividades.js';
 // Creación del perfil la primera vez (bienvenida) y edición del perfil después.
 import { estado, guardarPerfil, guardarRutas, guardarConfig, nuevaRuta, subtitulo, reiniciarEstado } from '../estado.js';
 import { pesoMetaSugerido, imc, INICIO_POR_DEFECTO, planDesdeActividades, ACTIVIDADES } from '../plan.js';
@@ -123,10 +125,10 @@ export async function mostrarBienvenida(cont) {
 
     if (paso === 2) {
       caja.innerHTML = `<div class="tarjeta-cab"><h2>¿Qué entrenamiento haces?</h2></div>
-        <p class="suave" style="margin-bottom:14px">Marca todo lo que vas a hacer. Con esto armo tu semana; después la puedes ajustar en <b>Mi plan</b>.</p>
+        <p class="suave" style="margin-bottom:14px">Marca todo lo que vas a hacer. Con esto armo tu semana; después la puedes ajustar en <b>Mi rutina</b>.</p>
         <div class="actividades">${ACTIVIDADES.map((a) => `<button type="button" class="actividad ${actividades.has(a.id) ? 'activo' : ''}" data-act="${a.id}">
-          <span class="emoji">${a.emoji}</span><b>${a.nombre}</b><small>${a.desc}</small></button>`).join('')}</div>
-        <label class="check" style="margin-top:14px"><input type="checkbox" id="con-ayuno" ${conAyuno ? 'checked' : ''}><span>También hago <b>ayuno intermitente</b> (16:8 con entrada gradual; se ajusta en Mi plan)</span></label>
+          ${iconoActividad(a.id,p.sexo)}<b>${a.nombre}</b><small>${a.desc}</small></button>`).join('')}</div>
+        <label class="check" style="margin-top:14px"><input type="checkbox" id="con-ayuno" ${conAyuno ? 'checked' : ''}><span>También hago <b>ayuno intermitente</b> (16:8 con entrada gradual; se ajusta en Mi rutina)</span></label>
         <div id="bloque-ruta" class="${actividades.has('ruta') ? '' : 'oculto'}">
           <h3 style="margin:20px 0 6px">Tu ruta principal</h3>
           <p class="suave pequeño" style="margin-bottom:10px">Donde sales a correr o caminar. El desnivel puedes dejarlo vacío y ponerlo después.</p>
@@ -159,7 +161,7 @@ export async function mostrarBienvenida(cont) {
       caja.querySelector('#atras').addEventListener('click', () => { leerRuta(); paso = 1; pintar(); });
       caja.querySelector('#terminar').addEventListener('click', async () => {
         leerRuta();
-        if (!actividades.size && !(await confirmar('¿Sin actividades?', 'No marcaste ningún entrenamiento: tu plan empezará en blanco y lo armas en "Mi plan".', 'Seguir así'))) return;
+        if (!actividades.size && !(await confirmar('¿Sin actividades?', 'No marcaste ningún entrenamiento: tu plan empezará en blanco y lo armas en "Mi rutina".', 'Seguir así'))) return;
         if (!actividades.has('ruta')) Object.assign(ruta, { nombre: 'Mi ruta', terreno: 'montana', distancia: null });
         await window.api.crearPerfil(p.nombre);
         reiniciarEstado();
@@ -200,7 +202,7 @@ export function mostrarPerfil(cont) {
   const edad = p.nacimiento ? Math.floor(diasEntre(p.nacimiento, hoyISO()) / 365.25) : null;
   cont.innerHTML = `
     <div class="cabecera"><div class="titulo"><h1>Perfil</h1><p>Tus datos de partida y metas.</p></div></div>
-    <div class="rejilla rejilla-2" style="align-items:start">
+    <div data-extras-perfil></div><div class="rejilla rejilla-2" style="align-items:start">
       <section class="tarjeta" id="form">
         ${formularioPerfil(p)}
         <div style="display:flex;justify-content:flex-end;margin-top:18px"><button class="boton primario" id="guardar">${I.guardar} Guardar cambios</button></div>
@@ -234,6 +236,7 @@ export function mostrarPerfil(cont) {
         </div>
       </div>
     </section>`;
+  montarExtrasPerfil(cont.querySelector('[data-extras-perfil]'),(campo,valor)=>{if(valor)p[campo]=valor;else delete p[campo];});
   cont.querySelector('#exportar').addEventListener('click', async () => {
     try {
       const ruta = await window.api.exportarPerfil();

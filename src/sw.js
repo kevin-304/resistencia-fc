@@ -1,5 +1,5 @@
-// Generado por scripts/construir-web.js — versión 2026-10-23T22:36:44.615Z
-const CACHE = 'rfc-1792795004616';
+// Generado por scripts/construir-web.js — versión 2026-10-23T23:21:38.016Z
+const CACHE = 'rfc-1792797698017';
 const ARCHIVOS = [
   "./",
   "estilos.css",
@@ -42,6 +42,7 @@ const ARCHIVOS = [
   "js/alimentos.js",
   "js/api-web.js",
   "js/avisos-reloj.js",
+  "js/bloques-actividad.js",
   "js/catalogo-ejercicios.js",
   "js/comidas.js",
   "js/editor-sesion.js",
@@ -49,8 +50,10 @@ const ARCHIVOS = [
   "js/figura-reloj.js",
   "js/graficos.js",
   "js/guias-rutina.js",
+  "js/iconos-actividades.js",
   "js/iconos-alimentos.js",
   "js/iconos.js",
+  "js/identidad-perfil.js",
   "js/ilustraciones-personas.js",
   "js/ilustraciones-vector.js",
   "js/metricas.js",
@@ -64,6 +67,7 @@ const ARCHIVOS = [
   "js/preparacion-sesion.js",
   "js/pulsacion-prolongada.js",
   "js/reloj-rutina.js",
+  "js/reportes-semanales.js",
   "js/resumen-rutina.js",
   "js/semana-editable.js",
   "js/tarjetas.js",
@@ -84,6 +88,7 @@ const ARCHIVOS = [
   "js/vistas/perfiles.js",
   "js/vistas/personalizacion.js",
   "js/vistas/rutas.js",
+  "js/vistas/semanales.js",
   "manifest.webmanifest",
   "movil.css",
   "movil.html",

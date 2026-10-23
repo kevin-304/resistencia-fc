@@ -834,3 +834,27 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .reloj-cal-resumen>summary .restablecer-mantener {margin-left:16px;font-size:.85em;padding:8px 12px;}
 .temporizador [data-reloj-restablecer-cal][hidden] {display:none!important;}
 @media(max-width:520px){.reloj-cal-resumen>summary .restablecer-mantener {display:block;margin:10px 0 0;}}
+.actividad-silueta {width:38px;height:38px;flex-shrink:0;color:var(--texto,#30343b);}
+.semana-opcion .actividad-silueta {width:34px;height:34px;}
+.bloques-actividades {display:grid;gap:10px;margin-top:12px;}
+.bloque-actividad {border:1px solid var(--borde,#dce0e6);border-radius:10px;overflow:hidden;}
+.bloque-actividad>summary {display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;list-style:none;}
+.bloque-actividad>summary::after {content:'⌄';margin-left:auto;}
+.bloque-actividad[open]>summary::after {content:'⌃';}
+.bloque-actividad>[data-bloque-editor] {padding:0 14px 14px;}
+.bloque-actividad summary::-webkit-details-marker {display:none;}
+@media(max-width:520px){.semana-opcion {flex-wrap:wrap;}.semana-opcion .actividad-silueta {width:27px;height:27px;}.semana-opcion span {flex:1 1 75px;}}
+.perfil-imagenes {padding:0;overflow:hidden;margin-bottom:16px;}
+.perfil-portada {height:170px;background:var(--superficie-2,#e8ecef);}
+.perfil-portada img {width:100%;height:100%;object-fit:cover;}
+.perfil-identidad {display:flex;align-items:center;gap:14px;padding:0 20px;margin-top:-30px;position:relative;}
+.perfil-foto {width:88px;height:88px;flex-shrink:0;border:4px solid var(--superficie,#fff);border-radius:50%;overflow:hidden;background:#eceff1;display:grid;place-items:center;color:#333;font-size:2em;}
+.perfil-foto img,.avatar img {width:100%;height:100%;object-fit:cover;}
+.perfil-fotos-acciones {display:flex;flex-wrap:wrap;gap:8px;padding:16px 20px;}
+.perfil-fotos-acciones label {cursor:pointer;}
+.perfil-metas {margin-bottom:16px;}
+.perfil-metas summary {cursor:pointer;font-weight:650;}
+.perfil-metas .campos {margin-top:16px;}
+.avatar {overflow:hidden;}
+.lista-reportes {display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
+[data-reportes-semanales] {margin-bottom:16px;}
