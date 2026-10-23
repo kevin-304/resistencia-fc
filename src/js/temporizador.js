@@ -47,11 +47,11 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   caja.innerHTML = `<section class="temporizador" aria-label="Temporizador guiado de la rutina">
     <div class="reloj-cabecera"><h3 data-reloj-titulo>Rutina</h3><span data-reloj-total></span></div>
     <div class="reloj-inicio" data-reloj-inicio><button type="button" class="boton" data-reloj-calentar>Comenzar calentamiento</button></div>
-    <div class="reloj-botones">
+    <div class="reloj-botones"><span class="reloj-contexto" data-reloj-contexto></span>
       <button type="button" class="boton comenzar-verde" data-reloj-iniciar>Comenzar rutina</button>
       <button type="button" class="boton" data-reloj-serie>Terminé la serie</button>
       <button type="button" class="boton" data-reloj-anterior aria-label="Paso anterior" title="Paso anterior">←</button>
-      <button type="button" class="boton" data-reloj-extra>+30 s</button>
+      <button type="button" class="boton" data-reloj-extra hidden>+30 s</button>
       <button type="button" class="boton" data-reloj-saltar aria-label="Paso siguiente" title="Paso siguiente">→</button>
       <button type="button" class="boton fantasma" data-reloj-finalizar>Finalizar</button>
       <button type="button" class="boton fantasma" data-reloj-reiniciar>Reiniciar</button>
@@ -144,6 +144,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     el('vuelta').textContent = e ? [e.vuelta ? `Vuelta ${e.vuelta} de ${e.vueltas}` : '', !enDescanso && e.lado || '', !enDescanso && e.clase === 'serie' ? `Sugerido: ${e.objetivo}` : ''].filter(Boolean).join(' · ') : '';
     el('cuenta').textContent = textoReloj(reloj.restanteMs / 1000);
     el('indicacion').textContent = reloj.terminado ? 'Sesión terminada.' : reloj.descansoSerie ? 'Descansa.' : e.indicacion || (enDescanso ? 'Recupera y prepara el siguiente movimiento.' : 'Mantén el control; puedes pausar si lo necesitas.');
+    el('indicacion').textContent = el('indicacion').textContent.replace(/^BLOQUE\s+[^·•–—]+[·•–—]\s*/i,'').replace(/^BLOQUE PRINCIPAL\s*[·•–—-]?\s*/i,'');
     const siguiente = sesion.etapas[reloj.indice + 1];
     el('siguiente').textContent = siguiente ? `Después: ${siguiente.nombre}${siguiente.lado ? ' · ' + siguiente.lado : ''}` : reloj.terminado ? '' : 'Después: fin de la sesión';
     el('transcurrido').textContent = `Tiempo: ${textoReloj(reloj.transcurridoMs / 1000)} · Restante: ${textoReloj(faltan)}`;
@@ -158,14 +159,15 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     el('saltar').disabled = reloj.terminado;
     el('serie').hidden = !iniciadoEn || !e || e.clase !== 'serie' || reloj.descansoSerie;
     el('serie').disabled = !reloj.enMarcha;
-    el('extra').hidden = !iniciadoEn;
+    el('extra').hidden = true;
     el('extra').disabled = reloj.terminado;
     el('extra').textContent = enDescanso ? '+30 s descanso' : '+30 s';
     el('anterior').hidden = !iniciadoEn;
     el('anterior').disabled = reloj.indice === 0;
     el('inicio').hidden = !!iniciadoEn;
     caja.classList.toggle('reloj-activo',!!iniciadoEn);
-    el('titulo').textContent = modo === 'calentamiento' ? 'Calentamiento' : 'Rutina';
+    caja.querySelector('.temporizador').classList.toggle('reloj-activo',!!iniciadoEn);
+    el('contexto').textContent = e?.bloque === 'Calentamiento' ? 'Calentamiento' : e?.bloque === 'Principal' ? 'Rutina' : e?.bloque || 'Rutina';
     for (const n of ['modo', 'trabajo', 'descanso']) if (el(n)) el(n).disabled = reloj.enMarcha;
     el('mensaje').textContent = mensaje;
   }

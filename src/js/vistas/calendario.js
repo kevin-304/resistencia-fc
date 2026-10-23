@@ -1,5 +1,4 @@
 // Pantalla de inicio: calendario del mes con marcas de cumplimiento en cada día.
-import { resumenPlan } from '../plan.js';
 import { estado, contexto } from '../estado.js';
 import { metricasDia, metricasRango, resumen } from '../metricas.js';
 import { navegar } from '../nav.js';
@@ -84,18 +83,13 @@ function celda(fecha, ctx, hoy, mesActual) {
   let textoPlan = '';
   if (p.antesDelPlan) textoPlan = '';
   else if (p.descanso) textoPlan = 'Descanso';
-  else textoPlan = resumenPlan(p);
-
-  const datos = [];
-  if (m.rutaKm) datos.push(`${num(m.rutaKm, 2)} km`);
-  if (m.peso) datos.push(`${num(m.peso, 1)} kg`);
-  if (m.sueno != null && !datos.length) datos.push(formatoHoras(m.sueno));
+  else textoPlan = (p.complemento?.nombre || p.ruta?.titulo || '').replace(/^(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s*[·:–-]\s*/i,'').replace(/\s*[·–-]\s*\d+\s*min.*$/i,'').trim();
 
   const d = deISO(fecha);
   return `<button class="${clases.join(' ')}" data-fecha="${fecha}">
-    <div class="c-top"><span class="c-num">${d.getDate()}</span>${p.ds === 1 && !p.antesDelPlan ? `<span class="c-sem">Sem ${p.semana}</span>` : ''}${fecha === ctx.inicio ? '<span class="c-sem" style="color:var(--acento)">Inicio</span>' : ''}</div>
+    <div class="c-top"><span class="c-num">${d.getDate()}</span></div>
     <div class="c-plan">${escapar(textoPlan)}</div>
-    ${datos.length ? `<div class="c-datos">${datos.map((x) => `<span>${x}</span>`).join('')}</div>` : ''}
+    
     ${p.antesDelPlan && !m.registrado ? '' : `<div class="c-marcas">${marcasDia(m)}</div>`}
   </button>`;
 }

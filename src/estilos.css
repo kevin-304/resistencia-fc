@@ -642,3 +642,23 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .reloj-siguiente { font-size: .8em; }
 @media(max-width:650px) { .reloj-botones { grid-template-columns: 40px minmax(80px,1fr) minmax(82px,1fr) 40px; gap: 5px; } .reloj-botones .boton { padding: 10px 5px; font-size: .85em; } }
 .reloj-inicio[hidden] { display: none !important; }
+/* Controles de sesión compactos y agrupados. */
+.temporizador .reloj-cabecera, .temporizador .reloj-etiqueta,
+.temporizador .reloj-vuelta, .temporizador .reloj-siguiente,
+.temporizador .reloj-progreso, .temporizador .reloj-mensaje { display: none; }
+.temporizador .reloj-botones { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.temporizador.reloj-activo .reloj-botones .boton { flex: none; min-width: 0; min-height: 38px; height: 38px; padding: 6px 13px; font-size: .85em; }
+.temporizador.reloj-activo [data-reloj-anterior], .temporizador.reloj-activo [data-reloj-saltar] { width: 38px; padding: 6px; font-size: 1.2em; }
+.temporizador.reloj-activo [data-reloj-anterior] { margin-left: 10px; margin-right: -5px; }
+.temporizador.reloj-activo [data-reloj-finalizar] { margin-left: 12px; }
+.reloj-contexto { font-size: .85em; font-weight: 650; margin-right: 8px; }
+.temporizador:not(.reloj-activo) .reloj-contexto { display: none; }
+.temporizador:not(.reloj-activo) { display: grid; grid-template-columns: repeat(2,minmax(0,220px)); gap: 20px; justify-content: center; }
+.temporizador:not(.reloj-activo) .reloj-inicio, .temporizador:not(.reloj-activo) .reloj-botones { margin: 0; display: contents; }
+.temporizador:not(.reloj-activo) [data-reloj-calentar], .temporizador:not(.reloj-activo) [data-reloj-iniciar] { width: 100%; min-width: 0; height: 56px; min-height: 56px; padding: 10px 14px; font-size: 1em; }
+.temporizador:not(.reloj-activo) [data-reloj-sesion] { display: none; }
+.temporizador.reloj-activo .reloj-inicio { display: none; }
+.temporizador .reloj-panel { margin-top: 14px; }
+@media(max-width:520px) { .temporizador:not(.reloj-activo) { gap: 12px; } .temporizador:not(.reloj-activo) [data-reloj-calentar], .temporizador:not(.reloj-activo) [data-reloj-iniciar] { font-size: .85em; } .reloj-contexto { width: 100%; text-align:center; margin:0 0 4px; } }
+.temporizador [data-reloj-serie] { display: none !important; }
+.figura-vector { background: transparent; }
