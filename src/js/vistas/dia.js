@@ -18,7 +18,7 @@ const PESTANAS = [
   { id: 'sueno', nombre: 'Sueño' },
   { id: 'ruta', nombre: 'Ruta' },
   { id: 'ejercicio', nombre: 'Calentamiento y ejercicio' },
-  { id: 'comidas', nombre: 'Comida' },
+  { id: 'comidas', nombre: 'Comida, medidas y notas' },
   { id: 'medidas', nombre: 'Medidas y notas' },
 ];
 let pestanaActual = null;
@@ -34,6 +34,7 @@ export function mostrarDia(cont, { fecha }) {
   const m0 = metricasDia(fecha, estado.dias, ctx);
   const plan = m0.plan;
   const d = diaDe(fecha);
+  const rutaVisible=PU.actividades?.includes('ruta') || Object.values(PU.semana||{}).some(d=>d.ruta?.activa);
   const vista = cont;
   cont = document.createElement('div');
   cont.className = 'dia-minimal';
@@ -47,18 +48,16 @@ export function mostrarDia(cont, { fecha }) {
       <button class="boton icono" data-accion="siguiente" title="Día siguiente">${I.derecha}</button>
       <div class="titulo">
         <h1>${fechaLarga(fecha)}${fecha === hoy ? ' <span class="estado-pill ok" style="vertical-align:middle;font-size:.45em">HOY</span>' : ''}</h1>
-        <p>${plan.antesDelPlan ? 'Antes del inicio del plan' : `Semana ${plan.semana} del plan · ${plan.descanso ? 'Día de descanso' : escapar(resumenPlan(plan))}`}</p>
+
       </div>
       ${fecha !== hoy ? '<button class="boton" data-accion="hoy">Ir a hoy</button>' : ''}
     </div>
-    <details class="avisos-dia"><summary>Avisos</summary><div class="alertas" id="alertas"></div></details>
     <div class="dia-paneles secciones-grid">
-      <div class="panel-pestana" data-panel="plan">${tarjetaPlan(plan, d, fecha === hoy)}</div>
+      ${rutaVisible ? `<div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>` : ''}
+      <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}${PU.calentamiento ? plegable('Registro de movilidad', seccionCalentamiento(d, plan)) : ''}</div>
+      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionComidas(d, plan, fecha)}${plegable('Ayuno y agua', seccionAyuno(d, plan))}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
       <div class="panel-pestana" data-panel="sueno">${seccionSueno(d)}</div>
-      <div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>
-      <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}${PU.calentamiento ? plegable('Registrar calentamiento y estiramientos', seccionCalentamiento(d, plan)) : ''}</div>
-      <div class="panel-pestana" data-panel="comidas">${seccionComidas(d, plan, fecha)}${plegable('Ayuno y agua', seccionAyuno(d, plan))}</div>
-      <div class="panel-pestana" data-panel="medidas">${plegable('Medidas corporales', seccionMedidas(d, fecha), true)}${plegable('Notas y estado de ánimo', seccionNotas(d), true)}</div>
+      <div class="panel-pestana" data-panel="plan">${tarjetaPlan(plan, d, fecha === hoy)}<details class="avisos-dia"><summary>Avisos</summary><div class="alertas" id="alertas"></div></details></div>
     </div>`;
 
   const detalles = {plan:['',I.plan],sueno:['',I.sueno],ruta:['',I.rutas],ejercicio:['',I.comp],comidas:['',I.comida],medidas:['',I.balanza]};
@@ -448,10 +447,10 @@ function seccionAyuno(d, plan) {
     ${cabecera('Ayuno y agua', I.ayuno, '--c-ayuno', '<span data-calc="ayuno-estado"></span>')}
     ${a ? `<p class="suave pequeño" style="margin:-6px 0 12px">Hoy: <b>${a.protocolo}</b> · ventana ${a.ventana[0]} – ${a.ventana[1]}</p>` : ''}
     <div class="campos">
-      ${campo('Primera comida (abre la ventana)', 'ayuno.primera', d, { tipo: 'hora', ahora: true })}
-      ${campo('Última comida (cierra la ventana)', 'ayuno.ultima', d, { tipo: 'hora', ahora: true })}
+      ${campo('Primera comida', 'ayuno.primera', d, { tipo: 'hora', ahora: true })}
+      ${campo('Última comida', 'ayuno.ultima', d, { tipo: 'hora', ahora: true })}
     </div>
-    <div style="margin-top:8px">${casilla('Excepción: comí algo pequeño antes de entrenar (ej. un guineo) porque estaba muy cansado o mareado', 'ayuno.guineoAntes', d)}</div>
+    <div style="margin-top:8px">${casilla('Comí antes de entrenar', 'ayuno.guineoAntes', d)}</div>
     <div class="resultado">
       <div><b data-calc="ayuno">—</b><small>de ayuno (desde la última comida de ayer)</small></div>
       <div><b data-calc="ventana">—</b><small>ventana de comida de hoy</small></div>
@@ -475,13 +474,13 @@ function seccionComidas(d, plan, fecha) {
     return `<div class="comida ${fuera ? 'fuera-ventana' : ''}">
       <select data-comida="${c.id}" data-k="tipo">${TIPOS_COMIDA.map((t) => `<option value="${t.id}" ${t.id === c.tipo ? 'selected' : ''}>${t.nombre}</option>`).join('')}</select>
       <input type="time" data-comida="${c.id}" data-k="hora" value="${escapar(c.hora || '')}">
-      <input type="text" data-comida="${c.id}" data-k="desc" value="${escapar(c.desc || '')}" placeholder="¿Qué comiste? (ej. 2 huevos + 1 guineo + 1 naranja)">
+      <input type="text" data-comida="${c.id}" data-k="desc" value="${escapar(c.desc || '')}" placeholder="¿Qué comiste?">
       <div class="con-unidad"><input type="text" inputmode="numeric" data-comida="${c.id}" data-k="kcal" value="${c.kcal ?? ''}" placeholder="Calorías"><em>kcal</em></div>
       <button class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${c.id}" title="Borrar esta comida">${I.basura}</button>
-      <div class="chips">
+      <details class="comida-opciones"><summary>Opciones</summary><div class="chips">
         ${ETIQUETAS_COMIDA.map((e) => `<button type="button" class="chip ${e.limitar ? 'limitar' : e.bueno ? 'bueno' : ''} ${(c.etiquetas || []).includes(e.id) ? 'activo' : ''}" data-etiqueta="${e.id}" data-id-comida="${c.id}">${e.nombre}</button>`).join('')}
         <button type="button" class="chip" data-accion="frecuente-guardar" data-id-comida="${c.id}" title="Guardar para repetirla con un clic" style="margin-left:auto">☆ Guardar como frecuente</button>
-      </div>
+      </div></details>
       <div class="aviso-ventana ${fuera ? '' : 'oculto'}">⚠ Esta hora queda fuera de la ventana de hoy (${plan.ayuno?.ventana.join(' – ')}).</div>
     </div>`;
   }).join('');
@@ -491,13 +490,13 @@ function seccionComidas(d, plan, fecha) {
 
   return `<section class="tarjeta" id="sec-comidas">
     ${cabecera('Comidas', I.comida, '--acento', '<span class="suave num" data-calc="kcal"></span>')}
-    ${filas || '<p class="suave" style="margin-bottom:10px">Aún no hay comidas registradas este día.</p>'}
+    ${filas}
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button class="boton primario" data-accion="agregar-comida">${I.mas} Añadir comida</button>
     </div>
-    ${estado.frecuentes.length ? `<div class="frecuentes"><span class="suave pequeño">Frecuentes:</span>${estado.frecuentes.map((f) => `<button class="chip" data-accion="frecuente-usar" data-id="${f.id}" title="${escapar(f.desc)}">${escapar(f.desc.length > 34 ? f.desc.slice(0, 32) + '…' : f.desc)}${f.kcal ? ` · ${f.kcal} kcal` : ''} <span data-accion="frecuente-quitar" data-id="${f.id}" title="Quitar de frecuentes" style="opacity:.5;margin-left:4px">✕</span></button>`).join('')}</div>` : ''}
+    ${estado.frecuentes.length ? `<details class="desplegable"><summary>Frecuentes</summary><div class="frecuentes">${estado.frecuentes.map((f) => `<button class="chip" data-accion="frecuente-usar" data-id="${f.id}" title="${escapar(f.desc)}">${escapar(f.desc.length > 34 ? f.desc.slice(0, 32) + '…' : f.desc)}${f.kcal ? ` · ${f.kcal} kcal` : ''} <span data-accion="frecuente-quitar" data-id="${f.id}" title="Quitar de frecuentes" style="opacity:.5;margin-left:4px">✕</span></button>`).join('')}</div></details>` : ''}
     ${plegable('Frutas y otros alimentos', `<div class="catalogo-agregar"><label class="campo"><span>Añadir al registro de hoy</span><select data-catalogo><option value="">Selecciona un alimento</option>${ALIMENTOS.map(a=>`<option value="${a.id}">${a.emoji} ${a.nombre}</option>`).join('')}</select></label><button type="button" class="boton" data-accion="catalogo-agregar">Añadir</button></div>
-      <div class="alimentos-cards">${alimentosDelDia(PU,d).map((a) => contador(`${escapar(a.emoji || '')} ${escapar(a.nombre)}`, a.id, a.nota || a.max ? ` <span class="suave pequeño">(${escapar(a.nota || `máx. ${a.max}`)})</span>` : '')).join('')}</div>`, true)}
+      <div class="alimentos-cards">${alimentosDelDia(PU,d).map((a) => contador(`${escapar(a.emoji || '')} ${escapar(a.nombre)}`, a.id, a.nota || a.max ? ` <span class="suave pequeño">(${escapar(a.nota || `máx. ${a.max}`)})</span>` : '')).join('')}</div>`)}
   </section>`;
 }
 
@@ -595,8 +594,8 @@ function filaSeries(e, valores, tipo, todos) {
 function seccionMedidas(d, fecha) {
   const lunes = diaSemana(fecha) === 1;
   return `<section class="tarjeta">
-    ${cabecera('Medidas', I.balanza, '--g-peso', lunes ? '<span class="estado-pill nada">Lunes: día de pesarse</span>' : '')}
-    <p class="suave pequeño" style="margin:-6px 0 12px">1 vez por semana, mismo día y hora, en ayunas, después de ir al baño. Cintura a la altura del ombligo.</p>
+    ${cabecera('Medidas', I.balanza, '--g-peso')}
+
     <div class="campos">
       ${campo('Peso', 'medidas.peso', d, { tipo: 'num', unidad: 'kg' })}
       ${campo('Cintura', 'medidas.cintura', d, { tipo: 'num', unidad: 'cm' })}
@@ -610,7 +609,7 @@ function seccionNotas(d) {
   return `<section class="tarjeta">
     ${cabecera('Notas del día', I.notas, '--texto-suave')}
     <label class="campo" style="margin-bottom:12px"><span>¿Cómo me sentí?</span>${escala('animo', d, 5, ['Muy mal', 'Mal', 'Normal', 'Bien', 'Excelente'])}</label>
-    <textarea data-c="notas" placeholder="Cómo te fue, qué comiste fuera de lo normal, cómo estuvo la ruta…">${escapar(d.notas || '')}</textarea>
+    <textarea data-c="notas" placeholder="Notas del día">${escapar(d.notas || '')}</textarea>
   </section>`;
 }
 
