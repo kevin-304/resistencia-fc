@@ -23,10 +23,30 @@ export const ENFRIAMIENTO_GUIADO = [
   ['Espalda baja', 'est-espalda', 'Relaja la espalda y respira con normalidad, sin forzar.'],
 ];
 function movilidadGuiada(lista, bloque, duracion, pausa) {
-  return lista.flatMap(([nombre, imagen, indicacion, lado]) => [
-    ...intervalo({ nombre, id: `movilidad-${imagen}`, unidad: 's', valor: duracion, lado, nota: indicacion }, duracion, { bloque, imagen: `img/ejercicios/${imagen}.webp` }),
-    paso('Descanso y preparación', pausa, { bloque, clase: 'descanso' }),
-  ]);
+  return lista.flatMap((item,i) => {
+    const e=Array.isArray(item)?{nombre:item[0],id:`movilidad-${item[1]}`,unidad:'s',valor:duracion,nota:item[2],lado:item[3],imagen:`img/ejercicios/${item[1]}.webp`}:item;
+    return Array.from({length:entero(e.series,1,20)},(_,v)=>[
+      ...intervalo(e,entero(e.valor,duracion,600),{bloque,imagen:e.imagen,vuelta:v+1,vueltas:entero(e.series,1,20)}),
+      ...(Number(e.descansoSeg??pausa)>0?[paso('Descanso',Math.min(600,Number(e.descansoSeg??pausa)),{bloque,clase:'descanso'})]:[]),
+    ]).flat();
+  });
+}
+
+function etapasPersonalizadas(ejercicios) {
+ const grupos=['Principal','Abdomen','Cardio','Rutina'];
+ return grupos.flatMap(bloque=>{
+  const lista=ejercicios.filter(e=>(e.bloque||'Principal')===bloque);
+  const vueltas=Math.max(0,...lista.map(e=>entero(e.series,1,20)));
+  const etapas=[];
+  for(let v=1;v<=vueltas;v++)for(const e of lista){
+   if(v>entero(e.series,1,20))continue;
+   const extra={bloque,vuelta:v,vueltas};
+   if(e.unidad==='reps')etapas.push(paso(e.nombre,entero(e.duracionSeg,40,600),{...extra,clase:'serie',ejercicioId:e.id,objetivo:objetivo(e),indicacion:e.nota||'Completa las repeticiones y descansa el tiempo restante.'}));
+   else etapas.push(...intervalo(e,entero(e.duracionSeg??e.valor,40,600),extra));
+   if(Number(e.descansoSeg)>0)etapas.push(paso('Descanso',Math.min(600,Number(e.descansoSeg)),{...extra,clase:'descanso'}));
+  }
+  return etapas;
+ });
 }
 
 export function avisoCuenta(reloj) {
@@ -44,21 +64,30 @@ function intervalo(e, segundos, extra = {}) {
   ];
 }
 
-export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo = 40, descanso = 20 } = {}) {
+export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo = 40, descanso = 20, ajustes = null } = {}) {
   trabajo = entero(trabajo, 40, 300);
   descanso = entero(descanso, 20, 300);
   const principales = ejercicios.filter(e => /-f-/.test(e.id || ''));
   const abdomen = ejercicios.filter(e => /-a-/.test(e.id || ''));
   const cardio = ejercicios.filter(e => /-c-/.test(e.id || ''));
   const es60 = !!rutina?.bloquesMinutos && principales.length === 5 && abdomen.length === 3 && cardio.length === 5;
+  const cal=Array.isArray(ajustes?.calentamiento)?ajustes.calentamiento:CALENTAMIENTO_GUIADO;
+  const enf=Array.isArray(ajustes?.enfriamiento)?ajustes.enfriamiento:ENFRIAMIENTO_GUIADO;
   const etapas = [];
   const agregar = (...p) => etapas.push(...p);
   if (modo === 'calentamiento') {
-    agregar(...movilidadGuiada(CALENTAMIENTO_GUIADO, 'Calentamiento', 50, 10));
-    return { etapas, es60, totalSegundos: 480 };
+    agregar(...movilidadGuiada(cal, 'Calentamiento', 50, 10));
+    return { etapas, es60, totalSegundos: etapas.reduce((n,e)=>n+e.segundos,0) };
+  }
+  if(Array.isArray(ajustes?.ejercicios)){
+    if(modo==='completa')agregar(...movilidadGuiada(cal,'Calentamiento',50,10));
+    const bloque={principal:'Principal',abdomen:'Abdomen',cardio:'Cardio'}[modo];
+    agregar(...etapasPersonalizadas(bloque?ajustes.ejercicios.filter(e=>e.bloque===bloque):ajustes.ejercicios));
+    if(['completa','entrenamiento'].includes(modo))agregar(...movilidadGuiada(enf,'Enfriamiento',40,10));
+    return {etapas,es60:false,totalSegundos:etapas.reduce((n,e)=>n+e.segundos,0)};
   }
   if (es60) {
-    if (modo === 'completa') agregar(...movilidadGuiada(CALENTAMIENTO_GUIADO, 'Calentamiento', 50, 10));
+    if (modo === 'completa') agregar(...movilidadGuiada(cal, 'Calentamiento', 50, 10));
     if (['completa', 'entrenamiento', 'principal'].includes(modo)) {
       const rondas = Math.max(...principales.map(e => entero(e.series, 3, 20)));
       const estaciones = principales.reduce((n, e) => n + entero(e.series, 3, 20), 0);
@@ -67,7 +96,7 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
         if (v > e.series) continue;
         const extra = { bloque: 'Principal', vuelta: v, vueltas: rondas };
         if (e.unidad === 'reps') {
-          agregar(paso(e.nombre, ventana, { ...extra, clase: 'serie', ejercicioId: e.id, objetivo: objetivo(e), indicacion: 'Completa las repeticiones con control y pulsa «Terminé la serie». Descansa lo que quede de esta ventana. Si es por lado, haz ambos lados dentro del mismo tiempo.' }));
+          agregar(paso(e.nombre, ventana, { ...extra, clase: 'serie', ejercicioId: e.id, objetivo: objetivo(e), indicacion: 'Completa las repeticiones con control y descansa el tiempo restante. Si es por lado, haz ambos lados dentro del mismo tiempo.' }));
         } else {
           const duracion = Math.min(entero(e.valor, 40), ventana);
           agregar(...intervalo(e, duracion, extra));
@@ -84,7 +113,7 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
     if (['completa', 'entrenamiento', 'cardio'].includes(modo)) {
       for (const e of cardio) agregar(...intervalo(e, 40, { bloque: 'Cardio de cierre', vuelta: 1, vueltas: 1 }), paso('Descanso y cambio', 20, { bloque: 'Cardio de cierre', clase: 'descanso' }));
     }
-    if (['completa','entrenamiento'].includes(modo)) agregar(...movilidadGuiada(ENFRIAMIENTO_GUIADO, 'Enfriamiento', 40, 10));
+    if (['completa','entrenamiento'].includes(modo)) agregar(...movilidadGuiada(enf, 'Enfriamiento', 40, 10));
   } else {
     // Otras rutinas: conserva sus series y segundos. Las repeticiones usan una
     // ventana orientativa editable: el reloj nunca inventa repeticiones hechas.
@@ -93,7 +122,7 @@ export function construirSesion(rutina, ejercicios, { modo = 'completa', trabajo
       if (v > entero(e.series, 1, 20)) continue;
       const extra = { bloque: 'Rutina', vuelta: v, vueltas: rondas };
       if (e.unidad === 's') agregar(...intervalo(e, entero(e.valor, trabajo) * (e.lado ? 2 : 1), extra));
-      else agregar(paso(e.nombre, trabajo, { ...extra, clase: 'serie', ejercicioId: e.id, objetivo: objetivo(e), indicacion: 'Completa las repeticiones sugeridas con control. Pulsa «Terminé la serie» para descansar el tiempo restante; puedes pausar si necesitas más tiempo.' }));
+      else agregar(paso(e.nombre, trabajo, { ...extra, clase: 'serie', ejercicioId: e.id, objetivo: objetivo(e), indicacion: 'Completa las repeticiones con control y descansa el tiempo restante; puedes pausar si lo necesitas.' }));
       agregar(paso('Descanso', descanso, { ...extra, clase: 'descanso' }));
     }
   }

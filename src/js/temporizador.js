@@ -2,13 +2,17 @@ import { alSalir } from './nav.js';
 import { construirSesion, RelojRutina, textoReloj, avisoCuenta } from './reloj-rutina.js';
 import { figuraReloj } from './figura-reloj.js';
 import { patronAviso } from './avisos-reloj.js';
+import { montarPreparacion } from './editor-sesion.js';
+import { crearPreparacion } from './preparacion-sesion.js';
+import { escapar } from './util.js';
 
 const leer = clave => { try { return JSON.parse(sessionStorage.getItem(clave)); } catch { return null; } };
 const escribir = (clave, valor) => { try { sessionStorage.setItem(clave, JSON.stringify(valor)); } catch { /* El reloj funciona aunque no haya almacenamiento disponible. */ } };
 
-export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, tipo, alComenzar, alTerminar }) {
+export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, tipo, alComenzar, alTerminar, ajustes: ajustesIniciales, alEditar }) {
   if (!caja || !ejercicios.length) return;
   const clave = `rfc-reloj:${perfil}:${fecha}:${tipo}`;
+  let ajustes=ajustesIniciales||(!construirSesion(rutina,ejercicios).es60?crearPreparacion(rutina,ejercicios):null),previsualizando=false;
   const preferencias = leer(clave + ':opciones') || {};
   let modo = ['completa', 'entrenamiento', 'calentamiento', 'principal', 'abdomen', 'cardio'].includes(preferencias.modo) ? preferencias.modo : 'entrenamiento';
   let trabajo = Number(preferencias.trabajo) || 40;
@@ -28,8 +32,8 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   let ultimoAviso = null;
   let ultimaFigura = '';
   let iniciadoEn = null;
-  let finalNotificado = false;
-  const calentamiento = construirSesion(rutina,ejercicios,{modo:'calentamiento'});
+  let finalNotificado = false,finalManual=false,saltados=0;
+  let calentamiento = construirSesion(rutina,ejercicios,{modo:'calentamiento',ajustes});
   let resumenCal = leer(clave + ':calentamiento');
   if(resumenCal?.firma !== JSON.stringify(calentamiento.etapas) || resumenCal?.reloj?.indice !== calentamiento.etapas.length)resumenCal=null;
 
@@ -37,13 +41,14 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     ultimaPintada = '';
     ultimaFigura = '';
     ultimoAviso = null;
-    sesion = construirSesion(rutina, ejercicios, { modo, trabajo, descanso });
+    sesion = construirSesion(rutina, ejercicios, { modo, trabajo, descanso, ajustes });
     if (!sesion.es60 && modo !== 'calentamiento') modo = 'entrenamiento';
     firma = JSON.stringify(sesion.etapas);
     const guardado = recuperar ? (leer(clave + ':' + modo) || leer(clave)) : null;
     reloj = new RelojRutina(sesion.etapas, guardado?.firma === firma ? guardado.reloj : null);
     iniciadoEn = guardado?.firma === firma && Number.isFinite(guardado.iniciadoEn) ? guardado.iniciadoEn : null;
     finalNotificado = guardado?.firma === firma && !!guardado.finalNotificado;
+    finalManual=guardado?.firma===firma&&!!guardado.finalManual;saltados=guardado?.firma===firma?Number(guardado.saltados)||0:0;
     if (guardado?.firma === firma && reloj.transcurridoMs > 0 && !reloj.terminado) mensaje = 'En pausa.';
   }
   preparar();
@@ -52,7 +57,8 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     <div class="reloj-eleccion" data-reloj-inicio-cal>
       <button type="button" class="boton" data-reloj-calentar>Comenzar calentamiento</button>
     </div>
-    <details class="reloj-cal-resumen" data-reloj-resumen-cal hidden><summary>Calentamiento <small>Finalizado</small></summary><ul>${[...new Set(calentamiento.etapas.filter(e=>e.clase!=='descanso').map(e=>e.nombre))].map(n=>`<li>${n}</li>`).join('')}</ul></details>
+    <details class="reloj-cal-resumen" data-reloj-resumen-cal hidden><summary>Calentamiento <small>Finalizado</small></summary><ul>${[...new Set(calentamiento.etapas.filter(e=>e.clase!=='descanso').map(e=>e.nombre))].map(n=>`<li>${escapar(n)}</li>`).join('')}</ul></details>
+    <div class="reloj-preparacion" data-reloj-preparacion hidden></div>
     <div class="reloj-botones" data-reloj-controles>
       <span class="reloj-contexto" data-reloj-contexto></span>
       <button type="button" class="boton comenzar-verde" data-reloj-iniciar>Pausar</button>
@@ -80,7 +86,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
 
   if (el('trabajo')) el('trabajo').value = trabajo;
   if (el('descanso')) el('descanso').value = descanso;
-  const guardar = () => { escribir(clave + ':' + modo, { firma, reloj: reloj.guardar(), iniciadoEn, finalNotificado }); ultimaPersistencia = Date.now(); };
+  const guardar = () => { escribir(clave + ':' + modo, { firma, reloj: reloj.guardar(), iniciadoEn, finalNotificado,finalManual,saltados }); ultimaPersistencia = Date.now(); };
   const guardarOpciones = () => escribir(clave + ':opciones', { modo, trabajo, descanso, sonido });
 
   async function despertarAudio() {
@@ -123,10 +129,10 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   function pintar() {
     if (desmontado) return;
     const e = reloj.etapa;
-    if (reloj.terminado && iniciadoEn && !finalNotificado) { finalNotificado = true; if(modo!=='calentamiento')alTerminar?.(Date.now(), iniciadoEn); guardar(); if(modo==='calentamiento'){resumenCal={firma,reloj:reloj.guardar()};el('resumen-cal').open=false;} }
+    if (reloj.terminado && iniciadoEn && !finalNotificado) { finalNotificado = true; alTerminar?.(Date.now(),iniciadoEn,{modo,activoMs:reloj.transcurridoMs,completa:!finalManual&&!saltados}); guardar(); if(modo==='calentamiento'){resumenCal={firma,reloj:reloj.guardar()};el('resumen-cal').open=false;} }
     const enDescanso = e?.clase === 'descanso' || reloj.descansoSerie;
     const faltan = reloj.terminado ? 0 : reloj.restanteMs / 1000 + sesion.etapas.slice(reloj.indice + 1).reduce((n, p) => n + p.segundos, 0);
-    const resumen = JSON.stringify([modo,iniciadoEn,!!resumenCal,reloj.indice, reloj.enMarcha, reloj.descansoSerie, Math.ceil(reloj.restanteMs / 1000), Math.floor(reloj.transcurridoMs / 1000), mensaje]);
+    const resumen = JSON.stringify([modo,iniciadoEn,!!resumenCal,previsualizando,reloj.indice, reloj.enMarcha, reloj.descansoSerie, Math.ceil(reloj.restanteMs / 1000), Math.floor(reloj.transcurridoMs / 1000), mensaje]);
     if (resumen === ultimaPintada) return;
     ultimaPintada = resumen;
     el('panel').classList.toggle('reloj-descanso', !!enDescanso);
@@ -159,11 +165,12 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     el('finalizar').disabled = reloj.terminado;
     el('saltar').disabled = reloj.terminado;
     const calTerminada = modo==='calentamiento' && reloj.terminado;
-    const activa=!!iniciadoEn && !calTerminada;
+    const activa=!!iniciadoEn && !calTerminada && !previsualizando;
     el('controles').hidden = !activa;
     el('sesion').hidden = !activa;
-    el('inicio-cal').hidden = activa || !!resumenCal;
-    el('inicio-rutina').hidden = activa;
+    el('inicio-cal').hidden = activa || !!resumenCal || previsualizando;
+    el('inicio-rutina').hidden = activa || previsualizando;
+    el('preparacion').hidden = !previsualizando;
     el('resumen-cal').hidden = !resumenCal;
     el('anterior').hidden = !iniciadoEn;
     el('anterior').disabled = reloj.indice === 0;
@@ -185,7 +192,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
 
     if (reloj.enMarcha) { pausar('En pausa.'); return; }
     despertarAudio().then(() => { if (!desmontado && reloj.enMarcha) avisar(); });
-    if (!iniciadoEn) { iniciadoEn = Date.now(); alComenzar?.(iniciadoEn); }
+    if (!iniciadoEn) { iniciadoEn = Date.now(); alComenzar?.(iniciadoEn,{modo}); }
     reloj.iniciar(Date.now()); ultimoTick = Date.now(); mensaje = '';
     const lamina = caja.closest('section.tarjeta')?.querySelector('[data-rutina-completa] details');
     if (lamina) lamina.open = false;
@@ -194,22 +201,32 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     el('sesion').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
   el('saltar').addEventListener('click', () => {
+    if(reloj.etapa?.clase!=='descanso'&&reloj.restanteMs>100)saltados++;
     reloj.siguiente(Date.now()); mensaje = '';
     if (reloj.terminado) liberarPantalla();
     avisar(reloj.terminado); guardar(); pintar();
   });
   el('anterior').addEventListener('click', () => { reloj.anterior(Date.now()); finalNotificado = false; mensaje = ''; ultimoAviso = null; guardar(); pintar(); });
   function elegirSesion(nuevo) {
-    if(modo !== nuevo){pausar();modo=nuevo;mensaje='';liberarPantalla();preparar(true);guardarOpciones();pintar();}
-    if(!reloj.enMarcha && !reloj.terminado)el('iniciar').click();
+    pausar();modo=nuevo;previsualizando=true;ultimaPintada='';pintar();
+    montarPreparacion(el('preparacion'),{modo,rutina,ejercicios,ajustes,
+      alCambiar:p=>{ajustes=p;alEditar?.(p);},
+      alCancelar:()=>{previsualizando=false;preparar(true);pintar();},
+      alComenzar:p=>{
+        if(p){ajustes=p;alEditar?.(p);}
+        calentamiento=construirSesion(rutina,ejercicios,{modo:'calentamiento',ajustes});
+        el('resumen-cal').querySelector('ul').innerHTML=[...new Set(calentamiento.etapas.filter(e=>e.clase!=='descanso').map(e=>e.nombre))].map(n=>`<li>${escapar(n)}</li>`).join('');
+        previsualizando=false;preparar(!p);if(reloj.terminado)preparar(false);guardarOpciones();pintar();el('iniciar').click();
+      }
+    });
   }
   el('calentar').addEventListener('click',()=>elegirSesion('calentamiento'));
   el('rutina').addEventListener('click',()=>elegirSesion('entrenamiento'));
   el('finalizar').addEventListener('click', () => {
-    reloj.pausar(Date.now()); reloj.indice = sesion.etapas.length; reloj.restanteMs = 0;
+    finalManual=true;reloj.pausar(Date.now()); reloj.indice = sesion.etapas.length; reloj.restanteMs = 0;
     liberarPantalla(); mensaje = 'Sesión finalizada.'; pintar(); guardar();
   });
-  el('reiniciar').addEventListener('click', () => { if(modo==='calentamiento')resumenCal=null; reloj.reiniciar(); iniciadoEn = null; finalNotificado = false; liberarPantalla(); mensaje = ''; guardar(); pintar(); const lamina = caja.closest('section.tarjeta')?.querySelector('[data-rutina-completa] details'); if(lamina)lamina.open=false; });
+  el('reiniciar').addEventListener('click', () => { if(modo==='calentamiento')resumenCal=null; reloj.reiniciar();finalManual=false;saltados=0; iniciadoEn = null; finalNotificado = false; liberarPantalla(); mensaje = ''; guardar(); pintar(); const lamina = caja.closest('section.tarjeta')?.querySelector('[data-rutina-completa] details'); if(lamina)lamina.open=false; });
   const ocultar = () => {
     if (document.hidden && window.api?.esCelular && reloj.enMarcha) pausar('Se pausó al salir de la app o apagar la pantalla. Pulsa Continuar al volver.');
     if (!document.hidden && reloj.enMarcha) mantenerPantalla();

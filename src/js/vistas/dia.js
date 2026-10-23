@@ -8,6 +8,7 @@ import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
 import { montarTemporizador } from '../temporizador.js';
 import { figuraReloj } from '../figura-reloj.js';
 import { ALIMENTOS, alimentosDelDia } from '../alimentos.js';
+import { comidasVisibles, comidasPredeterminadas, selectorAlimentos, actualizarDescripcion, CATEGORIAS_COMIDA, contadorAyuno } from '../comidas.js';
 import { tarjetaSeccion, conectarTarjetas } from '../tarjetas.js';
 import { resumenRutina } from '../resumen-rutina.js';
 import { I } from '../iconos.js';
@@ -54,10 +55,9 @@ export function mostrarDia(cont, { fecha }) {
     </div>
     <div class="dia-paneles secciones-grid">
       ${rutaVisible ? `<div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>` : ''}
-      <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}${PU.calentamiento ? plegable('Registro de movilidad', seccionCalentamiento(d, plan)) : ''}</div>
-      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionComidas(d, plan, fecha)}${plegable('Ayuno y agua', seccionAyuno(d, plan))}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
-      <div class="panel-pestana" data-panel="sueno">${seccionSueno(d)}</div>
-      <div class="panel-pestana" data-panel="plan">${tarjetaPlan(plan, d, fecha === hoy)}<details class="avisos-dia"><summary>Avisos</summary><div class="alertas" id="alertas"></div></details></div>
+      <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}</div>
+      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionAyuno(d, plan, fecha)}${seccionComidas(d, plan, fecha)}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
+      <div class="panel-pestana" data-panel="plan"><div class="plan-sueno"><div>${tarjetaPlan(plan,d,fecha===hoy)}</div><div class="sueno-compacto">${seccionSueno(d)}</div></div></div>
     </div>`;
 
   const detalles = {plan:['',I.plan],sueno:['',I.sueno],ruta:['',I.rutas],ejercicio:['',I.comp],comidas:['',I.comida],medidas:['',I.balanza]};
@@ -76,25 +76,21 @@ export function mostrarDia(cont, { fecha }) {
   const tipoRutina = d.complemento?.tipo || plan.complemento?.tipo || 'estiramientos';
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
     rutina: rutinaDe(tipoRutina, PU), ejercicios: ejerciciosDe(tipoRutina, plan.semana, PU),
+    ajustes:d.preparacion||null,
+    alEditar:p=>{diaEditable(fecha).preparacion=p;diaCambiado(fecha);const guia=cont.querySelector('[data-guia-ejercicios]');if(guia)guia.outerHTML=guiaEjercicios(p.ejercicios,tipoRutina);const programa=cont.querySelector('.plan-dia');if(programa)programa.outerHTML=tarjetaPlan(plan,diaDe(fecha),fecha===hoy);},
     perfil: estado.carpeta || estado.perfil?.nombre || '', fecha, tipo: tipoRutina,
-    alComenzar: instante => registrarHoraRutina('inicio', instante),
-    alTerminar: (instante, inicio) => registrarHoraRutina('fin', instante, inicio),
+    alComenzar: (instante,datos) => registrarHoraRutina('inicio', instante,null,datos),
+    alTerminar: (instante, inicio, datos) => registrarHoraRutina('fin', instante, inicio,datos),
   });
 
-  function registrarHoraRutina(campo, instante, inicio) {
-    const dia = diaEditable(fecha);
-    prepararDefectos(dia, 'complemento.x', plan);
-    const momento = new Date(instante);
-    dia.complemento[campo] = `${dos(momento.getHours())}:${dos(momento.getMinutes())}`;
-    dia.complemento[campo + 'ISO'] = momento.toISOString();
-    if (campo === 'inicio') { delete dia.complemento.fin; delete dia.complemento.finISO; }
-    if (campo === 'fin' && inicio) dia.complemento.duracion = Math.max(0, Math.round((instante - inicio) / 60000 * 10) / 10);
-    diaCambiado(fecha);
-    for (const k of ['inicio','fin','duracion']) {
-      const input = cont.querySelector(`[data-c="complemento.${k}"]`);
-      if (input) input.value = dia.complemento[k] ?? '';
-    }
-    refrescar();
+  function registrarHoraRutina(campo,instante,inicio,datos={}) {
+    const dia=diaEditable(fecha),cal=datos.modo==='calentamiento';
+    if(!cal)prepararDefectos(dia,'complemento.x',plan);
+    const destino=cal?(dia.calentamientoSesion||={}):dia.complemento;
+    const momento=new Date(instante);destino[campo]=`${dos(momento.getHours())}:${dos(momento.getMinutes())}`;destino[campo+'ISO']=momento.toISOString();
+    if(campo==='inicio'){delete destino.fin;delete destino.finISO;}
+    if(campo==='fin'){destino.duracion=Math.round((datos.activoMs??instante-inicio)/6000)/10;if(datos.completa&&!cal)destino.hecho=true;}
+    diaCambiado(fecha);refrescar();
   }
 
   // ---------- Eventos ----------
@@ -161,6 +157,14 @@ export function mostrarDia(cont, { fecha }) {
     }
     const accion = e.target.closest('[data-accion]')?.dataset.accion;
     const objetivo = e.target.closest('[data-accion]');
+    if(accion==='agregar-item-comida'){
+      const c=buscarComida(objetivo.dataset.idComida),cat=CATEGORIAS_COMIDA.find(x=>x.id===objetivo.dataset.categoria),caja=objetivo.closest('.categoria-comida');
+      const nombre=caja.querySelector('select').value;if(!cat?.alimentos.includes(nombre))return;
+      c.textoLibre??=c.items?.length?'':c.desc||'';c.items||=[];c.items.push({id:idUnico(),categoria:cat.id,nombre,cantidad:caja.querySelector('[data-item-cantidad]').value.trim()});actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
+    }
+    if(accion==='quitar-item-comida'){
+      const c=buscarComida(objetivo.dataset.idComida);c.items=(c.items||[]).filter(x=>x.id!==objetivo.dataset.item);actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
+    }
     if (accion === 'catalogo-agregar') {
       const id = cont.querySelector('[data-catalogo]').value;
       if (!ALIMENTOS.some(a=>a.id===id)) return;
@@ -172,7 +176,7 @@ export function mostrarDia(cont, { fecha }) {
     if (accion === 'agregar-comida') agregarComida({});
     if (accion === 'borrar-comida') {
       const dia = diaEditable(fecha);
-      dia.comidas = (dia.comidas || []).filter((c) => c.id !== b.dataset.idComida);
+      dia.comidas = comidasVisibles(dia).filter((c) => c.id !== b.dataset.idComida);
       diaCambiado(fecha);
       repintarComidas();
     }
@@ -249,7 +253,8 @@ export function mostrarDia(cont, { fecha }) {
   }
 
   function buscarComida(id) {
-    return (diaEditable(fecha).comidas || []).find((c) => c.id === id);
+    const dia=diaEditable(fecha);if(!Array.isArray(dia.comidas))dia.comidas=comidasPredeterminadas();
+    return dia.comidas.find(c=>c.id===id);
   }
 
   function cambiarComida(t) {
@@ -259,9 +264,11 @@ export function mostrarDia(cont, { fecha }) {
     let v = t.value;
     if (k === 'kcal') v = aNumero(v);
     if (v === '' || v == null) delete c[k]; else c[k] = v;
+    if(k==='textoLibre')actualizarDescripcion(c);
+    if(k==='tipo')t.closest('.comida').querySelector('summary b').textContent=TIPOS_COMIDA.find(x=>x.id===c.tipo)?.nombre||'Comida';
     diaCambiado(fecha);
     if (k === 'hora') {
-      const fila = t.closest('.comida');
+      const fila = t.closest('.comida');fila.querySelector('summary small').textContent=c.hora||'';
       const fuera = plan.ayuno && fueraDeVentana(c.hora, plan.ayuno.ventana, diaDe(fecha).ayuno?.guineoAntes);
       fila.classList.toggle('fuera-ventana', !!fuera);
       fila.querySelector('.aviso-ventana')?.classList.toggle('oculto', !fuera);
@@ -271,14 +278,14 @@ export function mostrarDia(cont, { fecha }) {
 
   function agregarComida(datos) {
     const dia = diaEditable(fecha);
-    dia.comidas = dia.comidas || [];
-    const usados = dia.comidas.map((c) => c.tipo);
-    const tipo = datos.tipo && !usados.includes(datos.tipo) ? datos.tipo : TIPOS_COMIDA.find((t) => !usados.includes(t.id))?.id || 'merienda';
+    dia.comidas = comidasVisibles(dia);
+    const tipo = datos.tipo || 'intermedia';
     const ahora = new Date();
-    dia.comidas.push({ id: idUnico(), tipo, hora: fecha === hoyISO() ? `${dos(ahora.getHours())}:${dos(ahora.getMinutes())}` : '', etiquetas: [], ...datos, tipo });
+    const nuevaId=idUnico();
+    dia.comidas.push({ id: nuevaId, tipo, hora: fecha === hoyISO() ? `${dos(ahora.getHours())}:${dos(ahora.getMinutes())}` : '', etiquetas: [], ...datos, tipo });
     dia.comidas.sort((a, b) => (a.hora || '99') < (b.hora || '99') ? -1 : 1);
     diaCambiado(fecha);
-    repintarComidas();
+    repintarComidas(nuevaId);
   }
 
   function alElegirRuta(id) {
@@ -298,9 +305,11 @@ export function mostrarDia(cont, { fecha }) {
     vista.scrollTop = top;
   }
 
-  function repintarComidas() {
+  function repintarComidas(abrirId=null) {
     const viejo = cont.querySelector('#sec-comidas');
+    const abiertas=[...viejo.querySelectorAll('details.comida[open]')].map(x=>x.dataset.comidaId);if(abrirId)abiertas.push(abrirId);
     viejo.outerHTML = seccionComidas(diaDe(fecha), plan, fecha);
+    cont.querySelectorAll('details.comida').forEach(x=>{x.open=abiertas.includes(x.dataset.comidaId);});
     refrescar();
   }
 
@@ -344,14 +353,13 @@ export function mostrarDia(cont, { fecha }) {
       const v = puntos[x.dataset.punto];
       x.className = 'punto' + (v === true ? ' ok' : v === 'parcial' ? ' parcial' : v === false ? ' no' : '');
     });
-    const cajaAlertas = cont.querySelector('#alertas');
-    cajaAlertas.innerHTML = alertasDia(fecha, estado.dias, ctx).map((a) => `<div class="alerta ${a.nivel}">${a.nivel === 'info' ? I.info : I.alerta}<div>${escapar(a.texto)}</div></div>`).join('');
+
   }
 
   // Cuenta regresiva de la ventana de comida (solo hoy)
   if (fecha === hoy && plan.ayuno) {
     const caja = cont.querySelector('#cuenta-regresiva');
-    const tick = () => pintarCuentaRegresiva(caja, plan, fecha);
+    const tick = () => pintarCuentaRegresiva(cont.querySelector('#cuenta-regresiva'), plan, fecha);
     tick();
     const t = setInterval(tick, 1000);
     alSalir(() => clearInterval(t));
@@ -432,7 +440,7 @@ function seccionSueno(d) {
   return `<section class="tarjeta">
     ${cabecera('Sueño', I.sueno, '--c-sueno', '<span data-calc="sueno-estado"></span>')}
     <div class="campos">
-      ${campo('Me dormí (noche anterior)', 'sueno.dormir', d, { tipo: 'hora' })}
+      ${campo('Me dormí', 'sueno.dormir', d, { tipo: 'hora' })}
       ${campo('Me desperté', 'sueno.despertar', d, { tipo: 'hora' })}
       <label class="campo"><span>Calidad del sueño</span>${escala('sueno.calidad', d, 5, ['Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente'])}</label>
     </div>
@@ -440,64 +448,21 @@ function seccionSueno(d) {
   </section>`;
 }
 
-function seccionAyuno(d, plan) {
-  const a = plan.ayuno;
-  const vasos = d.agua || 0;
-  return `<section class="tarjeta">
-    ${cabecera('Ayuno y agua', I.ayuno, '--c-ayuno', '<span data-calc="ayuno-estado"></span>')}
-    ${a ? `<p class="suave pequeño" style="margin:-6px 0 12px">Hoy: <b>${a.protocolo}</b> · ventana ${a.ventana[0]} – ${a.ventana[1]}</p>` : ''}
-    <div class="campos">
-      ${campo('Primera comida', 'ayuno.primera', d, { tipo: 'hora', ahora: true })}
-      ${campo('Última comida', 'ayuno.ultima', d, { tipo: 'hora', ahora: true })}
-    </div>
-    <div style="margin-top:8px">${casilla('Comí antes de entrenar', 'ayuno.guineoAntes', d)}</div>
-    <div class="resultado">
-      <div><b data-calc="ayuno">—</b><small>de ayuno (desde la última comida de ayer)</small></div>
-      <div><b data-calc="ventana">—</b><small>ventana de comida de hoy</small></div>
-    </div>
-    <div class="contador" style="margin-top:14px">
-      <span style="color:var(--c-ayuno)">${I.agua}</span>
-      <span class="nombre">Agua <span class="suave pequeño">(vasos de ${ML_POR_VASO} ml · meta ${PU.metas.aguaVasos || 10} vasos = ${num(((PU.metas.aguaVasos || 10) * ML_POR_VASO) / 1000, 2)} L)</span></span>
-      <span class="suave num" data-calc="agua"></span>
-      <button class="boton" data-sumar="agua" data-paso="-1">−</button>
-      <span class="valor">${vasos}</span>
-      <button class="boton" data-sumar="agua" data-paso="1">+</button>
-    </div>
-  </section>`;
+function seccionAyuno(d,plan,fecha){
+ return `<section class="tarjeta ayuno-simple"><h3>Ayuno y agua</h3><div class="horas-comida">
+ ${campo('Primera comida','ayuno.primera',d,{tipo:'hora'})}${campo('Última comida','ayuno.ultima',d,{tipo:'hora'})}</div>
+ ${fecha===hoyISO()&&plan.ayuno?'<div id="cuenta-regresiva" class="ayuno-contador"></div>':''}
+ <details class="desplegable"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map(x=>`<li>${x}</li>`).join('')}</ul></details>
+ <div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
 }
 
-function seccionComidas(d, plan, fecha) {
-  const comidas = d.comidas || [];
-  const frutas = d.frutas || {};
-  const filas = comidas.map((c) => {
-    const fuera = plan.ayuno && fueraDeVentana(c.hora, plan.ayuno.ventana, d.ayuno?.guineoAntes);
-    return `<div class="comida ${fuera ? 'fuera-ventana' : ''}">
-      <select data-comida="${c.id}" data-k="tipo">${TIPOS_COMIDA.map((t) => `<option value="${t.id}" ${t.id === c.tipo ? 'selected' : ''}>${t.nombre}</option>`).join('')}</select>
-      <input type="time" data-comida="${c.id}" data-k="hora" value="${escapar(c.hora || '')}">
-      <input type="text" data-comida="${c.id}" data-k="desc" value="${escapar(c.desc || '')}" placeholder="¿Qué comiste?">
-      <div class="con-unidad"><input type="text" inputmode="numeric" data-comida="${c.id}" data-k="kcal" value="${c.kcal ?? ''}" placeholder="Calorías"><em>kcal</em></div>
-      <button class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${c.id}" title="Borrar esta comida">${I.basura}</button>
-      <details class="comida-opciones"><summary>Opciones</summary><div class="chips">
-        ${ETIQUETAS_COMIDA.map((e) => `<button type="button" class="chip ${e.limitar ? 'limitar' : e.bueno ? 'bueno' : ''} ${(c.etiquetas || []).includes(e.id) ? 'activo' : ''}" data-etiqueta="${e.id}" data-id-comida="${c.id}">${e.nombre}</button>`).join('')}
-        <button type="button" class="chip" data-accion="frecuente-guardar" data-id-comida="${c.id}" title="Guardar para repetirla con un clic" style="margin-left:auto">☆ Guardar como frecuente</button>
-      </div></details>
-      <div class="aviso-ventana ${fuera ? '' : 'oculto'}">⚠ Esta hora queda fuera de la ventana de hoy (${plan.ayuno?.ventana.join(' – ')}).</div>
-    </div>`;
-  }).join('');
-
-  const contador = (nombre, clave, extra = '') => `<div class="contador"><span class="nombre">${nombre}${extra}</span>
-    <button class="boton" data-sumar="frutas.${clave}" data-paso="-1">−</button><span class="valor">${frutas[clave] || 0}</span><button class="boton" data-sumar="frutas.${clave}" data-paso="1">+</button></div>`;
-
-  return `<section class="tarjeta" id="sec-comidas">
-    ${cabecera('Comidas', I.comida, '--acento', '<span class="suave num" data-calc="kcal"></span>')}
-    ${filas}
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <button class="boton primario" data-accion="agregar-comida">${I.mas} Añadir comida</button>
-    </div>
-    ${estado.frecuentes.length ? `<details class="desplegable"><summary>Frecuentes</summary><div class="frecuentes">${estado.frecuentes.map((f) => `<button class="chip" data-accion="frecuente-usar" data-id="${f.id}" title="${escapar(f.desc)}">${escapar(f.desc.length > 34 ? f.desc.slice(0, 32) + '…' : f.desc)}${f.kcal ? ` · ${f.kcal} kcal` : ''} <span data-accion="frecuente-quitar" data-id="${f.id}" title="Quitar de frecuentes" style="opacity:.5;margin-left:4px">✕</span></button>`).join('')}</div></details>` : ''}
-    ${plegable('Frutas y otros alimentos', `<div class="catalogo-agregar"><label class="campo"><span>Añadir al registro de hoy</span><select data-catalogo><option value="">Selecciona un alimento</option>${ALIMENTOS.map(a=>`<option value="${a.id}">${a.emoji} ${a.nombre}</option>`).join('')}</select></label><button type="button" class="boton" data-accion="catalogo-agregar">Añadir</button></div>
-      <div class="alimentos-cards">${alimentosDelDia(PU,d).map((a) => contador(`${escapar(a.emoji || '')} ${escapar(a.nombre)}`, a.id, a.nota || a.max ? ` <span class="suave pequeño">(${escapar(a.nota || `máx. ${a.max}`)})</span>` : '')).join('')}</div>`)}
-  </section>`;
+function seccionComidas(d,plan,fecha){
+ return `<section class="tarjeta" id="sec-comidas"><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><b>${escapar(TIPOS_COMIDA.find(t=>t.id===c.tipo)?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
+ <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===c.tipo?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
+ <label class="campo"><span>Hora</span><input type="time" data-comida="${escapar(c.id)}" data-k="hora" value="${escapar(c.hora||'')}"></label>
+ <label class="campo"><span>Calorías</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal??''}"></label></div>
+ ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label></details>`).join('')}</div>
+ <button type="button" class="boton" data-accion="agregar-comida">${I.mas} Añadir comida</button></section>`;
 }
 
 function seccionRuta(d, plan) {
@@ -513,7 +478,7 @@ function seccionRuta(d, plan) {
       ${campo('Hora de salida', 'ruta.salida', d, { tipo: 'hora' })}
       ${campo('Hora de llegada', 'ruta.llegada', d, { tipo: 'hora' })}
       ${campo('Distancia', 'ruta.distancia', d, { tipo: 'num', unidad: 'km' })}
-      ${campo('Calorías<br>quemadas', 'ruta.kcal', d, { tipo: 'num', unidad: 'kcal' })}
+      ${campo('Calorías quemadas', 'ruta.kcal', d, { tipo: 'num', unidad: 'kcal' })}
     </div>
     <div class="ruta-calificacion">
       <label class="campo ruta-esfuerzo"><span>Esfuerzo (1–10)</span>${escala('ruta.rpe', d, 10, rpe)}</label>
@@ -522,33 +487,12 @@ function seccionRuta(d, plan) {
   </section>`;
 }
 
-function seccionComplemento(d, plan) {
-  const c = d.complemento || {};
-  const tipo = c.tipo || plan.complemento?.tipo || 'estiramientos';
-  const def = rutinaDe(tipo, PU);
-  const ejercicios = ejerciciosDe(tipo, plan.semana, PU);
-  return `<section class="tarjeta">
-    ${cabecera(plan.complemento ? 'Ejercicio del día' : 'Ejercicio (opcional hoy)', I.comp, '--c-comp', '<span data-calc="comp-estado"></span>')}
-    <div data-temporizador></div>
-    <details class="desplegable"><summary>Mis registros</summary>
-    <div data-rutina-completa>${tarjetaGuia(tipo, false)}</div>
-    ${plegable('Horario', `<div class="campos">
-      ${seleccion('Rutina', 'complemento.tipo', d, tiposComplemento(PU), tipo)}
-      ${campo('Inicio', 'complemento.inicio', d, { tipo: 'hora' })}
-      ${campo('Fin', 'complemento.fin', d, { tipo: 'hora' })}
-      ${campo('Duración real', 'complemento.duracion', d, { tipo: 'num', unidad: 'min' })}
-      ${def?.usaPeso ? campo('Peso usado', 'complemento.pesoLb', d, { tipo: 'num', unidad: 'lb' }) : ''}
-    </div>`)}
-    ${plegable('Mis series', `
-      ${bloqueSeries('Ejercicios del día', ejercicios.filter((e) => e.bloque === 'principal'), c.registro || {}, '', tipo, ejercicios)}
-      ${ejercicios.some((e) => e.bloque === 'abdomen') ? bloqueSeries(FINALIZADOR.nombre, ejercicios.filter((e) => e.bloque === 'abdomen'), c.registro || {}, '', tipo, ejercicios) : ''}`)}
-    <div class="resumen-series" data-calc="comp-resumen"></div>
-    <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap">
-      ${casilla('Completado', 'complemento.hecho', d)}
-      <button class="boton fantasma" data-accion="todo-complemento">${I.check} Todo como lo sugerido</button>
-    </div>
-    </details>
-  </section>`;
+function guiaEjercicios(ejercicios,tipo){
+ return `<details class="guia-rutina" data-guia-ejercicios><summary>Guía ilustrada de ejercicios</summary><div class="guia-ejercicios">${ejercicios.map(e=>`<article><b>${escapar(e.nombre)}</b>${figuraReloj({...e,ejercicioId:e.id},tipo,ejercicios)}</article>`).join('')}</div></details>`;
+}
+function seccionComplemento(d,plan){
+ const tipo=d.complemento?.tipo||plan.complemento?.tipo||'estiramientos',ejercicios=d.preparacion?.ejercicios||ejerciciosDe(tipo,plan.semana,PU);
+ return `<section class="tarjeta"><div data-temporizador></div>${guiaEjercicios(ejercicios,tipo)}</section>`;
 }
 
 function bloqueSeries(titulo, ejercicios, registro, formato = '', tipo, todos = ejercicios) {
@@ -625,66 +569,18 @@ function seccionCalentamiento(d) {
 }
 
 // ---------- Plan del día ----------
-function tarjetaPlan(plan, d, esHoy) {
-  if (plan.antesDelPlan) {
-    return `<section class="tarjeta plan-dia"><h2>Plan del día</h2><p class="suave" style="margin-top:10px">El plan comienza el <b>${fechaLarga(contexto().inicio)}</b>. Puedes ir registrando igual si quieres.</p></section>`;
-  }
-  const r = plan.ruta;
-  const c = plan.complemento;
-  const a = plan.ayuno;
-  return `<section class="tarjeta plan-dia">
-    <div class="tarjeta-cab"><h2>Plan del día</h2><span class="estado-pill nada">Semana ${plan.semana}</span></div>
-    <div class="plan-bloque">
-      <h4>Ruta</h4>
-      ${r ? `<div class="grande" style="color:var(--c-ruta)">${escapar(r.titulo)}</div>
-        ${r.detalle ? `<p class="suave" style="margin-top:4px">${escapar(r.detalle)}</p>` : ''}
-        ${r.intervalo ? `<p style="margin-top:6px"><b>Intervalo:</b> ${escapar(r.intervalo)}</p>` : ''}
-        <p style="margin-top:6px"><b>Meta:</b> ${num(r.metaKm, 1)} km${r.vueltas ? ` · ${r.vueltas} vueltas de 400 m` : r.nombreRuta ? ` · ${escapar(r.nombreRuta)}` : ''} · ${r.terreno === 'plano' ? 'plano' : r.terreno === 'mixto' ? 'mixto' : 'montaña'}</p>
-        ${PU.intervalos ? `<ul>${REGLAS_RUTA.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}`
-      : plan.descanso ? '<div class="grande">Descanso total</div><p class="suave" style="margin-top:4px">O caminata ligera de 20–30 min. Puedes dormir hasta 1 h más.</p>'
-      : '<div class="grande">Sin ruta hoy</div><p class="suave" style="margin-top:4px">Hoy toca solo el ejercicio de abajo.</p>'}
-    </div>
-    ${c ? `<div class="plan-bloque"><h4>Rutina del día</h4><div class="grande">${escapar(c.nombre)}</div>${resumenRutina(rutinaDe(c.tipo,PU),c.ejercicios)}
-      <details class="desplegable"><summary>Ejercicios</summary><p class="suave pequeño">${escapar(c.formato)}</p><ul>${c.ejercicios.map(e=>`<li>${escapar(e.nombre)} · ${escapar(e.meta)}</li>`).join('')}</ul></details></div>` : ''}
-    ${a ? `<div class="plan-bloque"><h4>Ayuno</h4><div class="grande" style="color:var(--c-ayuno)">${a.protocolo} · ${a.ventana[0]} – ${a.ventana[1]}</div><p class="suave">${a.texto}</p>
-      ${esHoy ? '<div class="cuenta-regresiva" id="cuenta-regresiva"></div>' : ''}
-      <details class="desplegable" style="margin-top:8px"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map((x) => `<li>${x}</li>`).join('')}</ul></details>
-    </div>` : ''}
-
-  </section>`;
+function tarjetaPlan(plan,d,esHoy){
+ if(plan.antesDelPlan)return `<section class="tarjeta plan-dia"><p>Inicio: ${fechaLarga(contexto().inicio)}</p></section>`;
+ const r=plan.ruta,c=plan.complemento,tipo=d.complemento?.tipo||c?.tipo;
+ const ruta=estado.rutas.find(x=>x.id===d.ruta?.rutaId);
+ return `<section class="tarjeta plan-dia">${r?`<div class="plan-bloque"><h3>Ruta</h3><b>${escapar(ruta?.nombre||r.titulo)}</b><p class="suave pequeño">${escapar(r.intervalo||r.detalle||'')}${r.metaKm?` · ${num(r.metaKm,1)} km`:''}</p></div>`:''}
+ ${c?`<div class="plan-bloque"><h3>Ejercicios</h3>${resumenRutina(rutinaDe(tipo,PU),ejerciciosDe(tipo,plan.semana,PU),d.preparacion)}</div>`:'<p>Descanso</p>'}</section>`;
 }
 
-function pintarCuentaRegresiva(caja, plan, fecha) {
-  if (!caja) return;
-  const ahora = new Date();
-  const seg = ahora.getHours() * 3600 + ahora.getMinutes() * 60 + ahora.getSeconds();
-  const [abre, cierra] = plan.ayuno.ventana.map((h) => aMinutos(h) * 60);
-  const dia = diaDe(fecha);
-  const ayer = diaDe(sumarDias(fecha, -1));
-  const fmt = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 3600)}:${dos(Math.floor((s % 3600) / 60))}:${dos(s % 60)}`; };
-  let titulo, tiempo, progreso, nota = '';
-  if (seg < abre && !dia.ayuno?.primera) {
-    // En ayuno: desde la última comida de ayer (o el cierre planeado) hasta la apertura.
-    const ultimaAyer = aMinutos(ayer.ayuno?.ultima);
-    const inicio = (ultimaAyer != null ? ultimaAyer : aMinutos('18:00')) * 60 - 86400;
-    const total = abre - inicio;
-    titulo = 'En ayuno · la ventana abre en';
-    tiempo = fmt(abre - seg);
-    progreso = (seg - inicio) / total;
-    nota = `Llevas ${fmt(seg - inicio)} de ayuno.`;
-  } else if (seg < cierra) {
-    titulo = 'Ventana abierta · cierra en';
-    tiempo = fmt(cierra - seg);
-    progreso = (seg - abre) / (cierra - abre);
-    nota = `Última comida antes de las ${plan.ayuno.ventana[1]}.`;
-  } else {
-    const ultima = aMinutos(dia.ayuno?.ultima);
-    const desde = (ultima != null ? ultima : cierra / 60) * 60;
-    titulo = 'Ventana cerrada · ayuno en curso';
-    tiempo = fmt(seg - desde);
-    progreso = 1;
-    nota = `Mañana abre a las ${deMinutos(abre / 60)} (según la semana del plan).`;
-  }
-  caja.innerHTML = `<div class="suave pequeño" style="font-weight:600">${titulo}</div><div class="tiempo">${tiempo}</div>
-    <div class="barra-progreso"><div style="width:${Math.min(100, Math.max(0, progreso * 100))}%"></div></div><div class="suave pequeño" style="margin-top:6px">${nota}</div>`;
+function pintarCuentaRegresiva(caja,plan,fecha){
+ if(!caja)return;const ahora=new Date(),a=diaDe(fecha).ayuno||{};
+ const cuenta=contadorAyuno(ahora.getHours()*3600+ahora.getMinutes()*60+ahora.getSeconds(),a.primera||plan.ayuno.ventana[0],a.ultima||plan.ayuno.ventana[1]);
+ if(!cuenta){caja.innerHTML='<span>Indica dos horarios distintos.</span>';return;}
+ const t=cuenta.segundos,tiempo=`${Math.floor(t/3600)}:${dos(Math.floor(t%3600/60))}:${dos(t%60)}`;
+ caja.innerHTML=`<span>${cuenta.titulo}</span><strong>${tiempo}</strong>`;
 }

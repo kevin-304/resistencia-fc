@@ -2,6 +2,7 @@
 // resúmenes semanales, rachas y alertas sanas (sección 9.8 del plan).
 
 import { horasEntre, sumarDias, diaSemana, duracionAMinutos, lunesDe, hoyISO, aMinutos, promedio, suma, diasEntre } from './util.js';
+import { tieneComida } from './comidas.js';
 import { planDelDia, planEnFecha, kmEsfuerzo, semanaDelPlan, ejerciciosDe, resumenComplemento, normalizarPlan } from './plan.js';
 
 export const ETIQUETAS_COMIDA = [
@@ -16,10 +17,11 @@ export const ETIQUETAS_COMIDA = [
 ];
 
 export const TIPOS_COMIDA = [
-  { id: 'primera', nombre: 'Primera comida' },
+  { id: 'primera', nombre: 'Desayuno' },
   { id: 'almuerzo', nombre: 'Almuerzo' },
   { id: 'cena', nombre: 'Cena' },
   { id: 'merienda', nombre: 'Merienda' },
+  { id: 'intermedia', nombre: 'Comida intermedia' },
 ];
 
 export const ML_POR_VASO = 250;
@@ -65,7 +67,7 @@ export function metricasDia(fecha, dias, ctx) {
 
   // Complemento
   const c = d.complemento || {};
-  const listaComp = ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana, pu);
+  const listaComp = Array.isArray(d.preparacion?.ejercicios)?d.preparacion.ejercicios:ejerciciosDe(c.tipo || plan.complemento?.tipo, plan.semana, pu);
   const rc = resumenComplemento(listaComp, c.registro || {});
   const hechosViejos = Object.values(c.ejercicios || {}).filter(Boolean).length; // formato anterior (casillas)
   m.compReps = rc.reps;
@@ -75,7 +77,7 @@ export function metricasDia(fecha, dias, ctx) {
   m.compParcial = !m.compHecho && (rc.conDatos > 0 || hechosViejos > 0);
 
   // Comidas y frutas
-  const comidas = d.comidas || [];
+  const comidas = (d.comidas || []).filter(tieneComida);
   const kcal = comidas.map((x) => x.kcal).filter((x) => x != null);
   m.kcalIngeridas = kcal.length ? suma(kcal) : null;
   m.comidas = comidas.length;

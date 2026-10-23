@@ -735,3 +735,63 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
   .ruta-esfuerzo { max-width: 100%; }
   .ruta-esfuerzo .estrellas button { width: clamp(24px,7vw,32px); }
 }
+
+/* Preparar antes de iniciar; la edición vive dentro de cada ejercicio. */
+.reloj-preparacion[hidden] { display: none !important; }
+.prep-cab, .prep-acciones { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.prep-grupo { margin: 14px 0; }
+.prep-grupo h4 { margin-bottom: 8px; font-size: .9em; }
+.prep-lista { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,230px),1fr)); gap: 8px; align-items: start; }
+.prep-ejercicio { border: 1px solid #e1e4e8; border-radius: 10px; overflow: hidden; }
+.prep-ejercicio > summary { padding: 12px; cursor: pointer; }
+.prep-ejercicio summary b { font-size: .88em; font-weight: 550; }
+.prep-ejercicio summary small { display: block; padding-left: 16px; margin-top: 3px; font-size: .78em; color: #535961; }
+.prep-figura .reloj-figura { height: 120px; max-width: 100%; }
+.prep-figura .ilustracion-persona { width: 100%; height: auto; max-height: 140px; }
+.prep-campos { padding: 10px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.prep-campos .campo { min-width: 0; }
+.prep-nombre { grid-column: 1 / -1; }
+.prep-agregar { display: flex; gap: 8px; margin-top: 8px; }
+.prep-agregar input { min-width: 0; flex: 1; }
+/* Comidas en lista, con categorías al abrir cada una. */
+.registro-cotidiano .comida-nueva { display: block; padding: 0; background: transparent; }
+.comida-nueva > summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
+.comida-nueva > summary b { flex: 1; font-size: .95em; }
+.comida-nueva > summary small { color: var(--texto-suave); }
+.comida-edicion { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr); gap: 8px; padding: 10px; }
+.comida-edicion .campo { min-width: 0; }
+.comida-categorias { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding: 10px; }
+.categoria-comida { min-width: 0; }
+.categoria-comida > summary { cursor: pointer; padding: 7px; font-size: .84em; }
+.categoria-comida[open] { grid-column: 1 / -1; }
+.categoria-elegir { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; }
+.categoria-elegir select, .categoria-elegir input { min-width: 0; width: 140px; flex: 1; }
+.comida-libre { margin: 0 10px 12px; }
+.comida-items { padding: 0 10px; }
+.comida-item { display: flex; align-items: center; gap: 8px; font-size: .9em; }
+.comida-item span { flex: 1; }
+.lista-comidas { margin-bottom: 10px; }
+.horas-comida { display: flex; gap: 12px; margin: 12px 0; }
+.horas-comida .campo { width: 140px; min-width: 0; }
+.ayuno-contador { display: flex; align-items: baseline; gap: 12px; margin: 12px 0; background: transparent; color: var(--texto); }
+.ayuno-contador span { font-size: .8em; }
+.ayuno-contador strong { font-size: 1.6em; font-variant-numeric: tabular-nums; }
+.agua-simple { margin: 12px 0; gap: 10px; flex-wrap: wrap; }
+.plan-sueno { display: grid; grid-template-columns: minmax(0,2fr) minmax(230px,.8fr); gap: 24px; align-items: start; }
+.plan-sueno .tarjeta { padding: 0; border: 0; background: transparent; }
+.plan-sueno .icono-sec { display: none; }
+.plan-sueno .tarjeta-cab h2 { font-size: 1em; }
+.sueno-compacto .campos { display: flex; gap: 10px; flex-wrap: wrap; }
+.sueno-compacto .campo { width: 130px; min-width: 0; }
+.sueno-compacto .resultado { border: 0; margin-top: 8px; padding: 0; font-size: .8em; }
+.resumen-con-listas { grid-template-columns: repeat(auto-fit,minmax(min(100%,170px),1fr)); gap: 18px; }
+.resumen-con-listas ul { padding-left: 16px; font-size: .82em; line-height: 1.5; margin-top: 8px; }
+.ruta-campos > .campo:nth-child(6) { width: 140px; }
+@media(max-width:850px) { .plan-sueno { grid-template-columns: 1fr; } .sueno-compacto { grid-row: 1; } }
+@media(max-width:520px) { .comida-edicion { grid-template-columns: repeat(2,minmax(0,1fr)); } .ayuno-contador { flex-wrap: wrap; } }
+.guia-ejercicios { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,230px),1fr)); gap: 12px; margin-top: 12px; }
+.guia-ejercicios article { padding: 10px; min-width: 0; }
+.guia-ejercicios b { font-size: .9em; }
+.guia-ejercicios .reloj-figura { max-height: 150px; width: 100%; height: auto; margin-top: 8px; }
+.reloj-preparacion [data-prep-error]:empty { display: none; }
+.ruta-campos > .campo:nth-child(6) > span { white-space: nowrap; }
