@@ -1,5 +1,5 @@
-// Generado por scripts/construir-web.js — versión 2026-10-23T13:47:23.549Z
-const CACHE = 'rfc-1792763243550';
+// Generado por scripts/construir-web.js — versión 2026-10-23T14:10:09.361Z
+const CACHE = 'rfc-1792764609362';
 const ARCHIVOS = [
   "./",
   "estilos.css",
@@ -16,6 +16,11 @@ const ARCHIVOS = [
   "img/ejercicios/est-pantorrillas.webp",
   "img/ejercicios/hombros.webp",
   "img/ejercicios/marcha.webp",
+  "img/ejercicios/personas/correcciones.png",
+  "img/ejercicios/personas/deslizamiento-talon.png",
+  "img/ejercicios/personas/lineas-1.png",
+  "img/ejercicios/personas/lineas-2.png",
+  "img/ejercicios/personas/lineas-3.png",
   "img/ejercicios/plancha.webp",
   "img/ejercicios/puente-gluteo.webp",
   "img/ejercicios/rodillas.webp",
@@ -41,6 +46,7 @@ const ARCHIVOS = [
   "js/graficos.js",
   "js/guias-rutina.js",
   "js/iconos.js",
+  "js/ilustraciones-personas.js",
   "js/ilustraciones-vector.js",
   "js/metricas.js",
   "js/movil.js",

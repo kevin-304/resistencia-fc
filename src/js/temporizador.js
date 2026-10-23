@@ -36,7 +36,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     sesion = construirSesion(rutina, ejercicios, { modo, trabajo, descanso });
     if (!sesion.es60 && modo !== 'calentamiento') modo = 'entrenamiento';
     firma = JSON.stringify(sesion.etapas);
-    const guardado = recuperar ? leer(clave) : null;
+    const guardado = recuperar ? (leer(clave + ':' + modo) || leer(clave)) : null;
     reloj = new RelojRutina(sesion.etapas, guardado?.firma === firma ? guardado.reloj : null);
     iniciadoEn = guardado?.firma === firma && Number.isFinite(guardado.iniciadoEn) ? guardado.iniciadoEn : null;
     finalNotificado = guardado?.firma === firma && !!guardado.finalNotificado;
@@ -45,26 +45,18 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   preparar();
 
   caja.innerHTML = `<section class="temporizador" aria-label="Temporizador guiado de la rutina">
-    <div class="reloj-cabecera"><h3 data-reloj-titulo>Rutina</h3><span data-reloj-total></span></div>
-    <div class="reloj-inicio" data-reloj-inicio><button type="button" class="boton" data-reloj-calentar>Comenzar calentamiento</button></div>
-    <div class="reloj-botones"><span class="reloj-contexto" data-reloj-contexto></span>
-      <button type="button" class="boton comenzar-verde" data-reloj-iniciar>Comenzar rutina</button>
-      <button type="button" class="boton" data-reloj-serie>Terminé la serie</button>
+    <div class="reloj-eleccion">
+      <button type="button" class="boton" data-reloj-calentar>Comenzar calentamiento</button>
+      <button type="button" class="boton comenzar-verde" data-reloj-rutina>Comenzar rutina</button>
+    </div>
+    <div class="reloj-botones" data-reloj-controles>
+      <span class="reloj-contexto" data-reloj-contexto></span>
+      <button type="button" class="boton comenzar-verde" data-reloj-iniciar>Pausar</button>
       <button type="button" class="boton" data-reloj-anterior aria-label="Paso anterior" title="Paso anterior">←</button>
-      <button type="button" class="boton" data-reloj-extra hidden>+30 s</button>
       <button type="button" class="boton" data-reloj-saltar aria-label="Paso siguiente" title="Paso siguiente">→</button>
       <button type="button" class="boton fantasma" data-reloj-finalizar>Finalizar</button>
       <button type="button" class="boton fantasma" data-reloj-reiniciar>Reiniciar</button>
     </div>
-    <details class="reloj-ajustes" data-reloj-ajustes><summary>Detalles</summary><div class="reloj-opciones">
-      <label class="campo"><span>Qué vas a hacer</span><select data-reloj-modo>
-        <option value="entrenamiento">Rutina</option><option value="calentamiento">Calentamiento</option><option value="completa">Calentamiento + rutina</option>
-        ${sesion.es60 ? '<option value="principal">Solo bloque principal</option><option value="abdomen">Solo abdomen · 12 min</option><option value="cardio">Solo cierre cardio · 5 min</option>' : ''}
-      </select></label>
-      ${!sesion.es60 ? `<label class="campo"><span>Ventana para repeticiones</span><select data-reloj-trabajo>${[20,30,40,45,60,90,120].map(s=>`<option value="${s}">${s} s</option>`).join('')}</select></label>
-        <label class="campo"><span>Descanso</span><select data-reloj-descanso>${[10,15,20,30,45,60,90,120].map(s=>`<option value="${s}">${s} s</option>`).join('')}</select></label>` : ''}
-      <label class="check"><input type="checkbox" data-reloj-sonido ${sonido ? 'checked' : ''}><span>Avisos sonoros</span></label>
-    </div><p class="suave pequeño">Horario automático. Registra tus series al terminar.</p></details>
     <div data-reloj-sesion>
     <div class="reloj-panel" data-reloj-panel>
       <div class="reloj-etiqueta" data-reloj-etiqueta aria-live="polite"></div>
@@ -80,10 +72,10 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     <p class="suave pequeño reloj-mensaje" data-reloj-mensaje role="status"></p>
   </section>`;
   const el = nombre => caja.querySelector(`[data-reloj-${nombre}]`);
-  el('modo').value = modo;
+
   if (el('trabajo')) el('trabajo').value = trabajo;
   if (el('descanso')) el('descanso').value = descanso;
-  const guardar = () => { escribir(clave, { firma, reloj: reloj.guardar(), iniciadoEn, finalNotificado }); ultimaPersistencia = Date.now(); };
+  const guardar = () => { escribir(clave + ':' + modo, { firma, reloj: reloj.guardar(), iniciadoEn, finalNotificado }); ultimaPersistencia = Date.now(); };
   const guardarOpciones = () => escribir(clave + ':opciones', { modo, trabajo, descanso, sonido });
 
   async function despertarAudio() {
@@ -129,7 +121,6 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     const resumen = JSON.stringify([reloj.indice, reloj.enMarcha, reloj.descansoSerie, Math.ceil(reloj.restanteMs / 1000), Math.floor(reloj.transcurridoMs / 1000), mensaje]);
     if (resumen === ultimaPintada) return;
     ultimaPintada = resumen;
-    el('total').textContent = `Programado: ${textoReloj(sesion.totalSegundos)}${reloj.extraMs ? ` + ${textoReloj(reloj.extraMs / 1000)} extra` : ''}`;
     el('panel').classList.toggle('reloj-descanso', !!enDescanso);
     const etiqueta = reloj.terminado ? 'Sesión terminada' : `${e.bloque}${enDescanso ? ' · Descanso' : ''}${!reloj.enMarcha ? ' · En pausa' : ''}`;
     if (el('etiqueta').textContent !== etiqueta) el('etiqueta').textContent = etiqueta;
@@ -150,25 +141,22 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     el('transcurrido').textContent = `Tiempo: ${textoReloj(reloj.transcurridoMs / 1000)} · Restante: ${textoReloj(faltan)}`;
     const totalReal = sesion.totalSegundos + reloj.extraMs / 1000;
     el('progreso').value = totalReal ? Math.max(0, 100 * (1 - faltan / totalReal)) : 100;
-    el('iniciar').textContent = reloj.enMarcha ? 'Pausar' : reloj.transcurridoMs > 0 || reloj.indice > 0 ? 'Continuar' : 'Comenzar rutina';
-    if(reloj.terminado && modo==='calentamiento')el('iniciar').textContent='Comenzar rutina';
-    el('iniciar').disabled = reloj.terminado && modo!=='calentamiento';
+    el('iniciar').textContent = reloj.enMarcha ? 'Pausar' : 'Continuar';
+
+    el('iniciar').disabled = reloj.terminado;
     el('sesion').hidden = !iniciadoEn && !reloj.terminado;
     for (const n of ['saltar','reiniciar','finalizar']) el(n).hidden = !iniciadoEn;
     el('finalizar').disabled = reloj.terminado;
     el('saltar').disabled = reloj.terminado;
-    el('serie').hidden = !iniciadoEn || !e || e.clase !== 'serie' || reloj.descansoSerie;
-    el('serie').disabled = !reloj.enMarcha;
-    el('extra').hidden = true;
-    el('extra').disabled = reloj.terminado;
-    el('extra').textContent = enDescanso ? '+30 s descanso' : '+30 s';
+    el('controles').hidden = !iniciadoEn;
     el('anterior').hidden = !iniciadoEn;
     el('anterior').disabled = reloj.indice === 0;
-    el('inicio').hidden = !!iniciadoEn;
     caja.classList.toggle('reloj-activo',!!iniciadoEn);
     caja.querySelector('.temporizador').classList.toggle('reloj-activo',!!iniciadoEn);
-    el('contexto').textContent = e?.bloque === 'Calentamiento' ? 'Calentamiento' : e?.bloque === 'Principal' ? 'Rutina' : e?.bloque || 'Rutina';
-    for (const n of ['modo', 'trabajo', 'descanso']) if (el(n)) el(n).disabled = reloj.enMarcha;
+    el('contexto').textContent = modo === 'calentamiento' ? 'Calentamiento' : e?.bloque || 'Rutina';
+    el('calentar').textContent = iniciadoEn ? 'Calentamiento' : 'Comenzar calentamiento';
+    el('rutina').textContent = iniciadoEn ? 'Rutina' : 'Comenzar rutina';
+    for(const [n,m] of [['calentar','calentamiento'],['rutina','entrenamiento']])el(n).setAttribute('aria-pressed',String(modo===m && !!iniciadoEn));
     el('mensaje').textContent = mensaje;
   }
   function pausar(texto = '') {
@@ -178,7 +166,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
   }
   caja.addEventListener('pausar-rutina',()=>{if(reloj.enMarcha)pausar('Rutina en pausa.');});
   el('iniciar').addEventListener('click', () => {
-    if(reloj.terminado && modo==='calentamiento'){modo='entrenamiento';preparar(false);el('modo').value=modo;guardarOpciones();}
+
     if (reloj.enMarcha) { pausar('En pausa.'); return; }
     despertarAudio().then(() => { if (!desmontado && reloj.enMarcha) avisar(); });
     if (!iniciadoEn) { iniciadoEn = Date.now(); alComenzar?.(iniciadoEn); }
@@ -189,31 +177,23 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     mantenerPantalla(); guardar(); pintar();
     el('sesion').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
-  el('serie').addEventListener('click', () => { reloj.terminarSerie(Date.now()); avisar(); guardar(); pintar(); });
-  el('extra').addEventListener('click', () => {
-    if (reloj.ampliarTiempo(30, Date.now())) { ultimoAviso = null; mensaje = '+30 s'; guardar(); pintar(); }
-  });
   el('saltar').addEventListener('click', () => {
     reloj.siguiente(Date.now()); mensaje = '';
     if (reloj.terminado) liberarPantalla();
     avisar(reloj.terminado); guardar(); pintar();
   });
   el('anterior').addEventListener('click', () => { reloj.anterior(Date.now()); finalNotificado = false; mensaje = ''; ultimoAviso = null; guardar(); pintar(); });
-  el('calentar').addEventListener('click', () => { modo = 'calentamiento'; preparar(false); el('modo').value=modo; guardarOpciones(); el('iniciar').click(); });
+  function elegirSesion(nuevo) {
+    if(modo !== nuevo){pausar();modo=nuevo;mensaje='';liberarPantalla();preparar(true);guardarOpciones();pintar();}
+    if(!reloj.enMarcha && !reloj.terminado)el('iniciar').click();
+  }
+  el('calentar').addEventListener('click',()=>elegirSesion('calentamiento'));
+  el('rutina').addEventListener('click',()=>elegirSesion('entrenamiento'));
   el('finalizar').addEventListener('click', () => {
     reloj.pausar(Date.now()); reloj.indice = sesion.etapas.length; reloj.restanteMs = 0;
     liberarPantalla(); mensaje = 'Sesión finalizada.'; pintar(); guardar();
   });
-  el('reiniciar').addEventListener('click', () => { if(modo==='calentamiento'){modo='entrenamiento';preparar(false);el('modo').value=modo;guardarOpciones();} reloj.reiniciar(); iniciadoEn = null; finalNotificado = false; liberarPantalla(); mensaje = ''; guardar(); pintar(); const lamina = caja.closest('section.tarjeta')?.querySelector('[data-rutina-completa] details'); if(lamina)lamina.open=false; });
-  el('sonido').addEventListener('change', e => { sonido = e.target.checked; guardarOpciones(); if (sonido) despertarAudio().then(() => avisar()); });
-  for (const n of ['modo', 'trabajo', 'descanso']) el(n)?.addEventListener('change', () => {
-    modo = el('modo').value;
-    trabajo = Number(el('trabajo')?.value) || 40;
-    descanso = Number(el('descanso')?.value) || 20;
-    mensaje = '';
-    liberarPantalla(); preparar(false); guardarOpciones(); guardar(); pintar();
-  });
-
+  el('reiniciar').addEventListener('click', () => { reloj.reiniciar(); iniciadoEn = null; finalNotificado = false; liberarPantalla(); mensaje = ''; guardar(); pintar(); const lamina = caja.closest('section.tarjeta')?.querySelector('[data-rutina-completa] details'); if(lamina)lamina.open=false; });
   const ocultar = () => {
     if (document.hidden && window.api?.esCelular && reloj.enMarcha) pausar('Se pausó al salir de la app o apagar la pantalla. Pulsa Continuar al volver.');
     if (!document.hidden && reloj.enMarcha) mantenerPantalla();

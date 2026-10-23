@@ -662,3 +662,23 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 @media(max-width:520px) { .temporizador:not(.reloj-activo) { gap: 12px; } .temporizador:not(.reloj-activo) [data-reloj-calentar], .temporizador:not(.reloj-activo) [data-reloj-iniciar] { font-size: .85em; } .reloj-contexto { width: 100%; text-align:center; margin:0 0 4px; } }
 .temporizador [data-reloj-serie] { display: none !important; }
 .figura-vector { background: transparent; }
+
+/* Zona de entrenamiento blanca y controles directos, sin selector de modo. */
+[data-seccion="ejercicio"] { --texto: #15171a; --texto-suave: #444950; --superficie: #fff; --superficie-2: #fff; --borde: #e1e4e8; background: #fff; color: #15171a; }
+[data-seccion="ejercicio"] .seccion-contenido, [data-seccion="ejercicio"] .tarjeta, [data-seccion="ejercicio"] .reloj-panel, [data-seccion="ejercicio"] .temporizador { background: #fff !important; color: #15171a; }
+.temporizador, .temporizador:not(.reloj-activo) { display: block !important; }
+.reloj-eleccion { display: grid; grid-template-columns: repeat(2,minmax(0,220px)); justify-content: center; gap: 22px; margin: 4px 0 18px; }
+.temporizador .reloj-eleccion .boton { width: 100%; height: 56px; min-width: 0; font-size: 1em; padding: 10px; }
+.temporizador.reloj-activo .reloj-eleccion .boton { height: 42px; font-size: .9em; }
+.reloj-eleccion .boton:not(.comenzar-verde) { background: #fff; color: #15171a; }
+.reloj-eleccion [aria-pressed="true"] { font-weight: 750; border-color: #15803d; }
+.temporizador .reloj-botones[hidden] { display: none !important; }
+.temporizador .reloj-botones { margin-bottom: 14px; }
+.temporizador .reloj-panel { border: 0; }
+.temporizador .reloj-figura { background: #fff; }
+@media(max-width:520px) { .reloj-eleccion { gap: 12px; } .temporizador .reloj-eleccion .boton { font-size: .82em; } }
+@media(prefers-reduced-motion:no-preference) { html { scroll-behavior: smooth; } .reloj-visual { animation: figura-entrada 140ms ease-out; } }
+@keyframes figura-entrada { from { opacity:.4; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+.temporizador .ilustracion-persona { width: min(100%,650px); height: auto; max-height: 310px; aspect-ratio: 2 / 1; background: #fff; }
+.serie-ilustracion .ilustracion-persona { width: 100%; height: auto; max-height: 170px; }
+@media(max-width:600px) { .temporizador .ilustracion-persona { max-height: 220px; } }
