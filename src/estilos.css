@@ -827,3 +827,10 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .prep-agregar input {flex:1 1 180px;min-width:0;}
 @media(max-width:520px){.semana-dias {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.prep-agregar select {flex-basis:100%;}}
 @media(max-width:520px){.semana-actividades {grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}.semana-actividades .semana-opcion {padding:9px 8px;gap:7px;font-size:.86em;min-height:48px;}}
+.temporizador .restablecer-mantener {position:relative;isolation:isolate;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;white-space:nowrap;}
+.temporizador .restablecer-mantener::before {content:'';position:absolute;inset:0;right:auto;width:var(--avance,0%);background:#d5e9dc;z-index:-1;pointer-events:none;}
+.temporizador .restablecer-mantener span {position:relative;pointer-events:none;}
+.temporizador .restablecer-mantener.manteniendo {border-color:#15803d;}
+.reloj-cal-resumen>summary .restablecer-mantener {margin-left:16px;font-size:.85em;padding:8px 12px;}
+.temporizador [data-reloj-restablecer-cal][hidden] {display:none!important;}
+@media(max-width:520px){.reloj-cal-resumen>summary .restablecer-mantener {display:block;margin:10px 0 0;}}

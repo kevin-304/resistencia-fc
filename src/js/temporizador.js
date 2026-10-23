@@ -1,3 +1,4 @@
+import { pulsacionProlongada } from './pulsacion-prolongada.js';
 import { alSalir } from './nav.js';
 import { construirSesion, RelojRutina, textoReloj, avisoCuenta } from './reloj-rutina.js';
 import { figuraReloj } from './figura-reloj.js';
@@ -57,7 +58,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     <div class="reloj-eleccion" data-reloj-inicio-cal>
       <button type="button" class="boton" data-reloj-modificar-cal>Modificar calentamiento</button><button type="button" class="boton comenzar-verde" data-reloj-calentar>Comenzar calentamiento</button>
     </div>
-    <details class="reloj-cal-resumen" data-reloj-resumen-cal hidden><summary>Calentamiento <small>Finalizado</small></summary><ul>${[...new Set(calentamiento.etapas.filter(e=>e.clase!=='descanso').map(e=>e.nombre))].map(n=>`<li>${escapar(n)}</li>`).join('')}</ul></details>
+    <details class="reloj-cal-resumen" data-reloj-resumen-cal hidden><summary>Calentamiento <small>Finalizado</small><button type="button" class="boton restablecer-mantener" data-reloj-restablecer-cal aria-label="Mantén presionado 5 segundos para restablecer el calentamiento"><span>Restablecer · 5 s</span></button></summary><ul>${[...new Set(calentamiento.etapas.filter(e=>e.clase!=='descanso').map(e=>e.nombre))].map(n=>`<li>${escapar(n)}</li>`).join('')}</ul></details>
     <div class="reloj-preparacion" data-reloj-preparacion hidden></div>
     <div class="reloj-botones" data-reloj-controles>
       <span class="reloj-contexto" data-reloj-contexto></span>
@@ -65,7 +66,7 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
       <button type="button" class="boton" data-reloj-anterior aria-label="Paso anterior" title="Paso anterior">←</button>
       <button type="button" class="boton" data-reloj-saltar aria-label="Paso siguiente" title="Paso siguiente">→</button>
       <button type="button" class="boton fantasma" data-reloj-finalizar>Finalizar</button>
-      <button type="button" class="boton fantasma" data-reloj-reiniciar>Reiniciar</button>
+      <button type="button" class="boton restablecer-mantener" data-reloj-reiniciar aria-label="Mantén presionado 5 segundos para restablecer la sesión"><span>Restablecer · 5 s</span></button>
     </div>
     <div data-reloj-sesion>
     <div class="reloj-panel" data-reloj-panel>
@@ -174,7 +175,9 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     caja.querySelector('.temporizador').classList.toggle('reloj-editando',previsualizando);
     el('preparacion').hidden = !previsualizando;
     el('resumen-cal').hidden = !resumenCal;
-    el('anterior').hidden = !iniciadoEn;
+    el('restablecer-cal').hidden = !resumenCal || (activa&&!reloj.terminado) || previsualizando;
+    for(const n of ['iniciar','anterior','saltar','finalizar'])el(n).hidden = reloj.terminado||!activa;
+    el('anterior').hidden = !activa || reloj.terminado;
     el('anterior').disabled = reloj.indice === 0;
     caja.classList.toggle('reloj-activo',!!iniciadoEn);
     caja.querySelector('.temporizador').classList.toggle('reloj-activo',!!iniciadoEn);
@@ -233,7 +236,15 @@ export function montarTemporizador(caja, { rutina, ejercicios, perfil, fecha, ti
     finalManual=true;reloj.pausar(Date.now()); reloj.indice = sesion.etapas.length; reloj.restanteMs = 0;
     liberarPantalla(); mensaje = 'Sesión finalizada.'; pintar(); guardar();
   });
-  el('reiniciar').addEventListener('click', () => { if(modo==='calentamiento')resumenCal=null; reloj.reiniciar();finalManual=false;saltados=0; iniciadoEn = null; finalNotificado = false; liberarPantalla(); mensaje = ''; guardar(); pintar(); const lamina = caja.closest('section.tarjeta')?.querySelector('[data-rutina-completa] details'); if(lamina)lamina.open=false; });
+  function restablecer(){
+    if(modo==='calentamiento'){resumenCal=null;escribir(clave+':calentamiento',null);}
+    reloj.reiniciar();finalManual=false;saltados=0;iniciadoEn=null;finalNotificado=false;liberarPantalla();mensaje='';guardar();pintar();
+  }
+  alSalir(pulsacionProlongada(el('reiniciar'),restablecer));
+  alSalir(pulsacionProlongada(el('restablecer-cal'),()=>{
+    resumenCal=null;escribir(clave+':calentamiento',null);
+    if(modo==='calentamiento')restablecer();else {ultimaPintada='';pintar();}
+  }));
   const ocultar = () => {
     if (document.hidden && window.api?.esCelular && reloj.enMarcha) pausar('Se pausó al salir de la app o apagar la pantalla. Pulsa Continuar al volver.');
     if (!document.hidden && reloj.enMarcha) mantenerPantalla();
