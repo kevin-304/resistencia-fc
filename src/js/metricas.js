@@ -50,7 +50,10 @@ export function metricasDia(fecha, dias, ctx) {
   // Ruta
   const r = d.ruta || {};
   m.rutaKm = r.distancia ?? null;
-  m.rutaMin = duracionAMinutos(r.tiempo);
+  const salida=aMinutos(r.salida),llegada=aMinutos(r.llegada);
+  m.rutaMin = Object.hasOwn(r,'llegada')
+    ? salida==null || llegada==null ? null : (llegada-salida+1440)%1440
+    : duracionAMinutos(r.tiempo);
   m.rutaHecha = !!(r.hecha || r.distancia || m.rutaMin);
   m.rutaDesnivel = r.desnivel ?? null;
   m.rutaKmEsf = m.rutaHecha && m.rutaKm != null ? kmEsfuerzo(m.rutaKm, r.desnivel) : null;

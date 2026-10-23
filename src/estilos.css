@@ -715,3 +715,23 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .registro-personal textarea { min-height: 100px; }
 @media(max-width:800px) { .registro-cotidiano { grid-template-columns: minmax(0,1fr); gap: 16px; } }
 .temporizador:not(.reloj-activo) .reloj-eleccion .boton, .temporizador.reloj-activo .reloj-eleccion .boton { height: 52px; min-height: 52px; font-size: 1em; }
+
+/* Ruta: seis campos de ancho ajustado y valoración en una sola fila. */
+.ruta-campos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; max-width: 900px; }
+.ruta-campos > .campo { flex: 0 0 auto; width: 126px; min-width: 0; max-width: 100%; }
+.ruta-campos > .campo:nth-child(1) { width: 180px; }
+.ruta-campos > .campo:nth-child(2) { width: 160px; }
+.ruta-campos > .campo:nth-child(5) { width: 92px; }
+.ruta-campos > .campo:nth-child(6) { width: 104px; }
+.ruta-campos input, .ruta-campos select { min-width: 0; width: 100%; }
+.ruta-calificacion { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; margin-top: 18px; }
+.ruta-calificacion > .campo { flex: 0 0 auto; width: 160px; max-width: 100%; }
+.ruta-calificacion > .ruta-esfuerzo { width: auto; }
+.ruta-esfuerzo .estrellas { display: flex; gap: 3px; flex-wrap: nowrap; }
+.ruta-esfuerzo .estrellas button { width: 34px; height: 36px; min-width: 0; padding: 0; }
+@media(max-width:520px) {
+  .ruta-campos { gap: 12px; }
+  .ruta-campos > .campo:nth-child(1), .ruta-campos > .campo:nth-child(2) { width: calc(50% - 6px); }
+  .ruta-esfuerzo { max-width: 100%; }
+  .ruta-esfuerzo .estrellas button { width: clamp(24px,7vw,32px); }
+}

@@ -507,33 +507,17 @@ function seccionRuta(d, plan) {
   const rpe = ['Muy fácil', 'Fácil', 'Fácil', 'Moderado', 'Moderado', 'Algo duro', 'Duro', 'Muy duro', 'Máximo casi', 'Máximo'];
   return `<section class="tarjeta">
     ${cabecera(plan.descanso ? 'Ruta (opcional hoy: descanso)' : 'Ruta', I.ruta, '--c-ruta', '<span data-calc="ruta-estado"></span>')}
-    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-      ${segmentado('ruta.terreno', d, [{ id: 'montana', nombre: '⛰ Montaña' }, { id: 'plano', nombre: '▭ Plano' }], terreno)}
-      ${casilla('Hecha (aunque no tenga los datos)', 'ruta.hecha', d)}
-    </div>
-    <div class="campos">
+    <div class="ruta-campos">
       ${seleccion('Ruta', 'ruta.rutaId', d, opcionesRutas, r.rutaId ?? '')}
       ${seleccion('Tipo de sesión', 'ruta.tipo', d, TIPOS_SESION, plan.ruta?.tipo || 'ligera')}
       ${campo('Hora de salida', 'ruta.salida', d, { tipo: 'hora' })}
-      ${campo('Tiempo (de la app Adidas)', 'ruta.tiempo', d, { ph: 'h:mm:ss  ej. 1:12:30' })}
-      ${campo('Distancia', 'ruta.distancia', d, { tipo: 'num', unidad: 'km', ph: '8,0' })}
-      ${campo('Calorías quemadas', 'ruta.kcal', d, { tipo: 'num', unidad: 'kcal' })}
-      ${campo('Desnivel positivo', 'ruta.desnivel', d, { tipo: 'num', unidad: 'm', ph: terreno === 'plano' ? '0' : 'por medir' })}
-      ${campo('Minutos trotando', 'ruta.minTrote', d, { tipo: 'num', unidad: 'min' })}
-      ${campo('Frec. cardíaca prom.', 'ruta.fc', d, { tipo: 'num', unidad: 'ppm', ph: 'opcional' })}
+      ${campo('Hora de llegada', 'ruta.llegada', d, { tipo: 'hora' })}
+      ${campo('Distancia', 'ruta.distancia', d, { tipo: 'num', unidad: 'km' })}
+      ${campo('Calorías<br>quemadas', 'ruta.kcal', d, { tipo: 'num', unidad: 'kcal' })}
     </div>
-    <div class="campos" style="margin-top:12px;grid-template-columns:1fr">
-      <label class="campo"><span>Esfuerzo percibido (RPE 1–10)</span>${escala('ruta.rpe', d, 10, rpe)}</label>
-    </div>
-    <div class="campos" style="margin-top:12px">
-      ${seleccion('Molestia', 'ruta.molestiaZona', d, [{ id: 'ninguna', nombre: 'Ninguna' }, ...ZONAS_MOLESTIA.map((z) => ({ id: z, nombre: z }))], 'ninguna')}
-      ${r.molestiaZona && r.molestiaZona !== 'ninguna' ? `<label class="campo"><span>Intensidad (1–5)</span>${escala('ruta.molestiaNivel', d, 5)}</label>` : ''}
-    </div>
-    <div class="resultado">
-      <div><b data-calc="duracion">—</b><small>duración</small></div>
-      <div><b data-calc="ritmo">—</b><small>ritmo promedio</small></div>
-      <div><b data-calc="kmesf">—</b><small>km-esfuerzo (km + desnivel/100)</small></div>
-      ${plan.ruta ? `<div><b>${num(plan.ruta.metaKm, 1)} km</b><small>meta del plan</small></div>` : ''}
+    <div class="ruta-calificacion">
+      <label class="campo ruta-esfuerzo"><span>Esfuerzo (1–10)</span>${escala('ruta.rpe', d, 10, rpe)}</label>
+      ${seleccion('Molestia', 'ruta.molestiaZona', d, [{ id: 'ninguna', nombre: 'Ninguna' }, ...ZONAS_MOLESTIA.map(z=>({id:z,nombre:z}))], 'ninguna')}
     </div>
   </section>`;
 }
