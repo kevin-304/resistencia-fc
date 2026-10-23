@@ -858,3 +858,5 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .avatar {overflow:hidden;}
 .lista-reportes {display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
 [data-reportes-semanales] {margin-bottom:16px;}
+.semana-opcion .actividad-silueta {width:42px;height:42px;}
+@media(max-width:520px){.semana-opcion .actividad-silueta {width:34px;height:34px;}}
