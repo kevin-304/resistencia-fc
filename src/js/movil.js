@@ -1,3 +1,4 @@
+import './acciones-ui.js';
 import {iniciarCambioDia} from './cambio-dia.js';
 import {mostrarSemanales} from './vistas/semanales.js';
 // Arranque de la versión celular. Primero se instala window.api (almacenamiento del teléfono).

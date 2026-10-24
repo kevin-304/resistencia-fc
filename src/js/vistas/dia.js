@@ -60,7 +60,7 @@ export function mostrarDia(cont, { fecha }) {
     <div class="dia-paneles secciones-grid">
       ${rutaVisible ? `<div class="panel-pestana" data-panel="ruta">${seccionRuta(d, plan)}</div>` : ''}
       <div class="panel-pestana" data-panel="ejercicio">${seccionComplemento(d, plan)}</div>
-      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionComidas(d, plan, fecha)}${seccionAyuno(d, plan, fecha)}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
+      <div class="panel-pestana" data-panel="comidas"><div class="registro-cotidiano"><div class="registro-alimentacion">${seccionComidas(d, plan, fecha)}${seccionAgua(d)}</div><div class="registro-personal">${seccionMedidas(d, fecha)}${seccionNotas(d)}</div></div></div>
       <div class="panel-pestana" data-panel="plan"><div class="plan-sueno"><div>${tarjetaPlan(plan,d,fecha===hoy)}</div><div class="sueno-compacto">${seccionSueno(d)}</div></div></div>
     </div>`;
 
@@ -78,7 +78,8 @@ export function mostrarDia(cont, { fecha }) {
   });
   conectarTarjetas(cont);
   alSalir(conectarHoras(cont));
-  alSalir(conectarOrdenComidas(cont,ids=>{const dia=diaEditable(fecha);dia.comidas=reordenarComidas(comidasVisibles(dia),ids);diaCambiado(fecha);}));
+  alSalir(conectarOrdenComidas(cont,ids=>{const dia=diaEditable(fecha);dia.ordenComidas=ids;dia.comidas=reordenarComidas(comidasVisibles(dia),ids.filter(id=>id!=='ayuno'));diaCambiado(fecha);}));
+  ordenarTarjetasComidas();
   const tipoRutina = d.complemento?.tipo || plan.complemento?.tipo || 'estiramientos';
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
     rutina: rutinaDe(tipoRutina, PU), ejercicios: ejerciciosDe(tipoRutina, plan.semana, PU),
@@ -183,7 +184,7 @@ export function mostrarDia(cont, { fecha }) {
     }
     if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
     if (accion === 'agregar-comida') agregarComida({tipo:objetivo.dataset.tipo});
-    if (accion === 'configurar-ayuno') {const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();refrescar();}
+    if (accion === 'configurar-ayuno') {const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;ordenarTarjetasComidas();cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();refrescar();}
     if(accion==='desactivar-ayuno'){e.preventDefault();const dia=diaEditable(fecha);(dia.ayuno||={}).activo=false;for(const k of ['primera','anterior','fechaAnterior'])delete dia.ayuno[k];diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=true;caja.open=false;refrescar();}
     if(accion==='terminar-ayuno'){const input=cont.querySelector('[data-c="ayuno.primera"]'),ahora=new Date();input.value=`${dos(ahora.getHours())}:${dos(ahora.getMinutes())}`;input.dispatchEvent(new Event('input',{bubbles:true}));}
     if (accion === 'guardar-comida') {
@@ -327,12 +328,19 @@ export function mostrarDia(cont, { fecha }) {
     vista.scrollTop = top;
   }
 
+  function ordenarTarjetasComidas(){
+    const lista=cont.querySelector('.lista-comidas');if(!lista)return;
+    const guardado=diaDe(fecha).ordenComidas||[],orden=guardado.includes('ayuno')?guardado:['ayuno',...guardado];
+    const filas=[...lista.children],porId=new Map(filas.map(x=>[x.dataset.comidaId,x]));
+    for(const id of [...orden,...filas.map(x=>x.dataset.comidaId)]){const nodo=porId.get(id);if(nodo){lista.appendChild(nodo);porId.delete(id);}}
+  }
+
   function repintarComidas(abrirId=null,cerrarId=null) {
     const viejo = cont.querySelector('#sec-comidas');
     const abiertas=[...viejo.querySelectorAll('details.comida[open]')].map(x=>x.dataset.comidaId);if(abrirId)abiertas.push(abrirId);
     viejo.outerHTML = seccionComidas(diaDe(fecha), plan, fecha);
     cont.querySelectorAll('details.comida').forEach(x=>{x.open=x.dataset.comidaId!==cerrarId&&abiertas.includes(x.dataset.comidaId);});
-    refrescar();
+    ordenarTarjetasComidas();refrescar();
   }
 
   async function repintarFoto() {
@@ -476,18 +484,20 @@ function seccionSueno(d) {
 
 function seccionAyuno(d,plan,fecha){
  const activo=d.ayuno?.activo===true,a=resolverAyuno(fecha,estado.dias),campos={...d,ayuno:{...d.ayuno,anterior:a.anterior,primera:a.primera}};
- return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary class="ayuno-cabecera"><span>Ayuno nocturno</span><button type="button" class="boton fantasma eliminar-ayuno" data-accion="desactivar-ayuno" aria-label="Eliminar ayuno" title="Eliminar ayuno">${I.basura}<span>Eliminar</span></button></summary><div class="horas-comida ayuno-nocturno">
+ return `<details class="comida comida-nueva tarjeta ayuno-simple" data-comida-id="ayuno" data-ayuno-config ${activo?'':'hidden'}><summary class="ayuno-cabecera"><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar ayuno" title="Arrastra para reordenar">${iconoArrastrar}</button><b>Ayuno nocturno</b><button type="button" class="boton fantasma eliminar-ayuno" data-accion="desactivar-ayuno" aria-label="Eliminar ayuno" title="Eliminar ayuno">${I.basura}</button></summary><div class="horas-comida ayuno-nocturno">
  <div class="ayuno-origen"><span>Última comida de ayer</span><strong data-ayuno-anterior>${escapar(a.anterior||'Sin comida registrada ayer')}</strong></div>
  <div>${campo('Primera comida de hoy','ayuno.primera',campos,{tipo:'hora'})}<small class="suave">${fechaLarga(fecha)}</small></div></div>
  <div id="cuenta-regresiva" class="ayuno-contador"></div>
  <button type="button" class="boton" data-accion="terminar-ayuno" hidden>Terminar ahora</button>
  <details class="desplegable"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map(x=>`<li>${x}</li>`).join('')}</ul></details>
- </details>
- <section class="tarjeta agua-registro"><div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
+ </details>`;
+}
+
+function seccionAgua(d){return `<section class="tarjeta agua-registro"><div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
 }
 
 function seccionComidas(d,plan,fecha){
- return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas"><button type="button" data-accion="configurar-ayuno">Ayuno</button>${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===tipoComida(c))?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
+ return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas"><button type="button" data-accion="configurar-ayuno">Ayuno</button>${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${seccionAyuno(d,plan,fecha)}${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===tipoComida(c))?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
  <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===tipoComida(c)?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
  <label class="campo"><span>Hora</span>${campoHora(c.hora,`data-comida="${escapar(c.id)}" data-k="hora"`,'Hora de comida')}</label>
  <label class="campo"><span>Calorías</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal??''}"></label></div>

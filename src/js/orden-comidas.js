@@ -3,7 +3,7 @@
 export function conectarOrdenComidas(cont,alOrdenar,{asaSelector='[data-arrastrar-comida]',filaSelector='.comida-nueva',idClave='comidaId'}={}){
  let fila=null,lista=null,asa=null,puntero=null,original=[],activo=false,inicio=null,ultimo=null,raf=null,suprimirHasta=0,flotante=null,agarre=null;
  const eventos=[];const on=(obj,tipo,fn,opciones)=>{obj.addEventListener(tipo,fn,opciones);eventos.push(()=>obj.removeEventListener(tipo,fn,opciones));};
- const filas=()=>[...(lista?.children||[])].filter(x=>x.matches(filaSelector));
+ const filas=()=>[...(lista?.children||[])].filter(x=>x.matches(filaSelector)&&!x.hidden);
  const ids=()=>filas().map(x=>x.dataset[idClave]);
  const reducir=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
  function animarCambio(cambio){

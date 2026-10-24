@@ -958,3 +958,19 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .comida-limites{display:flex;flex-wrap:wrap;gap:12px 20px;margin:0 10px 14px;font-size:.88em;}
 .comida-limites label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;}
 .comida-limites input{accent-color:#16813c;}
+
+/* Sistema común de añadir, restar y eliminar. */
+.accion-icono.accion-icono{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 36px;width:36px!important;min-width:36px!important;height:36px;min-height:36px!important;padding:8px!important;border:0!important;border-radius:8px;background:transparent!important;box-shadow:none!important;cursor:pointer;vertical-align:middle;}
+.accion-icono.accion-icono svg{display:block;width:20px;height:20px;flex:none;pointer-events:none;}
+.accion-icono.accion-anadir{color:#16813c!important;}.accion-icono.accion-eliminar{color:#d33434!important;}.accion-icono.accion-restar{color:var(--texto)!important;}
+@media(hover:hover){.accion-icono.accion-anadir:hover{background:#16813c!important;color:#fff!important;}.accion-icono.accion-eliminar:hover{background:#d33434!important;color:#fff!important;}.accion-icono.accion-restar:hover{background:#626a75!important;color:#fff!important;}}
+.accion-icono.accion-anadir:is(:focus-visible,:active){background:#16813c!important;color:#fff!important;}.accion-icono.accion-eliminar:is(:focus-visible,:active){background:#d33434!important;color:#fff!important;}.accion-icono.accion-restar:is(:focus-visible,:active){background:#626a75!important;color:#fff!important;}
+.accion-icono:focus-visible{outline:2px solid currentColor;outline-offset:2px;}
+.ayuda-accion{position:fixed;z-index:100000;max-width:min(270px,calc(100vw - 12px));padding:6px 9px;border-radius:6px;background:#24272d;color:#fff;font-size:12px;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0002;}
+.lista-comidas>.ayuno-simple{margin:0;border:1px solid var(--borde);border-radius:12px;overflow:visible;padding:0;}
+.lista-comidas>.ayuno-simple>summary{margin:0;min-height:64px;padding:10px 12px;}
+.lista-comidas>.ayuno-simple>summary b{flex:1;}
+.lista-comidas>.ayuno-simple>:not(summary){margin-left:12px;margin-right:12px;}
+.lista-comidas>.ayuno-simple>:last-child{margin-bottom:12px;}
+
+.accion-icono.accion-icono[hidden]{display:none!important;}
