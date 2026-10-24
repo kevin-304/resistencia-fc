@@ -900,3 +900,13 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .reloj-manecilla {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;stroke:currentColor;stroke-width:2;opacity:.22;}
 .reloj-centro {min-width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:var(--fondo,#f3f4f6);}
 .reloj-numero:focus-visible,.reloj-periodos button:focus-visible {outline:2px solid #626a75;outline-offset:2px;}
+/* Arrastre: tarjeta elevada, hueco de destino y recolocación suave. */
+.arrastre-en-curso,.arrastre-en-curso * {cursor:grabbing!important;}
+.arrastre-flotante {position:fixed;left:0;top:0;z-index:10000;pointer-events:none;will-change:transform;box-sizing:border-box;}
+.arrastre-titulo {display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:64px;box-sizing:border-box;border:1px solid #aab1ba;border-radius:12px;background:var(--tarjeta,var(--superficie,#fff));color:var(--texto,#20242a);box-shadow:0 12px 28px #00000030,0 3px 7px #00000016;}
+.arrastre-titulo b {font-weight:650;}
+.arrastre-titulo small {margin-left:auto;}
+.arrastre-titulo .actividad-silueta {width:34px;height:34px;}
+.comida-nueva.comida-arrastrando,.bloque-actividad.comida-arrastrando {height:var(--alto-arrastre)!important;min-height:0;overflow:hidden;opacity:1;border:2px dashed #9ca6b2;background:var(--fondo,#edf0f3);box-shadow:none;}
+.comida-arrastrando>summary {visibility:hidden;}
+@media(prefers-reduced-motion:reduce){.arrastre-flotante {will-change:auto;}}

@@ -1,15 +1,37 @@
 // Arrastre real por Pointer Events: funciona desde el asa y, con ratón, desde
 // el título de una tarjeta. El clic sin movimiento sigue abriendo el contenido.
 export function conectarOrdenComidas(cont,alOrdenar,{asaSelector='[data-arrastrar-comida]',filaSelector='.comida-nueva',idClave='comidaId'}={}){
- let fila=null,lista=null,asa=null,puntero=null,original=[],activo=false,inicio=null,ultimo=null,raf=null,suprimirHasta=0;
+ let fila=null,lista=null,asa=null,puntero=null,original=[],activo=false,inicio=null,ultimo=null,raf=null,suprimirHasta=0,flotante=null,agarre=null;
  const eventos=[];const on=(obj,tipo,fn,opciones)=>{obj.addEventListener(tipo,fn,opciones);eventos.push(()=>obj.removeEventListener(tipo,fn,opciones));};
  const filas=()=>[...(lista?.children||[])].filter(x=>x.matches(filaSelector));
  const ids=()=>filas().map(x=>x.dataset[idClave]);
- function mover(y){const otras=filas().filter(x=>x!==fila),antes=otras.find(x=>{const r=x.getBoundingClientRect();return y<r.top+r.height/2;});lista.insertBefore(fila,antes||null);}
+ const reducir=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function animarCambio(cambio){
+  const elementos=filas().filter(x=>x!==fila),previos=new Map(elementos.map(x=>[x,x.getBoundingClientRect().top]));cambio();
+  for(const x of elementos){x._ordenAnim?.cancel();const dy=previos.get(x)-x.getBoundingClientRect().top;if(!reducir()&&Math.abs(dy)>.5)x._ordenAnim=x.animate([{transform:`translateY(${dy}px)`},{transform:'translateY(0)'}],{duration:180,easing:'cubic-bezier(.2,.8,.2,1)'});}
+ }
+ function posicionar(){if(!flotante||!ultimo)return;const ancho=flotante.getBoundingClientRect().width,x=Math.max(6,Math.min(innerWidth-ancho-6,ultimo.x-agarre.x)),y=ultimo.y-agarre.y;flotante.style.transform=`translate3d(${x}px,${y}px,0)`;}
+ function levantar(){
+  const resumen=fila.querySelector(':scope>summary'),r=resumen.getBoundingClientRect(),caja=fila.getBoundingClientRect();agarre={x:inicio.x-caja.left,y:inicio.y-r.top};
+  flotante=document.createElement('div');flotante.className='arrastre-flotante';flotante.setAttribute('aria-hidden','true');flotante.inert=true;flotante.style.width=caja.width+'px';
+  const titulo=document.createElement('div');titulo.className='arrastre-titulo';titulo.innerHTML=resumen.innerHTML;
+  for(const el of titulo.querySelectorAll('*'))for(const a of [...el.attributes])if(a.name.startsWith('data-')||['id','tabindex','aria-controls'].includes(a.name))el.removeAttribute(a.name);
+  titulo.querySelectorAll('button').forEach(b=>{if(!b.classList.contains('comida-agarre')){b.remove();return;}const span=document.createElement('span');span.className=b.className;span.innerHTML=b.innerHTML;b.replaceWith(span);});
+  flotante.appendChild(titulo);document.body.appendChild(flotante);fila.style.setProperty('--alto-arrastre',r.height+2+'px');animarCambio(()=>fila.classList.add('comida-arrastrando'));document.documentElement.classList.add('arrastre-en-curso');posicionar();
+  if(!reducir())titulo.animate([{transform:'scale(.98)',opacity:.7},{transform:'scale(1)',opacity:1}],{duration:130,easing:'ease-out'});
+ }
+ function mover(y){
+  const otras=filas().filter(x=>x!==fila),antes=otras.find(x=>{const r=x.getBoundingClientRect(),desfase=x._ordenAnim?new DOMMatrix(getComputedStyle(x).transform).m42:0;return y<r.top-desfase+r.height/2;});
+  if(antes===fila.nextElementSibling||(!antes&&fila===lista.lastElementChild))return;
+  animarCambio(()=>lista.insertBefore(fila,antes||null));
+ }
  function terminar(guardar=false){
   cancelAnimationFrame(raf);if(!fila)return;
   if(activo&&guardar)alOrdenar(ids());else if(activo)for(const id of original){const nodo=filas().find(x=>x.dataset[idClave]===id);if(nodo)lista.appendChild(nodo);}
-  if(activo)suprimirHasta=performance.now()+450;fila.classList.remove('comida-arrastrando');
+  if(activo)suprimirHasta=performance.now()+450;
+  const final=fila;flotante?.remove();flotante=null;document.documentElement.classList.remove('arrastre-en-curso');fila.classList.remove('comida-arrastrando');fila.style.removeProperty('--alto-arrastre');
+  for(const x of filas())x._ordenAnim?.cancel();
+  if(activo&&guardar&&!reducir()&&final.isConnected)final.animate([{transform:'scale(.985)',opacity:.65},{transform:'scale(1)',opacity:1}],{duration:170,easing:'ease-out'});
   const pointer=puntero;fila=null;lista=null;asa=null;puntero=null;activo=false;inicio=null;ultimo=null;
   if(cont.hasPointerCapture?.(pointer))cont.releasePointerCapture(pointer);
  }
@@ -22,7 +44,7 @@ export function conectarOrdenComidas(cont,alOrdenar,{asaSelector='[data-arrastra
   if(handle){e.preventDefault();handle.focus();}
  });
  on(cont,'pointermove',e=>{if(!fila||e.pointerId!==puntero)return;ultimo={x:e.clientX,y:e.clientY};if(!activo&&Math.hypot(e.clientX-inicio.x,e.clientY-inicio.y)<6)return;
-  if(!activo){activo=true;try{cont.setPointerCapture(puntero);}catch{}fila.classList.add('comida-arrastrando');desplazar();}e.preventDefault();mover(e.clientY);
+  if(!activo){activo=true;try{cont.setPointerCapture(puntero);}catch{}levantar();desplazar();}e.preventDefault();posicionar();mover(e.clientY);
  },{passive:false});
  on(cont,'pointerup',e=>{if(e.pointerId===puntero)terminar(true);});
  on(window,'pointerup',()=>{if(fila&&!activo)terminar(false);});
