@@ -936,3 +936,15 @@ details>summary{transition:background-color 140ms ease,color 140ms ease;}
 }
 details:not(.categoria-comida)>summary:not(.boton):focus-visible{background-color:color-mix(in srgb,var(--texto) 7%,transparent);border-radius:8px;outline:2px solid var(--texto-suave);outline-offset:-2px;}
 @media(prefers-reduced-motion:reduce){details>summary{transition:none;}}
+
+/* Alimentos: cantidad compacta y acciones sin marco. */
+.categoria-elegir{display:grid;grid-template-columns:minmax(0,260px) 76px 32px;align-items:center;max-width:400px;}
+.categoria-elegir select,.categoria-elegir input{width:100%;min-width:0;}
+.comida-item{grid-template-columns:minmax(0,1fr) 90px 32px;max-width:440px;}
+.comida-item>.boton,.categoria-elegir>.boton{width:32px;min-width:32px;min-height:32px;padding:6px;border:0;box-shadow:none;background:transparent;}
+.alimento-anadir.boton{color:#16813c;font-size:23px;font-weight:600;}
+.alimento-quitar.boton{color:#d33434;}
+.alimento-quitar svg{width:18px;height:18px;}
+.alimento-anadir.boton:hover,.alimento-anadir.boton:focus-visible{background:color-mix(in srgb,#16813c 10%,transparent);color:#16813c;}
+.alimento-quitar.boton:hover,.alimento-quitar.boton:focus-visible{background:color-mix(in srgb,#d33434 10%,transparent);color:#d33434;}
+@media(max-width:420px){.categoria-elegir{grid-template-columns:minmax(0,1fr) 62px 32px;}.comida-item{grid-template-columns:minmax(0,1fr) 72px 32px;}}
