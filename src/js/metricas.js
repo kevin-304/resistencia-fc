@@ -1,3 +1,4 @@
+import {resolverAyuno} from './ayuno-nocturno.js';
 // Cálculos a partir de lo registrado: horas de sueño y de ayuno, cumplimiento del día,
 // resúmenes semanales, rachas y alertas sanas (sección 9.8 del plan).
 
@@ -42,7 +43,8 @@ export function metricasDia(fecha, dias, ctx) {
   m.suenoOk = m.sueno == null ? null : m.sueno >= (metas.suenoHoras || 7) - 1e-9;
 
   // Ayuno: desde la última comida de ayer hasta la primera de hoy.
-  m.ayunoHoras = horasEntre(ayer.ayuno?.ultima, d.ayuno?.primera);
+  m.ayuno = resolverAyuno(fecha,dias);
+  m.ayunoHoras = m.ayuno.horas;
   m.ayunoExcepcion = !!d.ayuno?.guineoAntes;
   const meta = plan.ayuno?.horas;
   if (m.ayunoExcepcion) m.ayunoOk = true;

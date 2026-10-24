@@ -1,3 +1,4 @@
+import {resolverAyuno} from '../ayuno-nocturno.js';
 import {campoHora,conectarHoras} from '../selector-hora.js';
 // Detalle de un día: lo que tocaba según el plan y todos los apartados para registrar.
 // Cada cambio se guarda solo (no hay botón "Guardar").
@@ -106,6 +107,7 @@ export function mostrarDia(cont, { fecha }) {
   cont.querySelector('[data-accion="hoy"]')?.addEventListener('click', () => navegar({ vista: 'dia', fecha: hoy }));
 
   const cambiar = (camino, valor) => {
+    if(camino==='ayuno.fechaAnterior'&&valor>fecha){cont.querySelector('[data-c="ayuno.fechaAnterior"]').value=resolverAyuno(fecha,estado.dias).fechaAnterior;aviso('La comida anterior no puede estar en una fecha posterior.','error');return;}
     const dia = diaEditable(fecha);
     prepararDefectos(dia, camino, plan);
     fijar(dia, camino, valor);
@@ -180,12 +182,13 @@ export function mostrarDia(cont, { fecha }) {
     }
     if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
     if (accion === 'agregar-comida') agregarComida({tipo:objetivo.dataset.tipo});
-    if (accion === 'configurar-ayuno') {const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();}
+    if (accion === 'configurar-ayuno') {const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();refrescar();}
     if(accion==='desactivar-ayuno'){const dia=diaEditable(fecha);(dia.ayuno||={}).activo=false;diaCambiado(fecha);cont.querySelector('[data-ayuno-config]').hidden=true;}
+    if(accion==='terminar-ayuno'){const input=cont.querySelector('[data-c="ayuno.primera"]'),ahora=new Date();input.value=`${dos(ahora.getHours())}:${dos(ahora.getMinutes())}`;input.dispatchEvent(new Event('input',{bubbles:true}));}
     if (accion === 'guardar-comida') {
       const c=buscarComida(objetivo.dataset.idComida);if(!c)return;guardarComida(c);
       const rol=c.tipo==='primera-comida'?'primera':c.tipo==='ultima-comida'?'ultima':null;
-      if(rol){const dia=diaEditable(fecha);(dia.ayuno||={})[rol]=c.hora;cont.querySelector(`[data-c="ayuno.${rol}"]`).value=c.hora;}
+      if(rol){const dia=diaEditable(fecha);(dia.ayuno||={})[rol]=c.hora;const input=cont.querySelector(`[data-c="ayuno.${rol}"]`);if(input)input.value=c.hora;}
       diaCambiado(fecha);repintarComidas(null,c.id);
     }
     if (accion === 'borrar-comida') {
@@ -335,6 +338,9 @@ export function mostrarDia(cont, { fecha }) {
   // Resultados calculados (se actualizan en vivo)
   function refrescar() {
     const m = metricasDia(fecha, estado.dias, ctx);
+    const resuelto=resolverAyuno(fecha,estado.dias),actual=diaDe(fecha).ayuno||{};
+    for(const [k,v]of [['anterior',resuelto.anterior],['primera',resuelto.primera]]){const i=cont.querySelector(`[data-c="ayuno.${k}"]`);if(i&&!Object.hasOwn(actual,k)&&document.activeElement!==i)i.value=v;}
+    pintarCuentaRegresiva(cont.querySelector('#cuenta-regresiva'),plan,fecha);
     const pon = (k, html) => cont.querySelectorAll(`[data-calc="${k}"]`).forEach((x) => (x.innerHTML = html));
     pon('sueno', m.sueno != null ? formatoHoras(m.sueno) : '—');
     pon('sueno-estado', m.suenoOk == null ? pill('nada', 'Sin datos') : m.suenoOk ? pill('ok', `✓ ${num(PU.metas.suenoHoras, 1)} h o más`) : pill('no', `Menos de ${num(PU.metas.suenoHoras, 1)} h`));
@@ -462,10 +468,12 @@ function seccionSueno(d) {
 }
 
 function seccionAyuno(d,plan,fecha){
- const activo=d.ayuno?.activo===true;
- return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary>Ayuno</summary><div class="horas-comida">
- ${campo('Primera comida','ayuno.primera',d,{tipo:'hora'})}${campo('Última comida','ayuno.ultima',d,{tipo:'hora'})}</div>
- ${fecha===hoyISO()?'<div id="cuenta-regresiva" class="ayuno-contador"></div>':''}
+ const activo=d.ayuno?.activo===true,a=resolverAyuno(fecha,estado.dias),campos={...d,ayuno:{...d.ayuno,anterior:a.anterior,primera:a.primera}};
+ return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary>Ayuno nocturno</summary><div class="horas-comida ayuno-nocturno">
+ <div>${campo('Última comida anterior','ayuno.anterior',campos,{tipo:'hora'})}<label class="campo fecha-ayuno"><span>Fecha de la comida anterior</span><input type="date" data-c="ayuno.fechaAnterior" value="${a.fechaAnterior}" max="${fecha}"></label></div>
+ <div>${campo('Primera comida de hoy','ayuno.primera',campos,{tipo:'hora'})}<small class="suave">${fechaLarga(fecha)}</small></div></div>
+ <div id="cuenta-regresiva" class="ayuno-contador"></div>
+ <button type="button" class="boton" data-accion="terminar-ayuno" hidden>Terminar ahora</button>
  <details class="desplegable"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map(x=>`<li>${x}</li>`).join('')}</ul></details>
  <button type="button" class="boton fantasma" data-accion="desactivar-ayuno">Quitar ayuno de este día</button></details>
  <section class="tarjeta agua-registro"><div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
@@ -594,9 +602,11 @@ function tarjetaPlan(plan,d,esHoy){
 }
 
 function pintarCuentaRegresiva(caja,plan,fecha){
- if(!caja)return;const ahora=new Date(),a=diaDe(fecha).ayuno||{};if(a.activo!==true){caja.innerHTML='';return;}
- const cuenta=contadorAyuno(ahora.getHours()*3600+ahora.getMinutes()*60+ahora.getSeconds(),a.primera||plan.ayuno?.ventana?.[0]||'',a.ultima||plan.ayuno?.ventana?.[1]||'');
- if(!cuenta){caja.innerHTML='<span>Indica dos horarios distintos.</span>';return;}
- const t=cuenta.segundos,tiempo=`${Math.floor(t/3600)}:${dos(Math.floor(t%3600/60))}:${dos(t%60)}`;
- caja.innerHTML=`<span>${cuenta.titulo}</span><strong>${tiempo}</strong>`;
+ if(!caja)return;const a=resolverAyuno(fecha,estado.dias),activo=diaDe(fecha).ayuno?.activo===true,boton=caja.parentElement.querySelector('[data-accion="terminar-ayuno"]');
+ if(boton)boton.hidden=!activo||a.estado!=='en-curso';if(!activo){caja.innerHTML='';return;}
+ if(a.estado==='sin-inicio'){caja.innerHTML='<span>Registra la última comida anterior.</span>';return;}
+ if(a.estado==='invalido'){caja.innerHTML='<span>Revisa las fechas: la primera comida debe ser posterior a la última comida anterior.</span>';return;}
+ if(a.estado==='sin-fin'){caja.innerHTML='<span>Falta la primera comida de este día.</span>';return;}
+ const t=Math.max(0,Math.floor(a.segundos)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;
+ caja.innerHTML=`<span>${a.estado==='completado'?'Tiempo de ayuno':'Ayuno en curso'}</span><strong>${a.estado==='completado'?`${h} h ${dos(m)} min`:`${h}:${dos(m)}:${dos(s)}`}</strong>`;
 }

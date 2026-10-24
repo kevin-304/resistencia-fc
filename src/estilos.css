@@ -911,3 +911,8 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .reloj-volver {border:0;color:inherit;font:inherit;font-size:1.3em;cursor:pointer;pointer-events:auto;line-height:1.1;}
 .reloj-volver small {display:block;font-size:.55em;font-weight:550;}
 .seccion-card:has(.hora-inline) {overflow:visible;position:relative;z-index:20;}
+.ayuno-nocturno {align-items:start;gap:22px;}
+.ayuno-nocturno>div {min-width:0;}
+.ayuno-nocturno .campo {width:180px;max-width:100%;}
+.ayuno-nocturno .fecha-ayuno {margin-top:12px;font-size:.85em;}
+[data-accion="terminar-ayuno"][hidden] {display:none!important;}

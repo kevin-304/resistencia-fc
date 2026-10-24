@@ -1,3 +1,4 @@
+import {resolverAyuno} from './ayuno-nocturno.js';
 import {planConProgramacion} from './programacion-rutinas.js';
 import {lunesDe,sumarDias} from './util.js';
 import {tieneComida} from './comidas.js';
@@ -19,7 +20,7 @@ export function lineasSemana(datos,desde){
   const cs=(d.comidas||[]).filter(tieneComida);comidas+=cs.length;
   if(cs.length){pon('Comidas:');for(const c of cs){const nombre=({'primera':'Desayuno',almuerzo:'Almuerzo',merienda:'Merienda',cena:'Cena',intermedia:'Comida intermedia','primera-comida':'Primera comida','ultima-comida':'Última comida'})[c.tipo]||'Comida';const descripcion=c.desc||[c.textoLibre,...(c.items||[]).map(x=>`${x.nombre}${x.cantidad?' ('+x.cantidad+')':''}`)].filter(Boolean).join(', ');pon(`  ${c.hora||'Sin hora'} - ${nombre}: ${descripcion||'Sin detalle'}${c.kcal!=null?' | '+c.kcal+' kcal':''}`);}}
   if(d.sueno)pon(`Sueño: ${d.sueno.dormir||'--:--'} a ${d.sueno.despertar||'--:--'} | calidad: ${d.sueno.calidad??'-'}`);
-  if(d.ayuno?.primera||d.ayuno?.ultima)pon(`Comida inicial: ${d.ayuno.primera||'--:--'} | última: ${d.ayuno.ultima||'--:--'}`);
+  if(d.ayuno?.activo||d.ayuno?.primera||d.ayuno?.anterior){const a=resolverAyuno(fecha,datos.dias);pon(`Ayuno: última comida ${a.fechaAnterior} ${a.anterior||'--:--'} | primera ${fecha} ${a.primera||'--:--'}${a.horas!=null?' | '+a.horas.toFixed(2)+' h':''}`);}
   if(d.agua!=null)pon(`Agua: ${d.agua} vasos`);
   if(d.medidas)pon(`Medidas: peso ${d.medidas.peso??'-'} kg | cintura ${d.medidas.cintura??'-'} cm`);
   if(d.notas)pon(`Notas: ${d.notas}`);
@@ -41,5 +42,5 @@ export function generarPDFSemanal(datos,desde){
 let timer=null,cola=Promise.resolve();const firmas=new Map();
 export function programarReportes(datos,api){
  if(!api?.guardarReporteAuto||!datos.perfil||!datos.carpeta)return;clearTimeout(timer);
- timer=setTimeout(()=>{const copia=structuredClone(datos);cola=cola.catch(()=>{}).then(async()=>{const existentes=await api.listarReportesAuto?.()||[];const semanas=[...new Set([...semanasConDatos(copia.dias),...existentes.map(r=>r.nombre.slice(7,17))])];for(const desde of semanas){const fin=sumarDias(desde,6),dias=Object.fromEntries(Object.entries(copia.dias).filter(([f])=>f>=desde&&f<=fin)),firma=JSON.stringify([copia.perfil.nombre,copia.config.plan,copia.config.programacionRutinas,dias]),clave=copia.carpeta+desde;if(firmas.get(clave)===firma)continue;const pdf=generarPDFSemanal({...copia,dias},desde);await api.guardarReporteAuto(`Semana-${desde}.pdf`,Array.from(pdf),copia.carpeta);firmas.set(clave,firma);}window.dispatchEvent(new Event('reportes-actualizados'));}).catch(e=>{console.error('Reporte semanal:',e);window.dispatchEvent(new CustomEvent('reporte-error',{detail:e.message}));});},1200);
+ timer=setTimeout(()=>{const copia=structuredClone(datos);cola=cola.catch(()=>{}).then(async()=>{const existentes=await api.listarReportesAuto?.()||[];const semanas=[...new Set([...semanasConDatos(copia.dias),...existentes.map(r=>r.nombre.slice(7,17))])];for(const desde of semanas){const fin=sumarDias(desde,6),dias=Object.fromEntries(Object.entries(copia.dias).filter(([f])=>f>=sumarDias(desde,-1)&&f<=fin)),firma=JSON.stringify([copia.perfil.nombre,copia.config.plan,copia.config.programacionRutinas,dias]),clave=copia.carpeta+desde;if(firmas.get(clave)===firma)continue;const pdf=generarPDFSemanal({...copia,dias},desde);await api.guardarReporteAuto(`Semana-${desde}.pdf`,Array.from(pdf),copia.carpeta);firmas.set(clave,firma);}window.dispatchEvent(new Event('reportes-actualizados'));}).catch(e=>{console.error('Reporte semanal:',e);window.dispatchEvent(new CustomEvent('reporte-error',{detail:e.message}));});},1200);
 }
