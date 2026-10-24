@@ -916,3 +916,7 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .ayuno-nocturno .campo {width:180px;max-width:100%;}
 .ayuno-nocturno .fecha-ayuno {margin-top:12px;font-size:.85em;}
 [data-accion="terminar-ayuno"][hidden] {display:none!important;}
+
+.ayuno-origen{display:flex;flex-direction:column;gap:10px;padding-top:2px;}
+.ayuno-origen>span{color:var(--texto-suave);font-size:.9em;}
+.ayuno-origen>strong{font-size:1.1em;padding:10px 0;}

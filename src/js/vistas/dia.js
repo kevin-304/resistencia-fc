@@ -107,7 +107,6 @@ export function mostrarDia(cont, { fecha }) {
   cont.querySelector('[data-accion="hoy"]')?.addEventListener('click', () => navegar({ vista: 'dia', fecha: hoy }));
 
   const cambiar = (camino, valor) => {
-    if(camino==='ayuno.fechaAnterior'&&valor>fecha){cont.querySelector('[data-c="ayuno.fechaAnterior"]').value=resolverAyuno(fecha,estado.dias).fechaAnterior;aviso('La comida anterior no puede estar en una fecha posterior.','error');return;}
     const dia = diaEditable(fecha);
     prepararDefectos(dia, camino, plan);
     fijar(dia, camino, valor);
@@ -339,7 +338,8 @@ export function mostrarDia(cont, { fecha }) {
   function refrescar() {
     const m = metricasDia(fecha, estado.dias, ctx);
     const resuelto=resolverAyuno(fecha,estado.dias),actual=diaDe(fecha).ayuno||{};
-    for(const [k,v]of [['anterior',resuelto.anterior],['primera',resuelto.primera]]){const i=cont.querySelector(`[data-c="ayuno.${k}"]`);if(i&&!Object.hasOwn(actual,k)&&document.activeElement!==i)i.value=v;}
+    const anterior=cont.querySelector('[data-ayuno-anterior]');if(anterior)anterior.textContent=resuelto.anterior||'Sin comida registrada ayer';
+    for(const [k,v]of [['primera',resuelto.primera]]){const i=cont.querySelector(`[data-c="ayuno.${k}"]`);if(i&&!Object.hasOwn(actual,k)&&document.activeElement!==i)i.value=v;}
     pintarCuentaRegresiva(cont.querySelector('#cuenta-regresiva'),plan,fecha);
     const pon = (k, html) => cont.querySelectorAll(`[data-calc="${k}"]`).forEach((x) => (x.innerHTML = html));
     pon('sueno', m.sueno != null ? formatoHoras(m.sueno) : '—');
@@ -470,7 +470,7 @@ function seccionSueno(d) {
 function seccionAyuno(d,plan,fecha){
  const activo=d.ayuno?.activo===true,a=resolverAyuno(fecha,estado.dias),campos={...d,ayuno:{...d.ayuno,anterior:a.anterior,primera:a.primera}};
  return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary>Ayuno nocturno</summary><div class="horas-comida ayuno-nocturno">
- <div>${campo('Última comida anterior','ayuno.anterior',campos,{tipo:'hora'})}<label class="campo fecha-ayuno"><span>Fecha de la comida anterior</span><input type="date" data-c="ayuno.fechaAnterior" value="${a.fechaAnterior}" max="${fecha}"></label></div>
+ <div class="ayuno-origen"><span>Última comida de ayer</span><strong data-ayuno-anterior>${escapar(a.anterior||'Sin comida registrada ayer')}</strong></div>
  <div>${campo('Primera comida de hoy','ayuno.primera',campos,{tipo:'hora'})}<small class="suave">${fechaLarga(fecha)}</small></div></div>
  <div id="cuenta-regresiva" class="ayuno-contador"></div>
  <button type="button" class="boton" data-accion="terminar-ayuno" hidden>Terminar ahora</button>
@@ -604,7 +604,7 @@ function tarjetaPlan(plan,d,esHoy){
 function pintarCuentaRegresiva(caja,plan,fecha){
  if(!caja)return;const a=resolverAyuno(fecha,estado.dias),activo=diaDe(fecha).ayuno?.activo===true,boton=caja.parentElement.querySelector('[data-accion="terminar-ayuno"]');
  if(boton)boton.hidden=!activo||a.estado!=='en-curso';if(!activo){caja.innerHTML='';return;}
- if(a.estado==='sin-inicio'){caja.innerHTML='<span>Registra la última comida anterior.</span>';return;}
+ if(a.estado==='sin-inicio'){caja.innerHTML='<span>Falta registrar la última comida en el día anterior.</span>';return;}
  if(a.estado==='invalido'){caja.innerHTML='<span>Revisa las fechas: la primera comida debe ser posterior a la última comida anterior.</span>';return;}
  if(a.estado==='sin-fin'){caja.innerHTML='<span>Falta la primera comida de este día.</span>';return;}
  const t=Math.max(0,Math.floor(a.segundos)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;
