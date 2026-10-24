@@ -16,7 +16,7 @@ export function conectarHoras(cont){
  function posicionar(){if(!popup||!origen)return;const caja=origen.closest('.selector-hora'),fila=caja.querySelector('.hora-input-fila'),r=caja.getBoundingClientRect(),ancho=Math.min(292,innerWidth-20);popup.style.width=ancho+'px';popup.style.left=Math.max(10-r.left,Math.min(0,innerWidth-10-r.left-ancho))+'px';popup.style.top=fila.offsetHeight+8+'px';}
  function abrir(input,boton){
   if(origen===input){cerrar();return;}cerrar();origen=input;botonOrigen=boton;
-  const valor=normalizarHora(input.value)||horaActual(),[h,m]=valor.split(':').map(Number);let hora=h%12||12,minuto=m,periodo=h>=12?'PM':'AM',etapa='hora';
+  const valor=normalizarHora(input.value)||horaActual(),[h,m]=valor.split(':').map(Number);let hora=h%12||12,minuto=m,periodo=h>=12?'PM':'AM',etapa='periodo';
   popup=document.createElement('div');popup.className='hora-inline';popup.id='reloj-'+Math.random().toString(36).slice(2);popup.setAttribute('role','group');popup.setAttribute('aria-label','Elegir hora');input.closest('.selector-hora').appendChild(popup);boton.setAttribute('aria-expanded','true');boton.setAttribute('aria-controls',popup.id);
   function pintar(){
    popup.innerHTML=`<div class="reloj-esfera" role="group" aria-label="${etapa==='hora'?'Elige una hora del 1 al 12':etapa==='minuto'?'Elige los minutos del 00 al 59 en espiral':'Elige AM o PM'}"></div>`;
@@ -25,15 +25,15 @@ export function conectarHoras(cont){
    else{
     const minutos=etapa==='minuto',seleccion=minutos?minuto:hora,cantidad=minutos?60:12,coord=minutos?posicionMinuto(minuto):{x:150+Math.sin(hora%12*30*Math.PI/180)*100,y:150-Math.cos(hora%12*30*Math.PI/180)*100};
     const guia=minutos?`<path d="${Array.from({length:60},(_,i)=>{const p=posicionMinuto(i);return(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1);}).join(' ')}"/>`:`<line x1="150" y1="150" x2="${coord.x}" y2="${coord.y}"/>`;
-    esfera.innerHTML=`<svg class="reloj-manecilla ${minutos?'guia-espiral':''}" viewBox="0 0 300 300" aria-hidden="true">${guia}</svg>`+Array.from({length:cantidad},(_,i)=>{const numero=minutos?i:i+1,angulo=numero%12*30*Math.PI/180,p=minutos?posicionMinuto(i):{x:150+Math.sin(angulo)*116,y:150-Math.cos(angulo)*116};return `<button type="button" class="reloj-numero ${minutos?'es-minuto':''}" data-numero-hora="${numero}" aria-label="${numero} ${minutos?'minutos':'horas'}" aria-pressed="${numero===seleccion}" style="left:${p.x/3}%;top:${p.y/3}%">${minutos?dos(numero):numero}</button>`;}).join('')+`<button type="button" class="reloj-centro reloj-volver" data-volver-hora aria-label="Volver a elegir la hora">${dos(hora)}${minutos?`<small>${periodo}</small>`:''}</button>`;
+    esfera.innerHTML=`<svg class="reloj-manecilla ${minutos?'guia-espiral':''}" viewBox="0 0 300 300" aria-hidden="true">${guia}</svg>`+Array.from({length:cantidad},(_,i)=>{const numero=minutos?i:i+1,angulo=numero%12*30*Math.PI/180,p=minutos?posicionMinuto(i):{x:150+Math.sin(angulo)*116,y:150-Math.cos(angulo)*116};return `<button type="button" class="reloj-numero ${minutos?'es-minuto':''}" data-numero-hora="${numero}" aria-label="${numero} ${minutos?'minutos':'horas'}" aria-pressed="${numero===seleccion}" style="left:${p.x/3}%;top:${p.y/3}%">${minutos?dos(numero):numero}</button>`;}).join('')+`<button type="button" class="reloj-centro reloj-volver" data-volver-hora aria-label="${minutos?'Volver a elegir la hora':'Volver a elegir AM o PM'}">${minutos?dos(hora):periodo}${minutos?`<small>${periodo}</small>`:''}</button>`;
    }
    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)esfera.animate([{opacity:.3,transform:'scale(.97)'},{opacity:1,transform:'scale(1)'}],{duration:130,easing:'ease-out'});
    posicionar();
   }
   popup.onclick=e=>{const t=e.target.closest('button');if(!t)return;e.preventDefault();
-   if(t.hasAttribute('data-volver-hora'))etapa='hora';
-   else if(t.hasAttribute('data-numero-hora')){if(etapa==='hora'){hora=Number(t.dataset.numeroHora);etapa='periodo';}else{minuto=Number(t.dataset.numeroHora);poner(input,hora24(hora,minuto,periodo));cerrar(true);return;}}
-   else if(t.hasAttribute('data-periodo-hora')){periodo=t.dataset.periodoHora;etapa='minuto';}
+   if(t.hasAttribute('data-volver-hora'))etapa=etapa==='minuto'?'hora':'periodo';
+   else if(t.hasAttribute('data-numero-hora')){if(etapa==='hora'){hora=Number(t.dataset.numeroHora);etapa='minuto';}else{minuto=Number(t.dataset.numeroHora);poner(input,hora24(hora,minuto,periodo));cerrar(true);return;}}
+   else if(t.hasAttribute('data-periodo-hora')){periodo=t.dataset.periodoHora;etapa='hora';}
    pintar();popup.querySelector('[aria-pressed="true"]')?.focus({preventScroll:true});
   };pintar();
   requestAnimationFrame(()=>{if(!popup)return;const r=popup.getBoundingClientRect();if(r.bottom>innerHeight-12){let zona=origen.closest('#vista');if(!zona||zona.scrollHeight<=zona.clientHeight+1)zona=document.scrollingElement;zona.scrollBy({top:r.bottom-innerHeight+12,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}});
