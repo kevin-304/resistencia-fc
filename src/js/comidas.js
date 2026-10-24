@@ -34,3 +34,11 @@ export function reordenarComidas(comidas,ids){
  const mapa=new Map(comidas.map(c=>[c.id,c]));if(ids.length!==comidas.length||new Set(ids).size!==ids.length||ids.some(id=>!mapa.has(id)))return comidas;
  return ids.map(id=>mapa.get(id));
 }
+
+export const esPrimeraComida=c=>c.primeraDelDia??(c.tipo==='primera-comida');
+export const esUltimaComida=c=>c.ultimaDelDia??(c.tipo==='ultima-comida');
+export const tipoComida=c=>['primera-comida','ultima-comida'].includes(c.tipo)?'intermedia':c.tipo;
+export function marcarLimiteComida(comidas,id,rol,activo){
+ if(!['primeraDelDia','ultimaDelDia'].includes(rol)||!comidas.some(c=>c.id===id))return;
+ for(const c of comidas)if(c.id===id||activo)c[rol]=c.id===id&&activo;
+}

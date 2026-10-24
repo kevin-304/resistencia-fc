@@ -10,7 +10,7 @@ import { tarjetaGuia, abrirGuia } from '../guias-rutina.js';
 import { montarTemporizador } from '../temporizador.js';
 import { figuraReloj } from '../figura-reloj.js';
 import { ALIMENTOS, alimentosDelDia } from '../alimentos.js';
-import { comidasVisibles, comidasPredeterminadas, selectorAlimentos, actualizarDescripcion, CATEGORIAS_COMIDA, contadorAyuno, guardarComida, reordenarComidas } from '../comidas.js';
+import { esPrimeraComida, esUltimaComida, tipoComida, marcarLimiteComida, comidasVisibles, comidasPredeterminadas, selectorAlimentos, actualizarDescripcion, CATEGORIAS_COMIDA, contadorAyuno, guardarComida, reordenarComidas } from '../comidas.js';
 import { tarjetaSeccion, conectarTarjetas } from '../tarjetas.js';
 import { resumenRutina } from '../resumen-rutina.js';
 import { iconoArrastrar } from '../iconos-alimentos.js';
@@ -125,6 +125,7 @@ export function mostrarDia(cont, { fecha }) {
   });
   cont.addEventListener('change', (e) => {
     const t = e.target;
+    if(t.dataset.limiteComida){const dia=diaEditable(fecha);dia.comidas=comidasVisibles(dia);marcarLimiteComida(dia.comidas,t.dataset.idComida,t.dataset.limiteComida,t.checked);diaCambiado(fecha);repintarComidas(t.dataset.idComida);return;}
     if (t.dataset.c && (t.type === 'checkbox' || t.tagName === 'SELECT')) {
       t.closest('.ejercicio, .ej-tarjeta')?.classList.toggle('hecho', t.checked);
       cambiar(t.dataset.c, leerValor(t));
@@ -187,8 +188,6 @@ export function mostrarDia(cont, { fecha }) {
     if(accion==='terminar-ayuno'){const input=cont.querySelector('[data-c="ayuno.primera"]'),ahora=new Date();input.value=`${dos(ahora.getHours())}:${dos(ahora.getMinutes())}`;input.dispatchEvent(new Event('input',{bubbles:true}));}
     if (accion === 'guardar-comida') {
       const c=buscarComida(objetivo.dataset.idComida);if(!c)return;guardarComida(c);
-      const rol=c.tipo==='primera-comida'?'primera':c.tipo==='ultima-comida'?'ultima':null;
-      if(rol){const dia=diaEditable(fecha);(dia.ayuno||={})[rol]=c.hora;const input=cont.querySelector(`[data-c="ayuno.${rol}"]`);if(input)input.value=c.hora;}
       diaCambiado(fecha);repintarComidas(null,c.id);
     }
     if (accion === 'borrar-comida') {
@@ -290,7 +289,7 @@ export function mostrarDia(cont, { fecha }) {
     if (k === 'hora') c.horaManual=!!v;
     if (v === '' || v == null) delete c[k]; else c[k] = v;
     if(k==='textoLibre')actualizarDescripcion(c);
-    if(k==='tipo')t.closest('.comida').querySelector('summary b').textContent=TIPOS_COMIDA.find(x=>x.id===c.tipo)?.nombre||'Comida';
+    if(k==='tipo')t.closest('.comida').querySelector('summary b').textContent=TIPOS_COMIDA.find(x=>x.id===tipoComida(c))?.nombre||'Comida';
     diaCambiado(fecha);
     if (k === 'hora') {
       const fila = t.closest('.comida');fila.querySelector('summary small').textContent=c.hora||'';
@@ -347,7 +346,7 @@ export function mostrarDia(cont, { fecha }) {
     const m = metricasDia(fecha, estado.dias, ctx);
     const resuelto=resolverAyuno(fecha,estado.dias),actual=diaDe(fecha).ayuno||{};
     const anterior=cont.querySelector('[data-ayuno-anterior]');if(anterior)anterior.textContent=resuelto.anterior||'Sin comida registrada ayer';
-    for(const [k,v]of [['primera',resuelto.primera]]){const i=cont.querySelector(`[data-c="ayuno.${k}"]`);if(i&&!Object.hasOwn(actual,k)&&document.activeElement!==i)i.value=v;}
+    for(const [k,v]of [['primera',resuelto.primera]]){const i=cont.querySelector(`[data-c="ayuno.${k}"]`);if(i&&(!Object.hasOwn(actual,k)||comidasVisibles(diaDe(fecha)).some(c=>esPrimeraComida(c)&&!c.borrador))&&document.activeElement!==i)i.value=v;}
     pintarCuentaRegresiva(cont.querySelector('#cuenta-regresiva'),plan,fecha);
     const pon = (k, html) => cont.querySelectorAll(`[data-calc="${k}"]`).forEach((x) => (x.innerHTML = html));
     pon('sueno', m.sueno != null ? formatoHoras(m.sueno) : '—');
@@ -488,10 +487,11 @@ function seccionAyuno(d,plan,fecha){
 }
 
 function seccionComidas(d,plan,fecha){
- return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas"><button type="button" data-accion="configurar-ayuno">Ayuno</button>${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===c.tipo)?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
- <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===c.tipo?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
+ return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas"><button type="button" data-accion="configurar-ayuno">Ayuno</button>${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===tipoComida(c))?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
+ <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===tipoComida(c)?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
  <label class="campo"><span>Hora</span>${campoHora(c.hora,`data-comida="${escapar(c.id)}" data-k="hora"`,'Hora de comida')}</label>
  <label class="campo"><span>Calorías</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal??''}"></label></div>
+ <div class="comida-limites"><label><input type="checkbox" data-limite-comida="primeraDelDia" data-id-comida="${escapar(c.id)}" ${esPrimeraComida(c)?'checked':''}> Primera del día</label><label><input type="checkbox" data-limite-comida="ultimaDelDia" data-id-comida="${escapar(c.id)}" ${esUltimaComida(c)?'checked':''}> Última del día</label></div>
  ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label><div class="comida-guardar"><button type="button" class="boton comenzar-verde" data-accion="guardar-comida" data-id-comida="${escapar(c.id)}">Guardar</button></div></details>`).join('')}</div>
  </section>`;
 }

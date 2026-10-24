@@ -1,7 +1,7 @@
 import {resolverAyuno} from './ayuno-nocturno.js';
 import {planConProgramacion} from './programacion-rutinas.js';
 import {lunesDe,sumarDias} from './util.js';
-import {tieneComida} from './comidas.js';
+import {tieneComida,esPrimeraComida,esUltimaComida} from './comidas.js';
 import {normalizarPlan,planEnFecha,planDelDia,ejerciciosDe} from './plan.js';
 export function semanasConDatos(dias){return [...new Set(Object.keys(dias||{}).filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f)&&dias[f]&&Object.keys(dias[f]).length).map(lunesDe))].sort().reverse();}
 const latin=s=>String(s??'').replace(/[\r\n]+/g,' ').replace(/[–—]/g,'-').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[^\x20-\xff]/g,' ');
@@ -18,7 +18,7 @@ export function lineasSemana(datos,desde){
    if(r.inicio||r.hecho||Object.keys(r.registro||{}).length){pon('Ejercicios configurados (las cantidades reales solo se indican si se registraron):');for(const e of lista){const reg=r.registro?.[e.id];pon(`  ${e.nombre}${Array.isArray(reg)&&reg.some(x=>x!=null)?` | registrado: ${reg.map(x=>x??'-').join(', ')} ${e.unidad==='s'?'s':'reps'}`:''}`);}}
   }}
   const cs=(d.comidas||[]).filter(tieneComida);comidas+=cs.length;
-  if(cs.length){pon('Comidas:');for(const c of cs){const nombre=({'primera':'Desayuno',almuerzo:'Almuerzo',merienda:'Merienda',cena:'Cena',intermedia:'Comida intermedia','primera-comida':'Primera comida','ultima-comida':'Última comida'})[c.tipo]||'Comida';const descripcion=c.desc||[c.textoLibre,...(c.items||[]).map(x=>`${x.nombre}${x.cantidad?' ('+x.cantidad+')':''}`)].filter(Boolean).join(', ');pon(`  ${c.hora||'Sin hora'} - ${nombre}: ${descripcion||'Sin detalle'}${c.kcal!=null?' | '+c.kcal+' kcal':''}`);}}
+  if(cs.length){pon('Comidas:');for(const c of cs){const nombre=({'primera':'Desayuno',almuerzo:'Almuerzo',merienda:'Merienda',cena:'Cena',intermedia:'Comida intermedia','primera-comida':'Primera comida','ultima-comida':'Última comida'})[c.tipo]||'Comida';const descripcion=c.desc||[c.textoLibre,...(c.items||[]).map(x=>`${x.nombre}${x.cantidad?' ('+x.cantidad+')':''}`)].filter(Boolean).join(', ');pon(`  ${c.hora||'Sin hora'} - ${nombre}${esPrimeraComida(c)?' [Primera del día]':''}${esUltimaComida(c)?' [Última del día]':''}: ${descripcion||'Sin detalle'}${c.kcal!=null?' | '+c.kcal+' kcal':''}`);}}
   if(d.sueno)pon(`Sueño: ${d.sueno.dormir||'--:--'} a ${d.sueno.despertar||'--:--'} | calidad: ${d.sueno.calidad??'-'}`);
   if(d.ayuno?.activo||d.ayuno?.primera||d.ayuno?.anterior){const a=resolverAyuno(fecha,datos.dias);pon(`Ayuno: última comida ${a.fechaAnterior} ${a.anterior||'--:--'} | primera ${fecha} ${a.primera||'--:--'}${a.horas!=null?' | '+a.horas.toFixed(2)+' h':''}`);}
   if(d.agua!=null)pon(`Agua: ${d.agua} vasos`);

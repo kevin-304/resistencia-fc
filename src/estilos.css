@@ -954,3 +954,7 @@ button.boton[data-accion="borrar-comida"],button.boton[data-accion="quitar-item-
 @media(hover:hover){button.boton[data-accion="borrar-comida"]:hover,button.boton[data-accion="quitar-item-comida"]:hover,button.boton[data-accion="desactivar-ayuno"]:hover{background:#d33434;color:#fff;}}
 button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boton[data-accion="quitar-item-comida"]:is(:focus-visible,:active),button.boton[data-accion="desactivar-ayuno"]:is(:focus-visible,:active){background:#d33434;color:#fff;}
 @media(prefers-reduced-motion:reduce){button.boton[data-accion="borrar-comida"],button.boton[data-accion="quitar-item-comida"],button.boton[data-accion="desactivar-ayuno"]{transition:none;}}
+
+.comida-limites{display:flex;flex-wrap:wrap;gap:12px 20px;margin:0 10px 14px;font-size:.88em;}
+.comida-limites label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;}
+.comida-limites input{accent-color:#16813c;}

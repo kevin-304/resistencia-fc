@@ -23,8 +23,6 @@ export const TIPOS_COMIDA = [
   { id: 'cena', nombre: 'Cena' },
   { id: 'merienda', nombre: 'Merienda' },
   { id: 'intermedia', nombre: 'Comida intermedia' },
-  { id: 'primera-comida', nombre: 'Primera comida' },
-  { id: 'ultima-comida', nombre: 'Última comida' },
 ];
 
 export const ML_POR_VASO = 250;
