@@ -924,3 +924,7 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .ayuno-simple>.ayuno-cabecera{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .eliminar-ayuno{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;}
 .eliminar-ayuno svg{width:17px;height:17px;}
+
+.comida-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr) 36px;gap:8px;margin-bottom:8px;}
+.comida-item input{width:100%;min-width:0;font:inherit;}
+.comida-item>.boton{min-width:0;width:36px;}

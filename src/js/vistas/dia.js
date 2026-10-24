@@ -119,6 +119,7 @@ export function mostrarDia(cont, { fecha }) {
     const t = e.target;
     if (t.type === 'checkbox' || t.tagName === 'SELECT') return; // se atienden en "change"
     if (t.dataset.c) cambiar(t.dataset.c, leerValor(t));
+    else if (t.dataset.comidaItem) cambiarAlimento(t);
     else if (t.dataset.comida) cambiarComida(t);
     else if (t.dataset.reg) cambiarSerie(t);
   });
@@ -272,6 +273,12 @@ export function mostrarDia(cont, { fecha }) {
   function buscarComida(id) {
     const dia=diaEditable(fecha);if(!Array.isArray(dia.comidas))dia.comidas=comidasPredeterminadas();
     return dia.comidas.find(c=>c.id===id);
+  }
+
+  function cambiarAlimento(t) {
+    const c=buscarComida(t.dataset.comidaItem),item=c?.items?.find(i=>i.id===t.dataset.itemId),k=t.dataset.itemCampo;
+    if(!item||!['nombre','cantidad'].includes(k))return;
+    item[k]=t.value;actualizarDescripcion(c);diaCambiado(fecha);refrescar();
   }
 
   function cambiarComida(t) {
