@@ -1,5 +1,5 @@
 import {sumarDias,aMinutos,aISO} from './util.js';
-import {tieneComida,esPrimeraComida,esUltimaComida} from './comidas.js';
+import {tieneComida,esPrimeraComida,esUltimaComida,limitesComidas} from './comidas.js';
 const horaValida=h=>typeof h==='string'&&/^\d{1,2}:[0-5]\d$/.test(h)&&aMinutos(h)<1440;
 function comidasValidas(d){return (d?.comidas||[]).filter(c=>c.borrador!==true&&tieneComida(c)&&horaValida(c.hora)&&!(c.kcal!=null&&c.kcal!==''&&Number(c.kcal)===0)&&!(/^agua$/i.test((c.desc||'').trim()))&&!(c.items?.length&&c.items.every(i=>/^agua$/i.test(i.nombre))&&!c.textoLibre?.trim()));}
 function horarios(d){return comidasValidas(d).map(c=>c.hora);}
@@ -8,7 +8,8 @@ export function resolverAyuno(fecha,dias,ahora=new Date()){
  const d=dias[fecha]||{},a=d.ayuno||{},fechaAnterior=sumarDias(fecha,-1),anteriorDia=dias[fechaAnterior]||{};
  const previas=[...horarios(anteriorDia),...(horaValida(anteriorDia.ayuno?.ultima)?[anteriorDia.ayuno.ultima]:[])].sort((x,y)=>aMinutos(x)-aMinutos(y));
  const actuales=horarios(d).sort((x,y)=>aMinutos(x)-aMinutos(y));
- const ultimaMarcada=comidasValidas(anteriorDia).find(esUltimaComida),primeraMarcada=comidasValidas(d).find(esPrimeraComida);
+ const limitesA=limitesComidas(anteriorDia),limitesH=limitesComidas(d);
+ const ultimaMarcada=comidasValidas(anteriorDia).find(c=>c===limitesA.ultima),primeraMarcada=comidasValidas(d).find(c=>c===limitesH.primera);
  const anterior=ultimaMarcada?.hora||previas.at(-1)||'',primera=primeraMarcada?.hora||(Object.hasOwn(a,'primera')?a.primera:(actuales[0]||''));
  const inicio=instante(fechaAnterior,anterior),fin=instante(fecha,primera);let estado='sin-inicio',segundos=null;
  if(inicio!=null){if(fin!=null){estado=fin>=inicio?'completado':'invalido';if(estado==='completado')segundos=(fin-inicio)/1000;}

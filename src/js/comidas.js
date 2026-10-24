@@ -11,7 +11,7 @@ export const CATEGORIAS_COMIDA=[
  {id:'bebidas',nombre:'Bebidas',alimentos:['Agua','Café','Té','Leche','Jugo de naranja','Jugo de mora','Jugo de maracuyá','Batido de frutas','Bebida vegetal','Gaseosa']},
  {id:'otros',nombre:'Otros',alimentos:['Aguacate','Maní','Nueces','Aceite','Mantequilla','Salsa']},
 ];
-export function comidasPredeterminadas(){return ['primera','almuerzo','merienda'].map(tipo=>({id:`base-${tipo}`,tipo,etiquetas:[],borrador:true}));}
+export function comidasPredeterminadas(){return ['primera','almuerzo','merienda'].map(tipo=>({id:`base-${tipo}`,tipo,etiquetas:[],borrador:true,primeraDelDia:tipo==='primera',ultimaDelDia:tipo==='merienda'}));}
 export function comidasVisibles(d){return Array.isArray(d.comidas)?d.comidas:comidasPredeterminadas();}
 export function tieneComida(c){return !!(c.desc?.trim()||c.items?.length||c.hora||c.kcal!=null);}
 export function actualizarDescripcion(c){c.desc=[c.textoLibre||'',...(c.items||[]).map(i=>`${i.nombre}${i.cantidad?' ('+i.cantidad+')':''}`)].filter(Boolean).join(' · ');return c.desc;}
@@ -42,3 +42,11 @@ export function marcarLimiteComida(comidas,id,rol,activo){
  if(!['primeraDelDia','ultimaDelDia'].includes(rol)||!comidas.some(c=>c.id===id))return;
  for(const c of comidas)if(c.id===id||activo)c[rol]=c.id===id&&activo;
 }
+
+export function limitesComidas(d){
+ const cs=comidasVisibles(d);
+ return {primera:cs.find(esPrimeraComida)||(cs.some(c=>Object.hasOwn(c,'primeraDelDia'))?null:cs[0]),ultima:cs.find(esUltimaComida)||(cs.some(c=>Object.hasOwn(c,'ultimaDelDia'))?null:cs.at(-1))};
+}
+export function limitesPorOrden(cs){for(let i=0;i<cs.length;i++){cs[i].primeraDelDia=i===0;cs[i].ultimaDelDia=i===cs.length-1;}return cs;}
+export function primeraRegistrada(d){const c=limitesComidas(d).primera;return !!(c&&c.borrador!==true&&/^\d{1,2}:[0-5]\d$/.test(c.hora||'')&&aMinutos(c.hora)<1440);}
+export const ayunoVisible=d=>d.ayuno?.activo!==false&&primeraRegistrada(d);

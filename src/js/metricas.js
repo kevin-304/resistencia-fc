@@ -1,3 +1,4 @@
+import {ayunoVisible} from './comidas.js';
 import {resolverAyuno} from './ayuno-nocturno.js';
 // Cálculos a partir de lo registrado: horas de sueño y de ayuno, cumplimiento del día,
 // resúmenes semanales, rachas y alertas sanas (sección 9.8 del plan).
@@ -95,7 +96,7 @@ export function metricasDia(fecha, dias, ctx) {
   m.peso = d.medidas?.peso ?? null;
   m.cintura = d.medidas?.cintura ?? null;
 
-  const ayunoElegido=d.ayuno?.activo===true||(d.ayuno?.activo!==false&&!!(d.ayuno?.primera||d.ayuno?.ultima));
+  const ayunoElegido=ayunoVisible(d)||(d.ayuno?.activo!==false&&!!(d.ayuno?.primera||d.ayuno?.ultima));
   if(!ayunoElegido)m.ayunoOk=null;
   // Cumplimiento: lo que el plan pide ese día (ruta, ayuno, complemento). Los días de descanso no cuentan.
   if (plan.antesDelPlan || plan.descanso) m.cumplido = null;
