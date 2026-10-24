@@ -1022,7 +1022,7 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .categoria-filtro svg{width:22px;height:22px;flex:none;}
 .categoria-filtro:hover,.categoria-filtro[aria-pressed="true"]{background:#626a75;color:white;}
 .comida-item.alimento-guardado input[readonly]{background:transparent;border-color:transparent;padding-left:0;padding-right:0;cursor:default;}
-.comida-item.alimento-guardado{border-bottom:1px solid var(--borde);padding-bottom:6px;}
+.comida-item.alimento-guardado{padding-bottom:0;}
 .accion-icono.accion-editar{color:#626a75!important;}
 @media(hover:hover){.accion-icono.accion-editar:hover{background:#626a75!important;color:white!important;}}
 .accion-icono.accion-editar:is(:active,:focus-visible){background:#626a75!important;color:white!important;}
@@ -1057,3 +1057,10 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 
 .categoria-anadir.boton{color:#16813c;background:transparent;}
 .categoria-anadir.boton:hover{background:#16813c;color:#fff;}
+
+/* Acciones de categoría sin relleno en reposo. */
+.categoria-acciones{flex-wrap:wrap;gap:8px;}
+.categoria-acciones .boton{background:transparent;border:1px solid var(--borde);color:var(--texto);}
+.categoria-acciones .categoria-anadir{color:#16813c;}
+.categoria-acciones .categoria-anadir:hover,.categoria-acciones .categoria-guardar:hover,.categoria-acciones .categoria-guardar:focus-visible{background:#16813c;color:#fff;border-color:#16813c;}
+.categoria-acciones .categoria-cancelar:hover{background:#626a75;color:#fff;border-color:#626a75;}

@@ -173,6 +173,7 @@ export function mostrarDia(cont, { fecha }) {
     const accion = e.target.closest('[data-accion]')?.dataset.accion;
     const objetivo = e.target.closest('[data-accion]');
     if(accion==='modificar-categoria'){e.preventDefault();const panel=objetivo.closest('.categoria-comida');panel.open=true;panel.querySelector('[data-item-categoria]').focus();return;}
+    if(accion==='cancelar-categoria'){const panel=objetivo.closest('.categoria-comida');panel.querySelector('[data-item-categoria]').value='';panel.querySelector('[data-item-cantidad]').value='';const kcal=panel.querySelector('[data-item-calorias]');kcal.value='';delete kcal.dataset.manual;prepararCalorias(panel);panel.open=false;panel.querySelector('summary').focus();return;}
     if(accion==='guardar-categoria'){
       const c=buscarComida(objetivo.dataset.idComida),panel=objetivo.closest('.categoria-comida');if(!c)return;
       if(panel.querySelector('[data-item-categoria]').value.trim()&&!agregarAlimentoDesde(panel,c))return;
