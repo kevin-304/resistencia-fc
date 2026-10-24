@@ -182,7 +182,7 @@ export function mostrarDia(cont, { fecha }) {
     if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
     if (accion === 'agregar-comida') agregarComida({tipo:objetivo.dataset.tipo});
     if (accion === 'configurar-ayuno') {const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();refrescar();}
-    if(accion==='desactivar-ayuno'){const dia=diaEditable(fecha);(dia.ayuno||={}).activo=false;diaCambiado(fecha);cont.querySelector('[data-ayuno-config]').hidden=true;}
+    if(accion==='desactivar-ayuno'){e.preventDefault();const dia=diaEditable(fecha);(dia.ayuno||={}).activo=false;for(const k of ['primera','anterior','fechaAnterior'])delete dia.ayuno[k];diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=true;caja.open=false;refrescar();}
     if(accion==='terminar-ayuno'){const input=cont.querySelector('[data-c="ayuno.primera"]'),ahora=new Date();input.value=`${dos(ahora.getHours())}:${dos(ahora.getMinutes())}`;input.dispatchEvent(new Event('input',{bubbles:true}));}
     if (accion === 'guardar-comida') {
       const c=buscarComida(objetivo.dataset.idComida);if(!c)return;guardarComida(c);
@@ -191,6 +191,7 @@ export function mostrarDia(cont, { fecha }) {
       diaCambiado(fecha);repintarComidas(null,c.id);
     }
     if (accion === 'borrar-comida') {
+      e.preventDefault();
       const dia = diaEditable(fecha);
       dia.comidas = comidasVisibles(dia).filter((c) => c.id !== b.dataset.idComida);
       diaCambiado(fecha);
@@ -469,13 +470,13 @@ function seccionSueno(d) {
 
 function seccionAyuno(d,plan,fecha){
  const activo=d.ayuno?.activo===true,a=resolverAyuno(fecha,estado.dias),campos={...d,ayuno:{...d.ayuno,anterior:a.anterior,primera:a.primera}};
- return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary>Ayuno nocturno</summary><div class="horas-comida ayuno-nocturno">
+ return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary class="ayuno-cabecera"><span>Ayuno nocturno</span><button type="button" class="boton fantasma eliminar-ayuno" data-accion="desactivar-ayuno" aria-label="Eliminar ayuno" title="Eliminar ayuno">${I.basura}<span>Eliminar</span></button></summary><div class="horas-comida ayuno-nocturno">
  <div class="ayuno-origen"><span>Última comida de ayer</span><strong data-ayuno-anterior>${escapar(a.anterior||'Sin comida registrada ayer')}</strong></div>
  <div>${campo('Primera comida de hoy','ayuno.primera',campos,{tipo:'hora'})}<small class="suave">${fechaLarga(fecha)}</small></div></div>
  <div id="cuenta-regresiva" class="ayuno-contador"></div>
  <button type="button" class="boton" data-accion="terminar-ayuno" hidden>Terminar ahora</button>
  <details class="desplegable"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map(x=>`<li>${x}</li>`).join('')}</ul></details>
- <button type="button" class="boton fantasma" data-accion="desactivar-ayuno">Quitar ayuno de este día</button></details>
+ </details>
  <section class="tarjeta agua-registro"><div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
 }
 

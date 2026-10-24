@@ -127,7 +127,7 @@ export function diaEditable(fecha) {
 
 export function diaCambiado(fecha) {
   avisarCambio('dia', fecha);
-  if (estado.dias[fecha] && vacio(estado.dias[fecha])) delete estado.dias[fecha];
+  if (estado.dias[fecha] && !Array.isArray(estado.dias[fecha].comidas) && estado.dias[fecha].ayuno?.activo !== false && vacio(estado.dias[fecha])) delete estado.dias[fecha];
   mesesPendientes.add(fecha.slice(0, 7));
   avisar('pendiente');
   guardarDias();
