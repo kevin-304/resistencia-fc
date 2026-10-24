@@ -25,11 +25,11 @@ new MutationObserver(cambios=>{if(origen&&!origen.isConnected)ocultar();for(cons
 let ayuda=null,origen=null;
 function ocultar(){ayuda?.remove();ayuda=null;origen=null;}
 function mostrar(b){
- if(b===origen)return;ocultar();if(!b)return;origen=b;ayuda=document.createElement('div');ayuda.className='ayuda-accion';ayuda.setAttribute('role','tooltip');ayuda.textContent=b.dataset.ayudaAccion;document.body.appendChild(ayuda);
+ if(b===origen)return;ocultar();if(!b)return;origen=b;ayuda=document.createElement('div');ayuda.className='ayuda-accion';ayuda.setAttribute('role','tooltip');ayuda.textContent=b.dataset.ayudaAccion||b.dataset.ayudaHora;document.body.appendChild(ayuda);
  const r=b.getBoundingClientRect(),a=ayuda.getBoundingClientRect();ayuda.style.left=Math.max(6,Math.min(innerWidth-a.width-6,r.left+(r.width-a.width)/2))+'px';ayuda.style.top=(r.top>a.height+10?r.top-a.height-7:r.bottom+7)+'px';
 }
-document.addEventListener('pointerover',e=>{if(e.pointerType!=='touch')mostrar(e.target.closest('.accion-icono'));});
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='touch')mostrar(e.target.closest('.accion-icono,[data-ayuda-hora]'));});
 document.addEventListener('pointerout',e=>{if(origen&&!origen.contains(e.relatedTarget))ocultar();});
-document.addEventListener('focusin',e=>mostrar(e.target.closest('.accion-icono')));
+document.addEventListener('focusin',e=>mostrar(e.target.closest('.accion-icono,[data-ayuda-hora]')));
 document.addEventListener('focusout',ocultar);document.addEventListener('click',ocultar,true);document.addEventListener('scroll',ocultar,true);window.addEventListener('blur',ocultar);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')ocultar();});

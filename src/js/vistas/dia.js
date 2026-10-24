@@ -1,3 +1,4 @@
+import {estimarCalorias,recalcularAlimento,actualizarCaloriasComida} from '../nutricion.js';
 import {resolverAyuno} from '../ayuno-nocturno.js';
 import {campoHora,conectarHoras} from '../selector-hora.js';
 // Detalle de un día: lo que tocaba según el plan y todos los apartados para registrar.
@@ -118,6 +119,7 @@ export function mostrarDia(cont, { fecha }) {
   // Campos de texto, número, hora, selección y casillas
   cont.addEventListener('input', (e) => {
     const t = e.target;
+    if(t.matches('[data-item-cantidad],[data-item-calorias]')){prepararCalorias(t.closest('.categoria-comida'),false,t.hasAttribute('data-item-calorias'));return;}
     if (t.type === 'checkbox' || t.tagName === 'SELECT') return; // se atienden en "change"
     if (t.dataset.c) cambiar(t.dataset.c, leerValor(t));
     else if (t.dataset.comidaItem) cambiarAlimento(t);
@@ -126,6 +128,7 @@ export function mostrarDia(cont, { fecha }) {
   });
   cont.addEventListener('change', (e) => {
     const t = e.target;
+    if(t.hasAttribute('data-item-categoria')){prepararCalorias(t.closest('.categoria-comida'),true);return;}
     if(t.dataset.limiteComida){const dia=diaEditable(fecha);dia.comidas=comidasVisibles(dia);marcarLimiteComida(dia.comidas,t.dataset.idComida,t.dataset.limiteComida,t.checked);if(t.dataset.limiteComida==='primeraDelDia'&&t.checked&&dia.ayuno?.activo===false)delete dia.ayuno.activo;diaCambiado(fecha);repintarComidas(t.dataset.idComida);return;}
     if (t.dataset.c && (t.type === 'checkbox' || t.tagName === 'SELECT')) {
       t.closest('.ejercicio, .ej-tarjeta')?.classList.toggle('hecho', t.checked);
@@ -170,10 +173,10 @@ export function mostrarDia(cont, { fecha }) {
     if(accion==='agregar-item-comida'){
       const c=buscarComida(objetivo.dataset.idComida),cat=CATEGORIAS_COMIDA.find(x=>x.id===objetivo.dataset.categoria),caja=objetivo.closest('.categoria-comida');
       const nombre=caja.querySelector('select').value;if(!cat?.alimentos.includes(nombre))return;
-      c.textoLibre??=c.items?.length?'':c.desc||'';c.items||=[];c.items.push({id:idUnico(),categoria:cat.id,nombre,cantidad:caja.querySelector('[data-item-cantidad]').value.trim()});actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
+      c.textoLibre??=c.items?.length?'':c.desc||'';c.items||=[];const cantidad=caja.querySelector('[data-item-cantidad]').value.trim()||'1',campoKcal=caja.querySelector('[data-item-calorias]'),item={id:idUnico(),categoria:cat.id,nombre,cantidad};if(campoKcal.dataset.manual==='true'&&campoKcal.value!==''&&Number(campoKcal.value)>=0){item.kcal=Number(campoKcal.value);item.kcalManual=true;}recalcularAlimento(item);c.items.push(item);actualizarCaloriasComida(c);actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
     }
     if(accion==='quitar-item-comida'){
-      const c=buscarComida(objetivo.dataset.idComida);c.items=(c.items||[]).filter(x=>x.id!==objetivo.dataset.item);actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
+      const c=buscarComida(objetivo.dataset.idComida);c.items=(c.items||[]).filter(x=>x.id!==objetivo.dataset.item);actualizarCaloriasComida(c);actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
     }
     if (accion === 'catalogo-agregar') {
       const id = cont.querySelector('[data-catalogo]').value;
@@ -187,7 +190,9 @@ export function mostrarDia(cont, { fecha }) {
     if (accion === 'configurar-ayuno') {if(!primeraRegistrada(diaDe(fecha)))return;const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;ordenarTarjetasComidas();cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();refrescar();}
     if(accion==='desactivar-ayuno'){e.preventDefault();const dia=diaEditable(fecha);(dia.ayuno||={}).activo=false;for(const k of ['primera','anterior','fechaAnterior'])delete dia.ayuno[k];diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=true;caja.open=false;refrescar();}
     if(accion==='terminar-ayuno'){const input=cont.querySelector('[data-c="ayuno.primera"]'),ahora=new Date();input.value=`${dos(ahora.getHours())}:${dos(ahora.getMinutes())}`;input.dispatchEvent(new Event('input',{bubbles:true}));}
+    if(accion==='guardar-alimento'){const c=buscarComida(objetivo.dataset.idComida);if(!c)return;const invalido=objetivo.closest('.comida').querySelector(':invalid');if(invalido){invalido.reportValidity();return;}guardarComida(c);actualizarCaloriasComida(c);diaCambiado(fecha);repintarComidas(c.id);return;}
     if (accion === 'guardar-comida') {
+      e.preventDefault();
       const c=buscarComida(objetivo.dataset.idComida);if(!c)return;guardarComida(c);
       diaCambiado(fecha);repintarComidas(null,c.id);
     }
@@ -275,10 +280,20 @@ export function mostrarDia(cont, { fecha }) {
     return dia.comidas.find(c=>c.id===id);
   }
 
+  function prepararCalorias(caja,reiniciar=false,manual=false){
+    if(!caja)return;const nombre=caja.querySelector('select').value,cantidad=caja.querySelector('[data-item-cantidad]'),campo=caja.querySelector('[data-item-calorias]'),etiqueta=caja.querySelector('[data-item-kcal-campo]'),ayuda=caja.querySelector('[data-item-kcal-ayuda]');
+    etiqueta.hidden=!nombre;if(reiniciar){delete campo.dataset.manual;if(!cantidad.value)cantidad.value='1';}if(manual)campo.dataset.manual='true';
+    const e=estimarCalorias(nombre,cantidad.value);if(campo.dataset.manual!=='true')campo.value=e.kcal??'';
+    etiqueta.querySelector('span').textContent=campo.dataset.manual==='true'?'kcal':'kcal aprox.';ayuda.textContent=nombre?(campo.dataset.manual==='true'?'Valor manual':e.ayuda):'';ayuda.title=e.detalle||'';
+  }
+
   function cambiarAlimento(t) {
     const c=buscarComida(t.dataset.comidaItem),item=c?.items?.find(i=>i.id===t.dataset.itemId),k=t.dataset.itemCampo;
-    if(!item||!['nombre','cantidad'].includes(k))return;
-    item[k]=t.value;actualizarDescripcion(c);diaCambiado(fecha);refrescar();
+    if(!item||!['nombre','cantidad','kcal'].includes(k))return;
+    if(k==='kcal'){if(t.value!==''&&(!Number.isFinite(Number(t.value))||Number(t.value)<0))return;if(t.value===''){delete item.kcalManual;recalcularAlimento(item);}else{item.kcal=Number(t.value);item.kcalManual=true;item.kcalEstimadas=false;}}
+    else{item[k]=t.value;recalcularAlimento(item);}
+    const fila=t.closest('.comida-item'),calorias=fila.querySelector('[data-item-campo="kcal"]');if(k!=='kcal')calorias.value=item.kcal??'';calorias.title=item.kcalManual?'Valor manual':[item.detalleKcal,item.referenciaKcal].filter(Boolean).join(' · ')||'Introducir kcal';fila.querySelector('[data-kcal-modo]').textContent=item.kcalManual?'kcal':'kcal aprox.';
+    actualizarCaloriasComida(c);actualizarDescripcion(c);diaCambiado(fecha);refrescar();
   }
 
   function cambiarComida(t) {
@@ -289,7 +304,7 @@ export function mostrarDia(cont, { fecha }) {
     if (k === 'kcal') v = aNumero(v);
     if (k === 'hora') c.horaManual=!!v;
     if (v === '' || v == null) delete c[k]; else c[k] = v;
-    if(k==='textoLibre')actualizarDescripcion(c);
+    if(k==='textoLibre'){actualizarDescripcion(c);actualizarCaloriasComida(c);}
     if(k==='tipo')t.closest('.comida').querySelector('summary b').textContent=TIPOS_COMIDA.find(x=>x.id===tipoComida(c))?.nombre||'Comida';
     diaCambiado(fecha);
     if (k === 'hora') {
@@ -501,12 +516,12 @@ function seccionAgua(d){return `<section class="tarjeta agua-registro"><div clas
 }
 
 function seccionComidas(d,plan,fecha){
- return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas">${d.ayuno?.activo===false&&primeraRegistrada(d)?'<button type="button" data-accion="configurar-ayuno">Mostrar ayuno</button>':''}${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${seccionAyuno(d,plan,fecha)}${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===tipoComida(c))?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
+ return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas">${d.ayuno?.activo===false&&primeraRegistrada(d)?'<button type="button" data-accion="configurar-ayuno">Mostrar ayuno</button>':''}${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${seccionAyuno(d,plan,fecha)}${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===tipoComida(c))?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton guardar-comida-cabecera" data-accion="guardar-comida" data-id-comida="${escapar(c.id)}">Guardar</button><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
  <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===tipoComida(c)?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
  <label class="campo"><span>Hora</span>${campoHora(c.hora,`data-comida="${escapar(c.id)}" data-k="hora"`,'Hora de comida')}</label>
- <label class="campo"><span>Calorías</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal??''}"></label></div>
+ </div>
  <div class="comida-limites"><label><input type="checkbox" data-limite-comida="primeraDelDia" data-id-comida="${escapar(c.id)}" ${limitesComidas(d).primera?.id===c.id?'checked':''}> Primera del día</label><label><input type="checkbox" data-limite-comida="ultimaDelDia" data-id-comida="${escapar(c.id)}" ${limitesComidas(d).ultima?.id===c.id?'checked':''}> Última del día</label></div>
- ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label><div class="comida-guardar"><button type="button" class="boton comenzar-verde" data-accion="guardar-comida" data-id-comida="${escapar(c.id)}">Guardar</button></div></details>`).join('')}</div>
+ ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label>${c.kcal!=null&&!c.kcalPorAlimentos?`<label class="campo total-anterior"><span>Total registrado (kcal)</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal}"></label>`:''}</details>`).join('')}</div>
  </section>`;
 }
 
