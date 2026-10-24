@@ -928,3 +928,11 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .comida-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr) 36px;gap:8px;margin-bottom:8px;}
 .comida-item input{width:100%;min-width:0;font:inherit;}
 .comida-item>.boton{min-width:0;width:36px;}
+
+/* Señal discreta para todas las cabeceras desplegables. */
+details>summary{transition:background-color 140ms ease,color 140ms ease;}
+@media(hover:hover){
+ details:not(.categoria-comida)>summary:not(.boton):hover{background-color:color-mix(in srgb,var(--texto) 7%,transparent);border-radius:8px;}
+}
+details:not(.categoria-comida)>summary:not(.boton):focus-visible{background-color:color-mix(in srgb,var(--texto) 7%,transparent);border-radius:8px;outline:2px solid var(--texto-suave);outline-offset:-2px;}
+@media(prefers-reduced-motion:reduce){details>summary{transition:none;}}
