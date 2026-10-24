@@ -284,7 +284,7 @@ export function mostrarDia(cont, { fecha }) {
     diaCambiado(fecha);
     if (k === 'hora') {
       const fila = t.closest('.comida');fila.querySelector('summary small').textContent=c.hora||'';
-      const fuera = plan.ayuno && fueraDeVentana(c.hora, plan.ayuno.ventana, diaDe(fecha).ayuno?.guineoAntes);
+      const fuera = diaDe(fecha).ayuno?.activo===true && plan.ayuno && fueraDeVentana(c.hora, plan.ayuno.ventana, diaDe(fecha).ayuno?.guineoAntes);
       fila.classList.toggle('fuera-ventana', !!fuera);
       fila.querySelector('.aviso-ventana')?.classList.toggle('oculto', !fuera);
     }
