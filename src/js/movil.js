@@ -1,3 +1,4 @@
+import {iniciarCambioDia} from './cambio-dia.js';
 import {mostrarSemanales} from './vistas/semanales.js';
 // Arranque de la versión celular. Primero se instala window.api (almacenamiento del teléfono).
 import './api-web.js';
@@ -93,6 +94,11 @@ async function iniciar() {
   document.addEventListener('pointerdown',e=>{gesto=e.pointerType==='touch'?{x:e.clientX,y:e.clientY}:null;});
   document.addEventListener('pointerup',e=>{if(!gesto)return;const dx=e.clientX-gesto.x,dy=e.clientY-gesto.y;if(Math.abs(dy)<45){if(lateral.open && dx < -80)cerrarMenu();else if(!lateral.open && gesto.x<24 && dx>80)abrirMenu();}gesto=null;});
   fijarManejador(irA);
+  iniciarCambioDia((fecha,anterior)=>{
+    if(!actual||!estado.perfil)return;
+    if(actual.vista==='dia'&&actual.params.fecha===anterior){if(!document.querySelector('.temporizador.reloj-activo'))navegar({vista:'dia',fecha});return;}
+    if(['calendario','mirutina','estadisticas','reporte'].includes(actual.vista))navegar({vista:actual.vista,...actual.params});
+  });
   alGuardar((s, detalle) => { if (s === 'error') aviso('No se pudo guardar: ' + (detalle || ''), 'error'); });
   // Al salir de la app (o bloquear el teléfono) se guarda lo pendiente.
   document.addEventListener('visibilitychange', () => { if (document.hidden) guardarTodoYa(); });

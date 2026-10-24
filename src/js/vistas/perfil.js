@@ -31,7 +31,7 @@ function formularioPerfil(p) {
       <label class="campo"><span>Peso inicial</span><div class="con-unidad"><input id="p-peso" inputmode="decimal" value="${v(p.pesoInicial)}"><em>kg</em></div></label>
       <label class="campo"><span>Cintura inicial (opcional)</span><div class="con-unidad"><input id="p-cintura" inputmode="decimal" value="${v(p.cinturaInicial)}"><em>cm</em></div></label>
       <label class="campo"><span>Peso meta</span><div class="con-unidad"><input id="p-meta" inputmode="decimal" value="${v(p.pesoMeta)}"><em>kg</em></div></label>
-      <label class="campo"><span>Inicio del plan (lunes)</span><input type="date" id="p-inicio" value="${p.fechaInicio || ''}"></label>
+      <label class="campo"><span>Inicio del seguimiento</span><input type="date" id="p-inicio" value="${p.fechaInicio || ''}"></label>
     </div>
     <p class="suave pequeño" id="p-info" style="margin-top:10px"></p>`;
 }
@@ -49,7 +49,7 @@ function conectarFormulario(raiz, p, alCambiarSexo) {
     if (est && peso) partes.push(`IMC inicial: <b>${num(imc(peso, est), 1)}</b>`);
     if (sug) partes.push(`Meta sugerida (IMC 25): <b>${sug} kg</b>`);
     const ini = raiz.querySelector('#p-inicio').value;
-    if (ini) partes.push(`El plan arranca el <b>${fechaLarga(ini)}</b>`);
+    if (ini) partes.push(`Seguimiento desde el <b>${fechaLarga(ini)}</b>`);
     raiz.querySelector('#p-info').innerHTML = partes.join(' · ');
   };
   raiz.querySelectorAll('input').forEach((i) => i.addEventListener('input', info));

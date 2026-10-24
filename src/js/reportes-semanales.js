@@ -1,3 +1,4 @@
+import {planConProgramacion} from './programacion-rutinas.js';
 import {lunesDe,sumarDias} from './util.js';
 import {tieneComida} from './comidas.js';
 import {normalizarPlan,planEnFecha,planDelDia,ejerciciosDe} from './plan.js';
@@ -12,7 +13,7 @@ export function lineasSemana(datos,desde){
   if(d.ruta){const r=d.ruta;pon(`Ruta: ${r.salida||'--:--'} a ${r.llegada||'--:--'} | Distancia: ${r.distancia??'-'} km | Calorías: ${r.kcal??'-'}`);km+=Number(r.distancia)||0;}
   for(const [clave,nombre]of [['calentamientoSesion','Calentamiento'],['complemento','Ejercicio']]){const r=d[clave];if(!r)continue;if(r.inicio||r.fin)pon(`${nombre}: inicio ${r.inicio||'--:--'} | fin ${r.fin||'--:--'}${r.duracion!=null?` | tiempo activo ${r.duracion} min`:''}`);if(clave==='complemento'){
    if(r.hecho)sesiones++;pon(`Estado: ${r.hecho?'completada':r.fin?'finalizada sin confirmar todos los ejercicios':r.inicio?'iniciada':'sin sesión registrada'}`);
-   const pu=normalizarPlan(planEnFecha(datos.config?.plan,fecha)),plan=planDelDia(fecha,datos.perfil?.fechaInicio||fecha,datos.config?.terreno,null,pu),preparacion=d.preparacion||pu.semana[plan.ds]?.preparacion,lista=preparacion?.ejercicios||ejerciciosDe(r.tipo||plan.complemento?.tipo,plan.semana,pu);
+   const pu=normalizarPlan(planEnFecha(planConProgramacion(datos.config||{}),fecha)),plan=planDelDia(fecha,datos.perfil?.fechaInicio||fecha,datos.config?.terreno,null,pu),preparacion=d.preparacion||pu.semana[plan.ds]?.preparacion,lista=preparacion?.ejercicios||ejerciciosDe(r.tipo||plan.complemento?.tipo,plan.semana,pu);
    if(r.inicio||r.hecho||Object.keys(r.registro||{}).length){pon('Ejercicios configurados (las cantidades reales solo se indican si se registraron):');for(const e of lista){const reg=r.registro?.[e.id];pon(`  ${e.nombre}${Array.isArray(reg)&&reg.some(x=>x!=null)?` | registrado: ${reg.map(x=>x??'-').join(', ')} ${e.unidad==='s'?'s':'reps'}`:''}`);}}
   }}
   const cs=(d.comidas||[]).filter(tieneComida);comidas+=cs.length;
@@ -40,5 +41,5 @@ export function generarPDFSemanal(datos,desde){
 let timer=null,cola=Promise.resolve();const firmas=new Map();
 export function programarReportes(datos,api){
  if(!api?.guardarReporteAuto||!datos.perfil||!datos.carpeta)return;clearTimeout(timer);
- timer=setTimeout(()=>{const copia=structuredClone(datos);cola=cola.catch(()=>{}).then(async()=>{const existentes=await api.listarReportesAuto?.()||[];const semanas=[...new Set([...semanasConDatos(copia.dias),...existentes.map(r=>r.nombre.slice(7,17))])];for(const desde of semanas){const fin=sumarDias(desde,6),dias=Object.fromEntries(Object.entries(copia.dias).filter(([f])=>f>=desde&&f<=fin)),firma=JSON.stringify([copia.perfil.nombre,copia.config.plan,dias]),clave=copia.carpeta+desde;if(firmas.get(clave)===firma)continue;const pdf=generarPDFSemanal({...copia,dias},desde);await api.guardarReporteAuto(`Semana-${desde}.pdf`,Array.from(pdf),copia.carpeta);firmas.set(clave,firma);}window.dispatchEvent(new Event('reportes-actualizados'));}).catch(e=>{console.error('Reporte semanal:',e);window.dispatchEvent(new CustomEvent('reporte-error',{detail:e.message}));});},1200);
+ timer=setTimeout(()=>{const copia=structuredClone(datos);cola=cola.catch(()=>{}).then(async()=>{const existentes=await api.listarReportesAuto?.()||[];const semanas=[...new Set([...semanasConDatos(copia.dias),...existentes.map(r=>r.nombre.slice(7,17))])];for(const desde of semanas){const fin=sumarDias(desde,6),dias=Object.fromEntries(Object.entries(copia.dias).filter(([f])=>f>=desde&&f<=fin)),firma=JSON.stringify([copia.perfil.nombre,copia.config.plan,copia.config.programacionRutinas,dias]),clave=copia.carpeta+desde;if(firmas.get(clave)===firma)continue;const pdf=generarPDFSemanal({...copia,dias},desde);await api.guardarReporteAuto(`Semana-${desde}.pdf`,Array.from(pdf),copia.carpeta);firmas.set(clave,firma);}window.dispatchEvent(new Event('reportes-actualizados'));}).catch(e=>{console.error('Reporte semanal:',e);window.dispatchEvent(new CustomEvent('reporte-error',{detail:e.message}));});},1200);
 }

@@ -1,3 +1,4 @@
+import {planConProgramacion} from './programacion-rutinas.js';
 import {programarReportes} from './reportes-semanales.js';
 // Estado de la aplicación: todo lo leído de la carpeta de datos vive aquí en memoria
 // y cada cambio se guarda solo, a los pocos milisegundos, en su archivo .json.
@@ -148,7 +149,7 @@ export function contexto() {
     inicio: estado.perfil?.fechaInicio || INICIO_POR_DEFECTO,
     terreno: estado.config.terreno,
     rutaPrincipal: rutaPrincipal(),
-    plan: normalizarPlan(estado.config.plan),
+    plan: planConProgramacion(estado.config),
   };
 }
 

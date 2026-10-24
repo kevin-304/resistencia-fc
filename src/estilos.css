@@ -860,3 +860,12 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 [data-reportes-semanales] {margin-bottom:16px;}
 .semana-opcion .actividad-silueta {width:42px;height:42px;}
 @media(max-width:520px){.semana-opcion .actividad-silueta {width:34px;height:34px;}}
+.rutinas-selector-fila {display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;}
+.rutinas-selector-fila>.campo {flex:1 1 220px;max-width:440px;}
+.selector-rutinas {margin-bottom:16px;}
+.fechas-rutina {margin-top:16px;}
+.fechas-rutina>summary {cursor:pointer;font-weight:600;}
+.fechas-rutina form {margin-top:14px;}
+.rutinas-guardar {display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.rutina-vigencia {margin-top:12px;}
+@media(max-width:520px){.rutinas-selector-fila>.campo {flex-basis:100%;max-width:none;}}

@@ -550,13 +550,25 @@ export function rutinaDe(tipo, pu) {
 // pu = plan del perfil (si no se pasa, el plan sugerido)
 // Las revisiones de un perfil solo afectan las fechas desde su entrada en vigor.
 export function planEnFecha(pu, fecha) {
+  if(pu?.programacionRutinas?.rutinas?.length){
+    const base={...pu};delete base.programacionRutinas;
+    const lista=pu.programacionRutinas.rutinas.map((r,i)=>({...r,indice:i})).filter(r=>!r.borrador);
+    const candidatas=lista.filter(r=>r.inicio<=fecha).sort((a,b)=>b.inicio.localeCompare(a.inicio)||b.indice-a.indice);
+    const r=candidatas[0];
+    if(!r){const primera=lista.sort((a,b)=>a.inicio.localeCompare(b.inicio))[0];return {...base,...(primera?{inicioRutina:primera.inicio}: {})};}
+    const plantilla=planEnFecha(r.plan,fecha),caducada=!!r.fin&&fecha>r.fin;
+    return {...plantilla,ayuno:base.ayuno,metas:base.metas,alimentos:base.alimentos,
+      ...(caducada?{semana:planVacio().semana,calentamiento:false,finalizador:false}:{}),
+      inicioRutina:r.inicio,rutinaFin:r.fin,rutinaNombre:r.nombre,rutinaId:r.id,rutinaMeta:r.meta,primeraSesion:r.primeraSesion,fueraDeRutina:caducada};
+  }
+
   while (pu?.vigenteDesde && fecha < pu.vigenteDesde && pu.planAnterior) pu = pu.planAnterior;
   return pu;
 }
 
 export function planDelDia(fecha, inicio, terreno, rutaPrincipal, pu = planSugerido()) {
   pu = planEnFecha(pu, fecha);
-  const semana = semanaDelPlan(fecha, inicio);
+  const semana = semanaDelPlan(fecha, pu.inicioRutina || inicio);
   const ds = diaSemana(fecha);
   const dia = pu.semana[ds];
   const base = { ...dia.ruta, complemento: dia.complemento };
