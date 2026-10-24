@@ -1008,3 +1008,24 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .comida-item>.guardar-alimento{width:auto;min-width:58px;padding:7px 8px;}
 .categoria-elegir>.alimento-anadir{grid-column:4;}
 @media(max-width:520px){.categoria-elegir>.alimento-anadir{grid-column:3;}}
+
+.buscador-general{margin:8px 10px 14px;}
+.categoria-elegir>[data-item-categoria]{grid-column:1;width:100%;min-width:0;}
+.categoria-elegir>input[type="search"]{padding-right:8px;}
+.categoria-elegir>input[data-item-cantidad]{grid-column:2;}
+.categoria-elegir>.alimento-kcal{grid-column:3;}
+@media(max-width:520px){.categoria-elegir>[data-item-categoria]{grid-column:1/-1;}.categoria-elegir>input[data-item-cantidad]{grid-column:1;}.categoria-elegir>.alimento-kcal{grid-column:2;}}
+
+/* Un único formulario de alta; cada alimento añadido se modifica con el lápiz. */
+.filtros-alimentos{padding:0 10px;gap:5px;margin-top:10px;}
+.categoria-filtro{display:flex;align-items:center;gap:6px;padding:7px;border:0;border-radius:7px;background:transparent;color:var(--texto);font:inherit;font-size:.82em;cursor:pointer;text-align:left;}
+.categoria-filtro svg{width:22px;height:22px;flex:none;}
+.categoria-filtro:hover,.categoria-filtro[aria-pressed="true"]{background:#626a75;color:white;}
+.comida-item.alimento-guardado input[readonly]{background:transparent;border-color:transparent;padding-left:0;padding-right:0;cursor:default;}
+.comida-item.alimento-guardado{border-bottom:1px solid var(--borde);padding-bottom:6px;}
+.accion-icono.accion-editar{color:#626a75!important;}
+@media(hover:hover){.accion-icono.accion-editar:hover{background:#626a75!important;color:white!important;}}
+.accion-icono.accion-editar:is(:active,:focus-visible){background:#626a75!important;color:white!important;}
+.agua-simple .accion-icono.accion-icono{background:#626a75!important;color:#fff!important;}
+@media(hover:hover){.agua-simple .accion-icono.accion-icono:hover{background:#454c56!important;color:#fff!important;}}
+.agua-simple .accion-icono.accion-icono:is(:active,:focus-visible){background:#454c56!important;color:#fff!important;}

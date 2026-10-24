@@ -1,7 +1,7 @@
 import {NUTRICION} from './nutricion-datos.js';
 const normalizar=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const tabla=new Map(Object.entries(NUTRICION).map(([n,v])=>[normalizar(n),v]));
-const alias={banana:'guineo / banana',guineo:'guineo / banana',banano:'guineo / banana',bananas:'guineo / banana'};
+const alias={banana:'guineo / banana',guineo:'guineo / banana',banano:'guineo / banana',bananas:'guineo / banana',fideos:'pasta','fideos cocidos':'pasta',espaguetis:'pasta','espaguetis cocidos':'pasta',tallarines:'pasta','tallarines cocidos':'pasta','macarrones cocidos':'pasta','avena cocida':'avena','huevo duro':'huevo','pechuga de pollo':'pollo'};
 export function estimarCalorias(nombre,cantidad='1'){
  const n=normalizar(nombre),d=tabla.get(alias[n]||n);if(!d)return{kcal:null,ayuda:'Introducir kcal',detalle:'Sin referencia para este alimento'};
  let texto=normalizar(cantidad||'1').replace(',','.').replace('½','1/2').replace('¼','1/4').replace('¾','3/4').replace(/^(media|medio|mitad)\b/,'0.5');
