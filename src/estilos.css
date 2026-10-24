@@ -869,3 +869,34 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .rutinas-guardar {display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;}
 .rutina-vigencia {margin-top:12px;}
 @media(max-width:520px){.rutinas-selector-fila>.campo {flex-basis:100%;max-width:none;}}
+.selector-hora {min-width:0;}
+.hora-input-fila {display:flex;align-items:stretch;gap:5px;}
+.hora-input-fila input {min-width:0;width:100%;}
+.hora-input-fila .boton {flex-shrink:0;padding:8px;width:38px;}
+.selector-hora .marcar-hora {font-size:.78em;padding:6px 0;min-height:28px;white-space:normal;}
+[data-hora-manual][aria-invalid="true"] {outline:2px solid #b84141;}
+[data-ayuno-config][hidden] {display:none!important;}
+.comida-nueva>summary,.bloque-actividad>summary {user-select:none;cursor:grab;}
+.comida-nueva>summary:active,.bloque-actividad>summary:active {cursor:grabbing;}
+.comida-agarre {min-width:32px;min-height:36px;touch-action:none;-webkit-touch-callout:none;}
+.comida-arrastrando {opacity:.65;box-shadow:0 3px 10px #00000012;}
+.reloj-hora-dialog {width:340px;max-width:calc(100vw - 24px);padding:18px;border:1px solid var(--borde,#dce0e6);border-radius:18px;background:var(--superficie,#fff);color:var(--texto,#20242a);box-sizing:border-box;}
+.reloj-hora-dialog::backdrop {background:#0006;}
+.reloj-hora-cab {display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.reloj-hora-lectura {font-size:1.3em;font-variant-numeric:tabular-nums;font-weight:650;}
+.reloj-hora-pasos {display:flex;gap:8px;justify-content:center;margin:16px 0 10px;}
+.reloj-hora-pasos button {border:0;background:transparent;color:inherit;padding:7px 10px;border-radius:7px;cursor:pointer;}
+.reloj-hora-pasos button[aria-current="step"] {background:#626a75;color:white;}
+.reloj-esfera {position:relative;width:300px;max-width:100%;aspect-ratio:1;margin:auto;border-radius:50%;background:var(--fondo,#f3f4f6);border:1px solid var(--borde,#dce0e6);}
+.reloj-numero {position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;font:inherit;display:grid;place-items:center;}
+.reloj-numero.es-minuto {width:20px;height:20px;font-size:11px;}
+.reloj-numero:hover,.reloj-numero:focus-visible,.reloj-numero[aria-pressed="true"],.reloj-periodos button[aria-pressed="true"] {background:#626a75;color:white;}
+.reloj-centro {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:1.5em;font-variant-numeric:tabular-nums;pointer-events:none;}
+.reloj-periodos {display:flex;align-items:center;justify-content:center;height:100%;gap:24px;}
+.reloj-periodos button {width:72px;height:72px;border-radius:50%;border:0;background:transparent;color:inherit;font:inherit;font-size:1.3em;cursor:pointer;}
+.reloj-hora-pie {display:flex;justify-content:space-between;gap:10px;margin-top:16px;}
+.agua-registro {margin-top:12px;}
+@media(pointer:coarse){.reloj-numero.es-minuto {width:23px;height:23px;}.comida-agarre {min-width:38px;}}
+.reloj-manecilla {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;stroke:currentColor;stroke-width:2;opacity:.22;}
+.reloj-centro {min-width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:var(--fondo,#f3f4f6);}
+.reloj-numero:focus-visible,.reloj-periodos button:focus-visible {outline:2px solid #626a75;outline-offset:2px;}

@@ -36,7 +36,7 @@ export function mostrarMiRutina(cont,opciones={}){
    const dibujar=()=>{if(cargada)return;cargada=true;const panel=tarjeta.querySelector('[data-editor-semana]'),d=p.semana[ds];
     if(!entrenaDia(d)){panel.innerHTML='<p class="suave">Descanso</p>';return;}
     const {base,orden}=bloquesDia(p,ds,hoy,inicioEditor);
-    panel.innerHTML=`<p class="suave pequeño">Arrastra las actividades para cambiar su orden.</p><div class="bloques-actividades">${orden.map(id=>`<details class="bloque-actividad" data-bloque-id="${id}"><summary><button type="button" class="comida-agarre" draggable="true" data-arrastrar-bloque aria-label="Reordenar actividad">${iconoArrastrar}</button>${iconoActividad(id==='calentamiento'||id==='enfriamiento'?'movilidad':id,estado.perfil?.sexo)}<b>${escapar(nombreActividad(id))}</b></summary><div data-bloque-editor="${id}"></div></details>`).join('')}</div>`;
+    panel.innerHTML=`<p class="suave pequeño">Arrastra las actividades para cambiar su orden.</p><div class="bloques-actividades">${orden.map(id=>`<details class="bloque-actividad" data-bloque-id="${id}"><summary><button type="button" class="comida-agarre" data-arrastrar-bloque aria-label="Reordenar actividad">${iconoArrastrar}</button>${iconoActividad(id==='calentamiento'||id==='enfriamiento'?'movilidad':id,estado.perfil?.sexo)}<b>${escapar(nombreActividad(id))}</b></summary><div data-bloque-editor="${id}"></div></details>`).join('')}</div>`;
     const actualizar=()=>{aplicarBloques(p,ds,base);guardar();};
     for(const id of orden){const caja=panel.querySelector(`[data-bloque-editor="${id}"]`);
      if(id==='ruta'){

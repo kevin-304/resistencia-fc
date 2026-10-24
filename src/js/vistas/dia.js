@@ -1,3 +1,4 @@
+import {campoHora,conectarHoras} from '../selector-hora.js';
 // Detalle de un día: lo que tocaba según el plan y todos los apartados para registrar.
 // Cada cambio se guarda solo (no hay botón "Guardar").
 import { estado, contexto, diaDe, diaEditable, diaCambiado, guardarFrecuentes, rutaPrincipal } from '../estado.js';
@@ -75,6 +76,7 @@ export function mostrarDia(cont, { fecha }) {
     tarjeta.addEventListener('toggle',()=>{if(tarjeta.open)pestanaActual=id;else {if(pestanaActual===id)pestanaActual=null;if(id==='ejercicio')cont.querySelector('[data-temporizador]')?.dispatchEvent(new Event('pausar-rutina'));}});
   });
   conectarTarjetas(cont);
+  alSalir(conectarHoras(cont));
   alSalir(conectarOrdenComidas(cont,ids=>{const dia=diaEditable(fecha);dia.comidas=reordenarComidas(comidasVisibles(dia),ids);diaCambiado(fecha);}));
   const tipoRutina = d.complemento?.tipo || plan.complemento?.tipo || 'estiramientos';
   montarTemporizador(cont.querySelector('[data-temporizador]'), {
@@ -178,7 +180,8 @@ export function mostrarDia(cont, { fecha }) {
     }
     if (accion === 'guia-ampliar') abrirGuia(objetivo.dataset.rutina);
     if (accion === 'agregar-comida') agregarComida({tipo:objetivo.dataset.tipo});
-    if (accion === 'configurar-ayuno') {const caja=cont.querySelector('[data-ayuno-config]');caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();}
+    if (accion === 'configurar-ayuno') {const dia=diaEditable(fecha);(dia.ayuno||={}).activo=true;diaCambiado(fecha);const caja=cont.querySelector('[data-ayuno-config]');caja.hidden=false;caja.open=true;cont.querySelector('.anadir-comida').open=false;caja.querySelector('input')?.focus();}
+    if(accion==='desactivar-ayuno'){const dia=diaEditable(fecha);(dia.ayuno||={}).activo=false;diaCambiado(fecha);cont.querySelector('[data-ayuno-config]').hidden=true;}
     if (accion === 'guardar-comida') {
       const c=buscarComida(objetivo.dataset.idComida);if(!c)return;guardarComida(c);
       const rol=c.tipo==='primera-comida'?'primera':c.tipo==='ultima-comida'?'ultima':null;
@@ -367,7 +370,7 @@ export function mostrarDia(cont, { fecha }) {
   }
 
   // Cuenta regresiva de la ventana de comida (solo hoy)
-  if (fecha === hoy && plan.ayuno) {
+  if (fecha === hoy) {
     const caja = cont.querySelector('#cuenta-regresiva');
     const tick = () => pintarCuentaRegresiva(cont.querySelector('#cuenta-regresiva'), plan, fecha);
     tick();
@@ -411,7 +414,7 @@ function campo(etiqueta, camino, d, { tipo = 'texto', unidad = '', ph = '', ahor
   const v = obtener(d, camino);
   const valor = v == null ? '' : tipo === 'num' ? String(v).replace('.', ',') : v;
   const tipoInput = tipo === 'hora' ? 'time' : 'text';
-  const input = `<input type="${tipoInput}" data-c="${camino}" data-t="${tipo}" value="${escapar(valor)}" placeholder="${escapar(ph)}" ${tipo === 'num' ? 'inputmode="decimal"' : ''}>`;
+  const input = tipo==='hora'?campoHora(valor,`data-c="${camino}" data-t="hora"`,etiqueta):`<input type="${tipoInput}" data-c="${camino}" data-t="${tipo}" value="${escapar(valor)}" placeholder="${escapar(ph)}" ${tipo === 'num' ? 'inputmode="decimal"' : ''}>`;
   return `<label class="campo"><span>${etiqueta}</span>${
     unidad ? `<div class="con-unidad">${input}<em>${unidad}</em></div>`
     : ahora ? `<div style="display:flex;gap:6px">${input}<button type="button" class="boton icono" data-accion="hora-ahora" title="Poner la hora actual">${I.ayuno}</button></div>`
@@ -459,17 +462,19 @@ function seccionSueno(d) {
 }
 
 function seccionAyuno(d,plan,fecha){
- return `<details class="tarjeta ayuno-simple" data-ayuno-config><summary>Ayuno y agua</summary><div class="horas-comida">
+ const activo=d.ayuno?.activo===true;
+ return `<details class="tarjeta ayuno-simple" data-ayuno-config ${activo?'':'hidden'}><summary>Ayuno</summary><div class="horas-comida">
  ${campo('Primera comida','ayuno.primera',d,{tipo:'hora'})}${campo('Última comida','ayuno.ultima',d,{tipo:'hora'})}</div>
- ${fecha===hoyISO()&&plan.ayuno?'<div id="cuenta-regresiva" class="ayuno-contador"></div>':''}
+ ${fecha===hoyISO()?'<div id="cuenta-regresiva" class="ayuno-contador"></div>':''}
  <details class="desplegable"><summary>Qué puedo tomar en ayuno</summary><ul>${DURANTE_AYUNO.map(x=>`<li>${x}</li>`).join('')}</ul></details>
- <div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></details>`;
+ <button type="button" class="boton fantasma" data-accion="desactivar-ayuno">Quitar ayuno de este día</button></details>
+ <section class="tarjeta agua-registro"><div class="contador agua-simple"><span>Agua</span><button type="button" class="boton" data-sumar="agua" data-paso="-1">−</button><span class="valor">${d.agua||0}</span><button type="button" class="boton" data-sumar="agua" data-paso="1">+</button><small>vasos</small></div></section>`;
 }
 
 function seccionComidas(d,plan,fecha){
- return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas">${TIPOS_COMIDA.map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}<button type="button" data-accion="configurar-ayuno">Ayuno</button></div></details><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida draggable="true" aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===c.tipo)?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
+ return `<section class="tarjeta" id="sec-comidas"><details class="anadir-comida"><summary class="boton">${I.mas} Añadir comida</summary><div class="menu-comidas"><button type="button" data-accion="configurar-ayuno">Ayuno</button>${[...TIPOS_COMIDA].sort((a,b)=>['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(a.id)-['primera','almuerzo','merienda','cena','intermedia','primera-comida','ultima-comida'].indexOf(b.id)).map(t=>`<button type="button" data-accion="agregar-comida" data-tipo="${t.id}">${t.nombre}</button>`).join('')}</div></details><div class="lista-comidas">${comidasVisibles(d).map(c=>`<details class="comida comida-nueva" data-comida-id="${escapar(c.id)}"><summary><button type="button" class="comida-agarre" data-arrastrar-comida aria-label="Reordenar comida" title="Arrastra para reordenar; usa las flechas arriba y abajo con el teclado">${iconoArrastrar}</button><b>${escapar(TIPOS_COMIDA.find(t=>t.id===c.tipo)?.nombre||'Comida')}</b><small>${escapar(c.hora||'')}</small><button type="button" class="boton icono fantasma" data-accion="borrar-comida" data-id-comida="${escapar(c.id)}" aria-label="Eliminar comida">${I.basura}</button></summary>
  <div class="comida-edicion"><label class="campo"><span>Comida</span><select data-comida="${escapar(c.id)}" data-k="tipo">${TIPOS_COMIDA.map(t=>`<option value="${t.id}" ${t.id===c.tipo?'selected':''}>${t.nombre}</option>`).join('')}</select></label>
- <label class="campo"><span>Hora</span><input type="time" data-comida="${escapar(c.id)}" data-k="hora" value="${escapar(c.hora||'')}"></label>
+ <label class="campo"><span>Hora</span>${campoHora(c.hora,`data-comida="${escapar(c.id)}" data-k="hora"`,'Hora de comida')}</label>
  <label class="campo"><span>Calorías</span><input inputmode="decimal" data-comida="${escapar(c.id)}" data-k="kcal" value="${c.kcal??''}"></label></div>
  ${selectorAlimentos(c)}<label class="campo comida-libre"><span>Otro alimento o detalle</span><input type="text" data-comida="${escapar(c.id)}" data-k="textoLibre" value="${escapar(c.textoLibre??(!c.items?.length?c.desc||'':''))}"></label><div class="comida-guardar"><button type="button" class="boton comenzar-verde" data-accion="guardar-comida" data-id-comida="${escapar(c.id)}">Guardar</button></div></details>`).join('')}</div>
  </section>`;
@@ -589,8 +594,8 @@ function tarjetaPlan(plan,d,esHoy){
 }
 
 function pintarCuentaRegresiva(caja,plan,fecha){
- if(!caja)return;const ahora=new Date(),a=diaDe(fecha).ayuno||{};
- const cuenta=contadorAyuno(ahora.getHours()*3600+ahora.getMinutes()*60+ahora.getSeconds(),a.primera||plan.ayuno.ventana[0],a.ultima||plan.ayuno.ventana[1]);
+ if(!caja)return;const ahora=new Date(),a=diaDe(fecha).ayuno||{};if(a.activo!==true){caja.innerHTML='';return;}
+ const cuenta=contadorAyuno(ahora.getHours()*3600+ahora.getMinutes()*60+ahora.getSeconds(),a.primera||plan.ayuno?.ventana?.[0]||'',a.ultima||plan.ayuno?.ventana?.[1]||'');
  if(!cuenta){caja.innerHTML='<span>Indica dos horarios distintos.</span>';return;}
  const t=cuenta.segundos,tiempo=`${Math.floor(t/3600)}:${dos(Math.floor(t%3600/60))}:${dos(t%60)}`;
  caja.innerHTML=`<span>${cuenta.titulo}</span><strong>${tiempo}</strong>`;
