@@ -4,7 +4,7 @@ import {I} from './iconos.js';
 const eliminar='[data-accion="borrar-comida"],[data-accion="quitar-item-comida"],[data-accion="desactivar-ayuno"],[data-accion="quitar-foto"],[data-prep-quitar],[data-quitar-foto],[data-borrar]';
 const agregar='[data-accion="agregar-item-comida"],[data-accion="serie-mas"],[data-prep-agregar]';
 function preparar(b){
- if(b.classList.contains('accion-icono')||b.closest('.arrastre-flotante'))return;
+ if(b.hasAttribute('data-con-texto')||b.classList.contains('accion-icono')||b.closest('.arrastre-flotante'))return;
  const texto=b.textContent.trim(),etiqueta=b.getAttribute('aria-label')||b.title||texto;
  // Los tipos del menú y las confirmaciones conservan sus nombres.
  if(b.closest('dialog .acciones,.menu-comidas')||b.matches('.perfil-tarjeta,[data-reloj-restablecer],[data-reloj-restablecer-cal]'))return;

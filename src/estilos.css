@@ -1036,3 +1036,24 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .reloj-navegacion button:hover:not(:disabled),.reloj-navegacion button:focus-visible{background:#626a75;color:#fff;}
 .reloj-navegacion button:disabled{opacity:.25;cursor:default;}
 .reloj-esfera.etapa-periodo .reloj-periodos{transform:translateY(-18px);}
+
+/* Cada categoría despliega su propio formulario debajo del título. */
+.categorias-agrupadas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 10px;}
+.categoria-grupo{min-width:0;border:1px solid var(--borde);border-radius:10px;overflow:hidden;}
+.categoria-grupo:has(>.categoria-comida[open]),.categoria-grupo.tiene-alimentos{grid-column:1/-1;}
+.categoria-grupo>.categoria-comida>summary{display:flex;gap:8px;align-items:center;padding:10px;min-height:44px;font-size:.85em;}
+.categoria-grupo>.categoria-comida>summary b{flex:1;}
+.categoria-grupo>.categoria-comida[open]>summary{background:color-mix(in srgb,var(--texto) 5%,transparent);color:var(--texto);}
+.categoria-grupo .categoria-elegir{grid-template-columns:minmax(0,1fr) 64px 80px;max-width:none;padding:8px 10px;}
+.categoria-acciones{display:flex;justify-content:flex-end;gap:10px;padding:2px 10px 12px;}
+.categoria-acciones .boton{display:inline-flex;align-items:center;gap:5px;font-size:.82em;padding:7px 10px;}
+.categoria-acciones svg,.modificar-categoria svg{width:17px;height:17px;}
+.modificar-categoria.boton{display:inline-flex;gap:5px;align-items:center;background:#fff1ad;color:#715600;border:0;padding:6px 9px;font-size:.85em;}
+.modificar-categoria.boton:hover{background:#f3d76a;color:#574200;}
+.categoria-comida[open] .modificar-categoria{display:none;}
+.categoria-grupo>.comida-items:empty{display:none;}
+.categoria-grupo>.comida-items{padding:0 10px 4px;}
+@media(max-width:520px){.categoria-grupo .categoria-elegir{grid-template-columns:minmax(0,1fr) 80px;}.categoria-grupo [data-item-categoria]{grid-column:1/-1;}.categoria-grupo [data-item-cantidad]{grid-column:1;}.categoria-grupo .alimento-kcal{grid-column:2;}.categoria-grupo>.categoria-comida>summary{padding:8px;gap:6px;}}
+
+.categoria-anadir.boton{color:#16813c;background:transparent;}
+.categoria-anadir.boton:hover{background:#16813c;color:#fff;}

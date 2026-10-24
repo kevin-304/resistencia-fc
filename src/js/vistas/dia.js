@@ -1,4 +1,4 @@
-import {buscarAlimento,catalogoAlimentos} from '../catalogo-comidas.js';
+import {buscarAlimento} from '../catalogo-comidas.js';
 import {estimarCalorias,recalcularAlimento,actualizarCaloriasComida} from '../nutricion.js';
 import {resolverAyuno} from '../ayuno-nocturno.js';
 import {campoHora,conectarHoras} from '../selector-hora.js';
@@ -172,22 +172,20 @@ export function mostrarDia(cont, { fecha }) {
     }
     const accion = e.target.closest('[data-accion]')?.dataset.accion;
     const objetivo = e.target.closest('[data-accion]');
-    if(accion==='filtrar-alimentos'){
-      const zona=objetivo.closest('.editor-alimentos'),categoria=objetivo.dataset.categoria,caja=zona.querySelector('.buscador-general'),input=caja.querySelector('[data-item-categoria]');
-      zona.querySelectorAll('[data-accion="filtrar-alimentos"]').forEach(b=>b.setAttribute('aria-pressed',String(b===objetivo)));
-      input.dataset.itemCategoria=categoria;input.value='';input.placeholder=categoria==='todos'?'Buscar o escribir alimento':'Buscar en '+(CATEGORIAS_COMIDA.find(c=>c.id===categoria)?.nombre||'alimentos');
-      caja.querySelector('datalist').innerHTML=catalogoAlimentos(estado.config.alimentosPersonalizados).filter(a=>categoria==='todos'||a.categoria===categoria).map(a=>`<option value="${escapar(a.nombre)}"></option>`).join('');
-      caja.querySelector('[data-accion="agregar-item-comida"]').dataset.categoria=categoria;prepararCalorias(caja,true);input.focus();return;
+    if(accion==='modificar-categoria'){e.preventDefault();const panel=objetivo.closest('.categoria-comida');panel.open=true;panel.querySelector('[data-item-categoria]').focus();return;}
+    if(accion==='guardar-categoria'){
+      const c=buscarComida(objetivo.dataset.idComida),panel=objetivo.closest('.categoria-comida');if(!c)return;
+      if(panel.querySelector('[data-item-categoria]').value.trim()&&!agregarAlimentoDesde(panel,c))return;
+      if(!c.items?.some(i=>i.categoria===objetivo.dataset.categoria))return;
+      guardarComida(c);actualizarCaloriasComida(c);diaCambiado(fecha);repintarComidas(c.id,null,{categoria:objetivo.dataset.categoria,limpiar:true,cerrar:true});return;
     }
     if(accion==='editar-alimento'){
       const fila=objetivo.closest('.comida-item');fila.classList.remove('alimento-guardado');fila.querySelectorAll('[data-item-campo]').forEach(i=>i.readOnly=false);
       objetivo.classList.remove('accion-icono','accion-editar');objetivo.classList.add('guardar-alimento');objetivo.dataset.accion='guardar-alimento';objetivo.removeAttribute('data-ayuda-accion');objetivo.setAttribute('aria-label','Guardar alimento');objetivo.textContent='Guardar';fila.querySelector('[data-item-campo="nombre"]').focus();return;
     }
     if(accion==='agregar-item-comida'){
-      const c=buscarComida(objetivo.dataset.idComida),cat=CATEGORIAS_COMIDA.find(x=>x.id===objetivo.dataset.categoria),caja=objetivo.closest('.categoria-comida');
-      const escrito=caja.querySelector('[data-item-categoria]').value.trim().slice(0,120);if(!escrito)return;const conocido=buscarAlimento(escrito,estado.config.alimentosPersonalizados),nombre=conocido?.nombre||escrito,categoria=cat?.id||conocido?.categoria||'otros';
-      if(!conocido){const lista=Array.isArray(estado.config.alimentosPersonalizados)?estado.config.alimentosPersonalizados:[];estado.config.alimentosPersonalizados=[...lista,{nombre,categoria}].slice(-1000);guardarConfig();}
-      c.textoLibre??=c.items?.length?'':c.desc||'';c.items||=[];const cantidad=caja.querySelector('[data-item-cantidad]').value.trim()||'1',campoKcal=caja.querySelector('[data-item-calorias]'),item={id:idUnico(),categoria,nombre,cantidad};if(campoKcal.dataset.manual==='true'&&campoKcal.value!==''&&Number(campoKcal.value)>=0){item.kcal=Number(campoKcal.value);item.kcalManual=true;}recalcularAlimento(item);c.items.push(item);actualizarCaloriasComida(c);actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
+      const c=buscarComida(objetivo.dataset.idComida),panel=objetivo.closest('.categoria-comida');if(!c||!agregarAlimentoDesde(panel,c))return;
+      diaCambiado(fecha);repintarComidas(c.id,null,{categoria:objetivo.dataset.categoria,limpiar:true,cerrar:false});cont.querySelector(`[data-comida-id="${c.id}"] [data-categoria-panel="${objetivo.dataset.categoria}"] [data-item-categoria]`)?.focus();return;
     }
     if(accion==='quitar-item-comida'){
       const c=buscarComida(objetivo.dataset.idComida);c.items=(c.items||[]).filter(x=>x.id!==objetivo.dataset.item);actualizarCaloriasComida(c);actualizarDescripcion(c);diaCambiado(fecha);repintarComidas(c.id);return;
@@ -294,6 +292,17 @@ export function mostrarDia(cont, { fecha }) {
     return dia.comidas.find(c=>c.id===id);
   }
 
+  function agregarAlimentoDesde(caja,c){
+    const escrito=caja.querySelector('[data-item-categoria]').value.trim().slice(0,120);if(!escrito)return false;
+    const invalido=caja.querySelector(':invalid');if(invalido){invalido.reportValidity();return false;}
+    const cat=caja.dataset.categoriaPanel,conocido=buscarAlimento(escrito,estado.config.alimentosPersonalizados),nombre=conocido?.nombre||escrito,categoria=cat||conocido?.categoria||'otros';
+    if(!conocido){const lista=Array.isArray(estado.config.alimentosPersonalizados)?estado.config.alimentosPersonalizados:[];estado.config.alimentosPersonalizados=[...lista,{nombre,categoria}].slice(-1000);guardarConfig();}
+    c.textoLibre??=c.items?.length?'':c.desc||'';c.items||=[];
+    const cantidad=caja.querySelector('[data-item-cantidad]').value.trim()||'1',campoKcal=caja.querySelector('[data-item-calorias]'),item={id:idUnico(),categoria,nombre,cantidad};
+    if(campoKcal.dataset.manual==='true'&&campoKcal.value!==''&&Number(campoKcal.value)>=0){item.kcal=Number(campoKcal.value);item.kcalManual=true;}
+    recalcularAlimento(item);c.items.push(item);actualizarCaloriasComida(c);actualizarDescripcion(c);return true;
+  }
+
   function prepararCalorias(caja,reiniciar=false,manual=false){
     if(!caja)return;const nombre=caja.querySelector('[data-item-categoria]').value.trim(),cantidad=caja.querySelector('[data-item-cantidad]'),campo=caja.querySelector('[data-item-calorias]'),etiqueta=caja.querySelector('[data-item-kcal-campo]'),ayuda=caja.querySelector('[data-item-kcal-ayuda]');
     etiqueta.hidden=!nombre;if(reiniciar){delete campo.dataset.manual;if(!cantidad.value)cantidad.value='1';}if(manual)campo.dataset.manual='true';
@@ -365,11 +374,13 @@ export function mostrarDia(cont, { fecha }) {
     for(const id of [...orden,...filas.map(x=>x.dataset.comidaId)]){const nodo=porId.get(id);if(nodo){lista.appendChild(nodo);porId.delete(id);}}
   }
 
-  function repintarComidas(abrirId=null,cerrarId=null) {
+  function repintarComidas(abrirId=null,cerrarId=null,opciones={}) {
     const viejo = cont.querySelector('#sec-comidas');
+    const borradores=[...viejo.querySelectorAll('[data-categoria-panel]')].map(p=>({comida:p.closest('[data-comida-id]').dataset.comidaId,categoria:p.dataset.categoriaPanel,abierto:p.open,nombre:p.querySelector('[data-item-categoria]').value,cantidad:p.querySelector('[data-item-cantidad]').value,kcal:p.querySelector('[data-item-calorias]').value,manual:p.querySelector('[data-item-calorias]').dataset.manual}));
     const abiertas=[...viejo.querySelectorAll('details.comida[open]')].map(x=>x.dataset.comidaId);if(abrirId)abiertas.push(abrirId);
     viejo.outerHTML = seccionComidas(diaDe(fecha), plan, fecha);
     cont.querySelectorAll('details.comida').forEach(x=>{x.open=x.dataset.comidaId!==cerrarId&&abiertas.includes(x.dataset.comidaId);});
+    for(const b of borradores){const panel=cont.querySelector(`[data-comida-id="${b.comida}"] [data-categoria-panel="${b.categoria}"]`);if(!panel)continue;const cambiado=b.comida===abrirId&&b.categoria===opciones.categoria;panel.open=cambiado?!opciones.cerrar:b.abierto;if(cambiado&&opciones.limpiar)continue;panel.querySelector('[data-item-categoria]').value=b.nombre;panel.querySelector('[data-item-cantidad]').value=b.cantidad;const k=panel.querySelector('[data-item-calorias]');k.value=b.kcal;if(b.manual)k.dataset.manual=b.manual;prepararCalorias(panel);}
     ordenarTarjetasComidas();refrescar();
   }
 
