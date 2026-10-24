@@ -1029,3 +1029,10 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .agua-simple .accion-icono.accion-icono{background:#626a75!important;color:#fff!important;}
 @media(hover:hover){.agua-simple .accion-icono.accion-icono:hover{background:#454c56!important;color:#fff!important;}}
 .agua-simple .accion-icono.accion-icono:is(:active,:focus-visible){background:#454c56!important;color:#fff!important;}
+
+.reloj-navegacion{position:absolute;top:calc(50% + 28px);left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2;}
+.reloj-navegacion button{display:grid;place-items:center;width:30px;height:30px;padding:5px;border:0;border-radius:7px;background:transparent;color:var(--texto);cursor:pointer;}
+.reloj-navegacion svg{width:20px;height:20px;pointer-events:none;}
+.reloj-navegacion button:hover:not(:disabled),.reloj-navegacion button:focus-visible{background:#626a75;color:#fff;}
+.reloj-navegacion button:disabled{opacity:.25;cursor:default;}
+.reloj-esfera.etapa-periodo .reloj-periodos{transform:translateY(-18px);}

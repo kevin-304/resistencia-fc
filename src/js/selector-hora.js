@@ -1,3 +1,4 @@
+import {I} from './iconos.js';
 import {escapar} from './util.js';
 const dos=n=>String(n).padStart(2,'0');
 export function normalizarHora(v){if(v==='')return '';const m=/^(\d{1,2}):([0-5]\d)$/.exec(v.trim());return m&&Number(m[1])<=23?`${dos(Number(m[1]))}:${m[2]}`:null;}
@@ -27,11 +28,14 @@ export function conectarHoras(cont){
     const guia=minutos?`<path d="${Array.from({length:60},(_,i)=>{const p=posicionMinuto(i);return(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1);}).join(' ')}"/>`:`<line x1="150" y1="150" x2="${coord.x}" y2="${coord.y}"/>`;
     esfera.innerHTML=`<svg class="reloj-manecilla ${minutos?'guia-espiral':''}" viewBox="0 0 300 300" aria-hidden="true">${guia}</svg>`+Array.from({length:cantidad},(_,i)=>{const numero=minutos?i:i+1,angulo=numero%12*30*Math.PI/180,p=minutos?posicionMinuto(i):{x:150+Math.sin(angulo)*116,y:150-Math.cos(angulo)*116};return `<button type="button" class="reloj-numero ${minutos?'es-minuto':''}" data-numero-hora="${numero}" aria-label="${numero} ${minutos?'minutos':'horas'}" aria-pressed="${numero===seleccion}" style="left:${p.x/3}%;top:${p.y/3}%">${minutos?dos(numero):numero}</button>`;}).join('')+`<button type="button" class="reloj-centro reloj-volver" data-volver-hora aria-label="${minutos?'Volver a elegir la hora':'Volver a elegir AM o PM'}">${minutos?dos(hora):periodo}${minutos?`<small>${periodo}</small>`:''}</button>`;
    }
+   const pasos=['periodo','hora','minuto'],indice=pasos.indexOf(etapa);esfera.classList.toggle('etapa-periodo',etapa==='periodo');
+   esfera.insertAdjacentHTML('beforeend',`<div class="reloj-navegacion"><button type="button" data-reloj-paso="-1" aria-label="Opción anterior" title="Anterior" ${indice===0?'disabled':''}>${I.izquierda}</button><button type="button" data-reloj-paso="1" aria-label="Opción siguiente" title="Siguiente" ${indice===2?'disabled':''}>${I.derecha}</button></div>`);
    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)esfera.animate([{opacity:.3,transform:'scale(.97)'},{opacity:1,transform:'scale(1)'}],{duration:130,easing:'ease-out'});
    posicionar();
   }
-  popup.onclick=e=>{const t=e.target.closest('button');if(!t)return;e.preventDefault();
-   if(t.hasAttribute('data-volver-hora'))etapa=etapa==='minuto'?'hora':'periodo';
+  popup.onclick=e=>{const t=e.target.closest('button');if(!t||t.disabled)return;e.preventDefault();
+   if(t.hasAttribute('data-reloj-paso')){const pasos=['periodo','hora','minuto'];etapa=pasos[Math.max(0,Math.min(2,pasos.indexOf(etapa)+Number(t.dataset.relojPaso)))];}
+   else if(t.hasAttribute('data-volver-hora'))etapa=etapa==='minuto'?'hora':'periodo';
    else if(t.hasAttribute('data-numero-hora')){if(etapa==='hora'){hora=Number(t.dataset.numeroHora);etapa='minuto';}else{minuto=Number(t.dataset.numeroHora);poner(input,hora24(hora,minuto,periodo));cerrar(true);return;}}
    else if(t.hasAttribute('data-periodo-hora')){periodo=t.dataset.periodoHora;etapa='hora';}
    pintar();popup.querySelector('[aria-pressed="true"]')?.focus({preventScroll:true});
