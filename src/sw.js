@@ -1,5 +1,5 @@
-// Generado por scripts/construir-web.js — versión 2026-10-24T15:06:15.680Z
-const CACHE = 'rfc-1792854375682';
+// Generado por scripts/construir-web.js — versión 2026-10-24T15:26:17.626Z
+const CACHE = 'rfc-1792855577627';
 const ARCHIVOS = [
   "./",
   "estilos.css",
