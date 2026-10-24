@@ -950,7 +950,7 @@ details:not(.categoria-comida)>summary:not(.boton):focus-visible{background-colo
 @media(max-width:420px){.categoria-elegir{grid-template-columns:minmax(0,1fr) 62px 32px;}.comida-item{grid-template-columns:minmax(0,1fr) 72px 32px;}}
 
 /* Papeleras de comidas: rojo de línea y relleno solo al interactuar. */
-button[data-accion="borrar-comida"],button[data-accion="quitar-item-comida"],button[data-accion="desactivar-ayuno"]{color:#d33434;background:transparent;border:0;box-shadow:none;transition:background-color 140ms ease,color 140ms ease;}
-@media(hover:hover){button[data-accion="borrar-comida"]:hover,button[data-accion="quitar-item-comida"]:hover,button[data-accion="desactivar-ayuno"]:hover{background:#d33434;color:#fff;}}
-button[data-accion="borrar-comida"]:is(:focus-visible,:active),button[data-accion="quitar-item-comida"]:is(:focus-visible,:active),button[data-accion="desactivar-ayuno"]:is(:focus-visible,:active){background:#d33434;color:#fff;}
-@media(prefers-reduced-motion:reduce){button[data-accion="borrar-comida"],button[data-accion="quitar-item-comida"],button[data-accion="desactivar-ayuno"]{transition:none;}}
+button.boton[data-accion="borrar-comida"],button.boton[data-accion="quitar-item-comida"],button.boton[data-accion="desactivar-ayuno"]{color:#d33434;background:transparent;border:0;box-shadow:none;transition:background-color 140ms ease,color 140ms ease;}
+@media(hover:hover){button.boton[data-accion="borrar-comida"]:hover,button.boton[data-accion="quitar-item-comida"]:hover,button.boton[data-accion="desactivar-ayuno"]:hover{background:#d33434;color:#fff;}}
+button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boton[data-accion="quitar-item-comida"]:is(:focus-visible,:active),button.boton[data-accion="desactivar-ayuno"]:is(:focus-visible,:active){background:#d33434;color:#fff;}
+@media(prefers-reduced-motion:reduce){button.boton[data-accion="borrar-comida"],button.boton[data-accion="quitar-item-comida"],button.boton[data-accion="desactivar-ayuno"]{transition:none;}}
