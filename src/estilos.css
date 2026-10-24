@@ -873,7 +873,7 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .hora-input-fila {display:flex;align-items:stretch;gap:5px;}
 .hora-input-fila input {min-width:0;width:100%;}
 .hora-input-fila .boton {flex-shrink:0;padding:8px;width:38px;}
-.selector-hora .marcar-hora {font-size:.78em;padding:6px 0;min-height:28px;white-space:normal;}
+.selector-hora .marcar-hora {display:inline-flex;justify-content:center;margin-top:10px;font-size:.82em;padding:8px 12px;min-height:36px;white-space:normal;border:1px solid var(--borde);border-radius:8px;background:var(--superficie-2);color:var(--texto);font-weight:550;}
 [data-hora-manual][aria-invalid="true"] {outline:2px solid #b84141;}
 [data-ayuno-config][hidden] {display:none!important;}
 .comida-nueva>summary,.bloque-actividad>summary {user-select:none;cursor:grab;}

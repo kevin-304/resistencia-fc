@@ -5,7 +5,7 @@ export function hora24(hora,minuto,periodo){return `${dos(Number(hora)%12+(perio
 export const horaActual=(fecha=new Date())=>`${dos(fecha.getHours())}:${dos(fecha.getMinutes())}`;
 const icono='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>';
 export function campoHora(valor,atributos='',etiqueta='Hora'){
- return `<div class="selector-hora"><div class="hora-input-fila"><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-hora-manual data-hora-valida="${escapar(valor||'')}" ${atributos} value="${escapar(valor||'')}" aria-label="${escapar(etiqueta)} (24 horas)"><button type="button" class="boton icono" data-abrir-reloj aria-label="Elegir ${escapar(etiqueta.toLowerCase())} en el reloj">${icono}</button></div><button type="button" class="boton fantasma marcar-hora" data-hora-actual>Marcar hora actual</button></div>`;
+ return `<div class="selector-hora"><div class="hora-input-fila"><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-hora-manual data-hora-valida="${escapar(valor||'')}" ${atributos} value="${escapar(valor||'')}" aria-label="${escapar(etiqueta)} (24 horas)"><button type="button" class="boton icono" data-abrir-reloj aria-label="Elegir ${escapar(etiqueta.toLowerCase())} en el reloj">${icono}</button></div><button type="button" class="boton marcar-hora" data-hora-actual>Marcar hora actual</button></div>`;
 }
 export function conectarHoras(cont){
  let dialog=null,origen=null;
