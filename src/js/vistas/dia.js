@@ -1,3 +1,4 @@
+import { conectarBuscadorAlimentos } from "../modulos/alimentacion/buscador-alimentos.js";
 import { campo, escala, cabecera } from "../modulos/interfaz/campos.js";
 import { seccionSueno } from "../modulos/sueno/sueno-vista.js";
 import {
@@ -175,6 +176,7 @@ export function mostrarDia(cont, { fecha }) {
   });
   conectarTarjetas(cont);
   alSalir(conectarHoras(cont));
+  alSalir(conectarBuscadorAlimentos(cont));
   alSalir(
     conectarOrdenComidas(cont, (ids) => {
       const dia = diaEditable(fecha);

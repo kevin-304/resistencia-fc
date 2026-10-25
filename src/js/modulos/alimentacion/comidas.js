@@ -56,7 +56,7 @@ export function selectorAlimentos(c, personales = []) {
     .map(({ cat, items }) => {
       const id = `alimentos-${c.id}-${cat.id}`;
       return `<section class="categoria-grupo ${items.length ? "tiene-alimentos" : ""}" data-grupo-categoria="${cat.id}"><details class="categoria-comida" data-categoria-panel="${cat.id}"><summary>${iconoCategoria(cat.id)}<b>${cat.nombre}</b></summary>
- <div class="categoria-elegir"><input type="search" list="${escapar(id)}" data-item-categoria="${cat.id}" aria-label="Buscar en ${escapar(cat.nombre)}" placeholder="Buscar en ${escapar(cat.nombre)} o escribir otro" autocomplete="off" maxlength="120"><datalist id="${escapar(id)}">${catalogo
+ <div class="categoria-elegir"><input type="search" data-lista-alimentos="${escapar(id)}" role="combobox" aria-autocomplete="list" aria-expanded="false" data-item-categoria="${cat.id}" aria-label="Buscar en ${escapar(cat.nombre)}" placeholder="Buscar en ${escapar(cat.nombre)} o escribir otro" autocomplete="off" maxlength="120"><datalist id="${escapar(id)}">${catalogo
    .filter((a) => a.categoria === cat.id)
    .map((a) => `<option value="${escapar(a.nombre)}"></option>`)
    .join(

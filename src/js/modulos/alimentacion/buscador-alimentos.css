@@ -1,0 +1,31 @@
+.lista-alimentos {
+  position: fixed;
+  z-index: 500;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+.lista-alimentos[hidden] {
+  display: none;
+}
+.lista-alimentos button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.lista-alimentos button:hover,
+.lista-alimentos button[aria-selected="true"] {
+  background: var(--superficie-2);
+}
