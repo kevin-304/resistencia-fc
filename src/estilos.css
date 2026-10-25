@@ -1084,3 +1084,8 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
  .reloj-periodos:has(button:hover) button:not(:hover){background:transparent;color:inherit;transition:none;}
 }
 .reloj-periodos:has(button:focus-visible):not(:has(button:hover)) button:not(:focus-visible){background:transparent;color:inherit;transition:none;}
+
+.sueno-tramos{display:grid;gap:12px;margin-bottom:12px;}
+.sueno-tramo{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.sueno-tramo>.campo{flex:1 1 130px;min-width:0;}
+.sueno-calidad{margin-top:16px;}

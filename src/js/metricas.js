@@ -1,3 +1,4 @@
+import {resumenSueno} from './sueno.js';
 import {ayunoVisible} from './comidas.js';
 import {resolverAyuno} from './ayuno-nocturno.js';
 // Cálculos a partir de lo registrado: horas de sueño y de ayuno, cumplimiento del día,
@@ -38,7 +39,7 @@ export function metricasDia(fecha, dias, ctx) {
   const metas = pu.metas;
 
   // Sueño: de la hora de dormir (noche anterior) a la de despertar.
-  m.sueno = horasEntre(d.sueno?.dormir, d.sueno?.despertar);
+  m.sueno = resumenSueno(d.sueno).horas;
   m.suenoOk = m.sueno == null ? null : m.sueno >= (metas.suenoHoras || 7) - 1e-9;
 
   // Ayuno: desde la última comida de ayer hasta la primera de hoy.

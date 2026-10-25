@@ -1,3 +1,4 @@
+import {tramosSueno,resumenSueno} from './sueno.js';
 import {resolverAyuno} from './ayuno-nocturno.js';
 import {planConProgramacion} from './programacion-rutinas.js';
 import {lunesDe,sumarDias} from './util.js';
@@ -19,7 +20,7 @@ export function lineasSemana(datos,desde){
   }}
   const cs=(d.comidas||[]).filter(tieneComida);comidas+=cs.length;
   if(cs.length){pon('Comidas:');for(const c of cs){const nombre=({'primera':'Desayuno',almuerzo:'Almuerzo',merienda:'Merienda',cena:'Cena',intermedia:'Comida intermedia','primera-comida':'Primera comida','ultima-comida':'Última comida'})[c.tipo]||'Comida';const descripcion=c.desc||[c.textoLibre,...(c.items||[]).map(x=>`${x.nombre}${x.cantidad?' ('+x.cantidad+')':''}`)].filter(Boolean).join(', ');pon(`  ${c.hora||'Sin hora'} - ${nombre}${limitesComidas(d).primera===c?' [Primera del día]':''}${limitesComidas(d).ultima===c?' [Última del día]':''}: ${descripcion||'Sin detalle'}${c.kcal!=null?' | '+(c.kcalEstimadas?'≈ ':'')+c.kcal+' kcal'+(c.kcalParcial?' (parcial)':''):''}`);}}
-  if(d.sueno)pon(`Sueño: ${d.sueno.dormir||'--:--'} a ${d.sueno.despertar||'--:--'} | calidad: ${d.sueno.calidad??'-'}`);
+  if(d.sueno){const r=resumenSueno(d.sueno);pon(`Sueño: ${tramosSueno(d.sueno).map(t=>`${t.dormir||'--:--'} a ${t.despertar||'--:--'}`).join(' / ')} | total: ${r.horas==null?'pendiente':r.horas.toFixed(2)+' h'} | calidad: ${d.sueno.calidad??'-'}`);}
   if(ayunoVisible(d)||d.ayuno?.primera||d.ayuno?.anterior){const a=resolverAyuno(fecha,datos.dias);pon(`Ayuno: última comida ${a.fechaAnterior} ${a.anterior||'--:--'} | primera ${fecha} ${a.primera||'--:--'}${a.horas!=null?' | '+a.horas.toFixed(2)+' h':''}`);}
   if(d.agua!=null)pon(`Agua: ${d.agua} vasos`);
   if(d.medidas)pon(`Medidas: peso ${d.medidas.peso??'-'} kg | cintura ${d.medidas.cintura??'-'} cm`);

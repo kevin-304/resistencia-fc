@@ -1,3 +1,4 @@
+import {tramosSueno,resumenSueno} from '../sueno.js';
 import {buscarAlimento} from '../catalogo-comidas.js';
 import {estimarCalorias,recalcularAlimento,actualizarCaloriasComida} from '../nutricion.js';
 import {resolverAyuno} from '../ayuno-nocturno.js';
@@ -172,6 +173,15 @@ export function mostrarDia(cont, { fecha }) {
     }
     const accion = e.target.closest('[data-accion]')?.dataset.accion;
     const objetivo = e.target.closest('[data-accion]');
+    if(accion==='agregar-tramo-sueno'||accion==='quitar-tramo-sueno'){
+      const dia=diaEditable(fecha),sueno=(dia.sueno||={});
+      sueno.tramos=tramosSueno(sueno).map(t=>({...t}));
+      if(accion==='agregar-tramo-sueno')sueno.tramos.push({dormir:'',despertar:''});
+      else sueno.tramos.splice(Number(objetivo.dataset.tramo),1);
+      delete sueno.dormir;delete sueno.despertar;
+      diaCambiado(fecha);
+      const anterior=cont.querySelector('[data-sueno]');anterior.outerHTML=seccionSueno(dia);refrescar();return;
+    }
     if(accion==='cancelar-categoria'){const panel=objetivo.closest('.categoria-comida');panel.querySelector('[data-item-categoria]').value='';panel.querySelector('[data-item-cantidad]').value='';const kcal=panel.querySelector('[data-item-calorias]');kcal.value='';delete kcal.dataset.manual;prepararCalorias(panel);panel.open=false;panel.querySelector('summary').focus();return;}
     if(accion==='guardar-categoria'){
       const c=buscarComida(objetivo.dataset.idComida),panel=objetivo.closest('.categoria-comida');if(!c)return;
@@ -402,6 +412,7 @@ export function mostrarDia(cont, { fecha }) {
     pintarCuentaRegresiva(cont.querySelector('#cuenta-regresiva'),plan,fecha);
     const pon = (k, html) => cont.querySelectorAll(`[data-calc="${k}"]`).forEach((x) => (x.innerHTML = html));
     pon('sueno', m.sueno != null ? formatoHoras(m.sueno) : '—');
+    const rs=resumenSueno(diaDe(fecha).sueno);pon('sueno-detalle',rs.error||(rs.despierto>0?'Tiempo despierto: '+formatoHoras(rs.despierto):rs.incompleto&&tramosSueno(diaDe(fecha).sueno).length>1?'Completa las horas de cada tramo.':''));
     pon('sueno-estado', m.suenoOk == null ? pill('nada', 'Sin datos') : m.suenoOk ? pill('ok', `✓ ${num(PU.metas.suenoHoras, 1)} h o más`) : pill('no', `Menos de ${num(PU.metas.suenoHoras, 1)} h`));
     pon('ayuno', m.ayunoHoras != null ? formatoHoras(m.ayunoHoras) : '—');
     pon('ventana', m.ventanaHoras != null ? formatoHoras(m.ventanaHoras) : '—');
@@ -515,14 +526,18 @@ function plegable(titulo, contenido, abierto = false) {
 
 // ---------- Secciones ----------
 function seccionSueno(d) {
-  return `<section class="tarjeta">
+  const multiples=Array.isArray(d.sueno?.tramos),tramos=tramosSueno(d.sueno);
+  return `<section class="tarjeta" data-sueno>
     ${cabecera('Sueño', I.sueno, '--c-sueno', '<span data-calc="sueno-estado"></span>')}
-    <div class="campos">
-      ${campo('Me dormí', 'sueno.dormir', d, { tipo: 'hora' })}
-      ${campo('Me desperté', 'sueno.despertar', d, { tipo: 'hora' })}
-      <label class="campo"><span>Calidad del sueño</span>${escala('sueno.calidad', d, 5, ['Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente'])}</label>
-    </div>
+    <div class="sueno-tramos">${tramos.map((t,i)=>{const base=multiples?`sueno.tramos.${i}`:'sueno';return `<div class="sueno-tramo">
+      ${campo('Me dormí',base+'.dormir',d,{tipo:'hora'})}
+      ${campo('Me desperté',base+'.despertar',d,{tipo:'hora'})}
+      <button type="button" class="boton icono" data-accion="quitar-tramo-sueno" data-tramo="${i}" aria-label="Eliminar tramo" title="Eliminar tramo">${I.basura}</button>
+    </div>`;}).join('')}</div>
+    <button type="button" class="boton" data-con-texto data-accion="agregar-tramo-sueno">${I.mas} Añadir tramo de sueño</button>
+    <label class="campo sueno-calidad"><span>Calidad del sueño</span>${escala('sueno.calidad', d, 5, ['Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente'])}</label>
     <div class="resultado"><div><b data-calc="sueno">—</b><small>horas dormidas (meta ${num(PU.metas.suenoHoras, 1)} h)</small></div></div>
+    <p class="suave" data-calc="sueno-detalle"></p>
   </section>`;
 }
 
