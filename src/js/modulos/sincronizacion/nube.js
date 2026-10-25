@@ -1,3 +1,7 @@
+import { fotoParaNube } from "./fotos.js";
+import { fusionarRegistro, perfilCoincidente } from "./fusion.js";
+import { crearColaLocal, confirmaciones } from "./cola-local.js";
+import { leerDatoNube, fechaNubeValida, emuladorLocal } from "./validacion.js";
 // Sincronización automática entre la PC y los celulares (Firebase, plan gratuito).
 //
 // Cada app guarda sus datos en su propio equipo (funciona sin internet). Cuando hay sesión
@@ -21,9 +25,12 @@ import {
   guardarFrecuentes,
 } from "../datos/estado.js";
 import { NUBE_CONFIG } from "./nube-config.js";
-import { combinarDia } from "../datos/paquetes.js";
 import { retrasar } from "../../util.js";
 
+const colaLocal = crearColaLocal({
+  leer: (id) => window.api.perfilLeer(id, "sincro.json"),
+  escribir: (id, meta) => window.api.perfilEscribir(id, "sincro.json", meta),
+});
 const CONFIG_EMULADOR = {
   apiKey: "demo-clave",
   authDomain: "demo-rfc.firebaseapp.com",
@@ -31,7 +38,7 @@ const CONFIG_EMULADOR = {
 };
 const emulador = (() => {
   try {
-    return localStorage.getItem("rfc-emulador");
+    return emuladorLocal(localStorage.getItem("rfc-emulador"));
   } catch {
     return null;
   }
@@ -51,6 +58,8 @@ const info = {
   configurada: !!CONFIG,
   emulador: !!emulador,
   conectado: false,
+  enLinea: navigator.onLine,
+  pendiente: false,
   email: null,
   sincronizando: false,
   ultima: null,
@@ -75,13 +84,7 @@ export function alCambiarNube(fn) {
 export const nubeConfigurada = () => !!CONFIG;
 
 const json = (v) => (v == null ? null : JSON.stringify(v));
-const deJson = (t) => {
-  try {
-    return t == null ? null : JSON.parse(t);
-  } catch {
-    return null;
-  }
-};
+const deJson = leerDatoNube;
 const idFoto = (rel) => rel.replace(/[/\\]/g, "_");
 const nuevoId = () =>
   crypto.randomUUID
@@ -98,7 +101,7 @@ const mensaje = (e) => {
   if (c.includes("email-already-in-use"))
     return "Ya existe una cuenta con ese correo: inicia sesión.";
   if (c.includes("weak-password"))
-    return "La contraseña debe tener al menos 6 caracteres.";
+    return "Usa una contraseña de al menos 12 caracteres.";
   if (c.includes("invalid-email")) return "El correo no es válido.";
   if (c.includes("network")) return "Sin conexión a internet.";
   if (c.includes("permission-denied"))
@@ -130,6 +133,8 @@ export async function iniciarNube() {
     fb.connectAuthEmulator(auth, `http://${h}`, { disableWarnings: true });
     const [host, puerto] = p.split(":");
     fb.connectFirestoreEmulator(db, host, Number(puerto));
+    if (localStorage.getItem("rfc-emulador-sin-red") === "1")
+      await fb.disableNetwork(db);
   }
   ganchos.cambio = cambioLocal;
   fb.onAuthStateChanged(auth, async (u) => {
@@ -138,7 +143,9 @@ export async function iniciarNube() {
     detenerEscucha();
     if (u) await sincronizarTodo();
   });
+  window.addEventListener("offline", () => avisar({ enLinea: false }));
   window.addEventListener("online", () => {
+    avisar({ enLinea: true });
     if (usuario) sincronizarTodo();
   });
 }
@@ -237,6 +244,7 @@ export function sincronizarTodo() {
 async function sincronizarTodoReal() {
   avisar({ sincronizando: true, error: null });
   try {
+    await colaSucios;
     const uid = usuario.uid;
     const remotos = new Map();
     (await fb.getDocs(fb.collection(db, "cuentas", uid, "perfiles"))).forEach(
@@ -251,7 +259,23 @@ async function sincronizarTodoReal() {
       if (!arch.perfil) continue;
       let nid = arch.perfil.nubeId;
       if (!nid) {
-        nid = nuevoId();
+        nid = perfilCoincidente(arch.perfil, remotos, deJson) || nuevoId();
+        if (remotos.has(nid)) {
+          arch.sincro ||= {};
+          arch.sincro.respaldoInicial ||= structuredClone({
+            perfil: arch.perfil,
+            config: arch.config,
+            rutas: arch.rutas,
+            frecuentes: arch.frecuentes,
+            dias: arch.dias,
+          });
+          arch.sincro.sucios = [
+            ...new Set([
+              ...(arch.sincro.sucios || []),
+              ...Object.keys(arch.dias || {}),
+            ]),
+          ];
+        }
         arch.perfil = { ...arch.perfil, nubeId: nid };
         if (esActivo) {
           estado.perfil.nubeId = nid;
@@ -295,7 +319,13 @@ async function sincronizarTodoReal() {
       suciosMemoria.datos.clear();
       if (pendientes.size || pendientesDatos.size) subirPendientes();
     }
-    avisar({ sincronizando: false, ultima: new Date(), error: null });
+    const restante = activo ? await colaLocal.leer(activo.localId) : {};
+    avisar({
+      sincronizando: false,
+      ultima: new Date(),
+      error: null,
+      pendiente: !!(restante.sucios?.length || restante.suciosDatos?.length),
+    });
     if (huboCambiosLista) window.dispatchEvent(new Event("nube-perfiles"));
   } catch (e) {
     console.error(e);
@@ -312,6 +342,9 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
       ? arch.sincro
       : null;
   meta = meta || { cuenta: uid, nubeId: nid, datos: {}, dias: {}, fotos: {} };
+  if (arch.sincro?.respaldoInicial)
+    meta.respaldoInicial = arch.sincro.respaldoInicial;
+  meta.basesDias ||= {};
   delete meta.sucios;
   delete meta.suciosDatos;
   const r = remoto || {};
@@ -364,13 +397,24 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
     ...remDias.keys(),
     ...Object.keys(meta.dias),
   ])) {
+    if (!fechaNubeValida(fecha)) continue;
     const rd = remDias.get(fecha);
     const rm = rd?.mod || 0;
     if (sucios.has(fecha)) {
       // Cambiado aquí sin sesión: si en la nube también cambió, se combinan; luego se sube.
       let valor = dias[fecha] || null;
       if (rd && rm > (meta.dias[fecha] || 0) && rd.v) {
-        valor = valor ? combinarDia(deJson(rd.v), valor) : deJson(rd.v);
+        const remotoDia = deJson(rd.v);
+        if (JSON.stringify(valor) !== JSON.stringify(remotoDia)) {
+          meta.conflictos = [
+            ...(meta.conflictos || []),
+            { fecha, local: valor, remoto: remotoDia, instante: Date.now() },
+          ].slice(-20);
+        }
+        valor =
+          valor === null
+            ? null
+            : fusionarRegistro(meta.basesDias[fecha], valor, remotoDia);
         if (esActivo) aplicarDiaActivo(fecha, valor);
         else {
           if (valor) dias[fecha] = valor;
@@ -381,6 +425,7 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
       const mod = Math.max(ahora, rm + 1);
       lote.set(fb.doc(base, "dias", fecha), { v: json(valor), mod });
       meta.dias[fecha] = mod;
+      meta.basesDias[fecha] = structuredClone(valor);
       if (++enLote >= 400) await confirmar();
       continue;
     }
@@ -394,6 +439,7 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
         mesesCambiados.add(fecha.slice(0, 7));
       }
       meta.dias[fecha] = rm;
+      meta.basesDias[fecha] = structuredClone(valor);
     } else if (
       (dias[fecha] && (lm > rm || !rd)) ||
       (!dias[fecha] && lm > rm && rd)
@@ -404,6 +450,7 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
         mod,
       });
       meta.dias[fecha] = mod;
+      meta.basesDias[fecha] = structuredClone(dias[fecha] || null);
       if (++enLote >= 400) await confirmar();
     }
   }
@@ -427,7 +474,9 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
     if (!rel) continue;
     const local = await window.api.perfilFoto(localId, rel);
     if (local && !meta.fotos[rel]) {
-      await fb.setDoc(fb.doc(base, "fotos", idFoto(rel)), { v: local });
+      await fb.setDoc(fb.doc(base, "fotos", idFoto(rel)), {
+        v: await fotoParaNube(local),
+      });
       meta.fotos[rel] = true;
     } else if (!local) {
       const snap = await fb.getDoc(fb.doc(base, "fotos", idFoto(rel)));
@@ -438,7 +487,11 @@ async function sincronizarPerfil(uid, localId, esActivo, nid, arch, remoto) {
     }
   }
 
-  await window.api.perfilEscribir(localId, "sincro.json", meta);
+  await colaLocal.guardar(
+    localId,
+    meta,
+    confirmaciones(arch.sincro || {}, [...sucios], [...suciosDatos]),
+  );
   return meta;
 }
 
@@ -454,7 +507,9 @@ const refrescarPantalla = retrasar(
 );
 const guardarMeta = retrasar(() => {
   if (activo)
-    window.api.perfilEscribir(activo.localId, "sincro.json", activo.meta);
+    colaLocal
+      .guardar(activo.localId, activo.meta)
+      .catch((e) => avisar({ error: mensaje(e) }));
 }, 1000);
 
 function escucharActivo(uid) {
@@ -471,13 +526,20 @@ function escucharActivo(uid) {
         for (const c of snap.docChanges()) {
           if (c.type === "removed") continue;
           const fecha = c.doc.id;
+          if (!fechaNubeValida(fecha)) continue;
           const { v, mod } = c.doc.data();
           if (!mod || mod <= (activo.meta.dias[fecha] || 0)) continue;
           let valor = deJson(v);
           if (pendientes.has(fecha) && valor && estado.dias[fecha])
-            valor = combinarDia(valor, estado.dias[fecha]); // cambios cruzados
+            valor = fusionarRegistro(
+              activo.meta.basesDias?.[fecha],
+              estado.dias[fecha],
+              valor,
+            ); // cambios cruzados
           aplicarDiaActivo(fecha, valor);
           activo.meta.dias[fecha] = mod;
+          activo.meta.basesDias ||= {};
+          activo.meta.basesDias[fecha] = deJson(v);
           cambio = true;
           const rel = valor?.medidas?.foto;
           if (rel) bajarFoto(base, rel);
@@ -534,8 +596,8 @@ const pendientesDatos = new Set();
 
 function cambioLocal(tipo, clave) {
   if (aplicandoRemoto) return;
+  anotarSucio(tipo, clave);
   if (!usuario || !activo || enCurso) {
-    anotarSucio(tipo, clave);
     return;
   }
   if (tipo === "dia") pendientes.add(clave);
@@ -548,24 +610,33 @@ let colaSucios = Promise.resolve();
 const suciosMemoria = { dia: new Set(), datos: new Set() };
 function anotarSucio(tipo, clave) {
   if (!estado.perfil) return;
-  suciosMemoria[tipo === "dia" ? "dia" : "datos"].add(clave);
+  avisar({ pendiente: true });
+  if (!usuario || !activo || enCurso)
+    suciosMemoria[tipo === "dia" ? "dia" : "datos"].add(clave);
+  const ubicacion = window.api.ubicacion();
   colaSucios = colaSucios
     .then(async () => {
-      const meta = (await window.api.leer("sincro.json")) || {};
-      const campo = tipo === "dia" ? "sucios" : "suciosDatos";
-      meta[campo] = [...new Set([...(meta[campo] || []), clave])];
-      await window.api.escribir("sincro.json", meta);
+      const { perfil } = await ubicacion;
+      if (perfil) await colaLocal.marcar(perfil, tipo, clave);
     })
-    .catch(console.error);
+    .catch((e) => avisar({ error: mensaje(e) }));
 }
 
 const subirPendientes = retrasar(async () => {
   if (!usuario || !activo) return;
-  const base = fb.doc(db, "cuentas", usuario.uid, "perfiles", activo.nid);
+  await colaSucios;
+  const destino = activo;
+  if (!destino || !usuario) return;
+  const revisionEnviada = await colaLocal.leer(destino.localId);
+  const diasEnviados = [...pendientes],
+    datosEnviados = [...pendientesDatos];
+  const base = fb.doc(db, "cuentas", usuario.uid, "perfiles", destino.nid);
   const ahora = Date.now();
   try {
     const lote = fb.writeBatch(db);
+    const basesEnviadas = {};
     for (const fecha of pendientes) {
+      basesEnviadas[fecha] = structuredClone(estado.dias[fecha] || null);
       lote.set(fb.doc(base, "dias", fecha), {
         v: json(estado.dias[fecha] || null),
         mod: ahora,
@@ -586,22 +657,53 @@ const subirPendientes = retrasar(async () => {
       .filter((rel) => rel && !activo.meta.fotos[rel]);
     pendientes.clear();
     pendientesDatos.clear();
-    // Sin internet, Firestore guarda la escritura y la envía sola al volver la conexión.
+    // Solo confirmar la cola durable después de recibir acuse de registros y fotos.
+    avisar({ sincronizando: true });
+    const subirFotos = async () => {
+      for (const rel of fotos) {
+        const data = await window.api.perfilFoto(destino.localId, rel);
+        if (data) {
+          await fb.setDoc(fb.doc(base, "fotos", idFoto(rel)), {
+            v: await fotoParaNube(data),
+          });
+          destino.meta.fotos[rel] = true;
+        }
+      }
+    };
     lote
       .commit()
-      .then(() => avisar({ ultima: new Date(), error: null }))
-      .catch((e) => avisar({ error: mensaje(e) }));
-    for (const rel of fotos) {
-      const data = await window.api.perfilFoto(activo.localId, rel);
-      if (data) {
-        fb.setDoc(fb.doc(base, "fotos", idFoto(rel)), { v: data }).catch(
-          () => {},
+      .then(subirFotos)
+      .then(async () => {
+        destino.meta.basesDias = {
+          ...(destino.meta.basesDias || {}),
+          ...basesEnviadas,
+        };
+        const meta = await colaLocal.guardar(
+          destino.localId,
+          destino.meta,
+          confirmaciones(revisionEnviada, diasEnviados, datosEnviados),
         );
-        activo.meta.fotos[rel] = true;
-      }
-    }
+        avisar({
+          ultima: new Date(),
+          error: null,
+          sincronizando: false,
+          pendiente: !!(meta.sucios?.length || meta.suciosDatos?.length),
+        });
+      })
+      .catch((e) =>
+        avisar({ error: mensaje(e), sincronizando: false, pendiente: true }),
+      );
     guardarMeta();
   } catch (e) {
     avisar({ error: mensaje(e) });
   }
 }, 1200);
+
+// Prueba local: usa la desconexión oficial del SDK, nunca modifica el firewall.
+export async function conexionEmulador(activa) {
+  if (!emulador || !db) throw Error("Disponible solo en el emulador local.");
+  localStorage.setItem("rfc-emulador-sin-red", activa ? "0" : "1");
+  await (activa ? fb.enableNetwork(db) : fb.disableNetwork(db));
+  avisar({ enLinea: activa });
+  if (activa && usuario) sincronizarTodo();
+}

@@ -57,8 +57,8 @@ export function tarjetaNube(caja) {
       });
       caja.querySelector("#n-crear").addEventListener("click", async () => {
         const [c, k] = datos();
-        if (k.length < 6) {
-          msg("La contraseña debe tener al menos 6 caracteres.");
+        if (k.length < 12) {
+          msg("Usa una contraseña de al menos 12 caracteres.");
           return;
         }
         const e = await crearCuenta(c, k);
@@ -83,14 +83,16 @@ export function tarjetaNube(caja) {
       });
       return;
     }
-    const estadoTexto = n.error
-      ? `<span class="estado-pill no">Error</span>`
-      : n.sincronizando
-        ? '<span class="estado-pill nada">Sincronizando…</span>'
-        : '<span class="estado-pill ok">✓ Sincronizado</span>';
+    const estadoTexto = !n.enLinea
+      ? '<span class="estado-pill nada">Guardado en este dispositivo</span>'
+      : n.error
+        ? `<span class="estado-pill no">Error</span>`
+        : n.sincronizando || n.pendiente
+          ? '<span class="estado-pill nada">Sincronizando…</span>'
+          : '<span class="estado-pill ok">✓ Sincronizado</span>';
     caja.innerHTML = `<div class="tarjeta-cab"><h2>☁ Sincronización</h2>${estadoTexto}</div>
       <p>Sesión: <b>${escapar(n.email)}</b>${n.emulador ? ' <span class="suave">(emulador de prueba)</span>' : ""}</p>
-      <p class="suave pequeño" style="margin-top:4px">Última sincronización: ${hora(n.ultima)}. Los cambios se suben y bajan solos mientras haya internet; sin conexión se guardan y se envían al volver.</p>
+      <p class="suave pequeño" style="margin-top:4px">Última sincronización: ${hora(n.ultima)}. ${!n.enLinea ? "Sin internet: tus cambios quedan guardados aquí y se enviarán al reconectar." : n.pendiente ? "Hay cambios pendientes de confirmar." : "Tus dispositivos se actualizan automáticamente."}</p>
       ${n.error ? `<p class="pequeño" style="margin-top:6px;color:var(--peligro)">${escapar(n.error)}</p>` : ""}
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button class="boton" id="n-ahora">Sincronizar ahora</button>

@@ -1,5 +1,9 @@
-// Configuración del proyecto de Firebase (plan gratuito) para sincronizar PC y celular.
-// Se obtiene en: Consola de Firebase → ⚙ Configuración del proyecto → Tus apps → app web.
-// Estos datos NO son secretos: identifican el proyecto. Los datos los protegen la contraseña
-// de la cuenta y las reglas de seguridad (firebase/firestore.rules).
-export const NUBE_CONFIG = null;
+// Identificadores públicos del cliente. La autorización se aplica con Firebase Auth y Firestore Rules.
+export const NUBE_CONFIG = {
+  apiKey: "AIzaSyBOfVL8ht3Yyy_7FFZsoUgLDuR2DxhLFeU",
+  authDomain: "resistencia-fc.firebaseapp.com",
+  projectId: "resistencia-fc",
+  storageBucket: "resistencia-fc.firebasestorage.app",
+  messagingSenderId: "899842079197",
+  appId: "1:899842079197:web:0ef216225a16b4a9c75e34",
+};
