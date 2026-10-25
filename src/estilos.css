@@ -1078,3 +1078,9 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .reloj-periodos button{transition:background-color .15s ease,color .15s ease;}
 .reloj-periodos button:hover,.reloj-periodos button:focus-visible{background:#626a75;color:#fff;}
 @media (prefers-reduced-motion:reduce){.reloj-periodos button{transition:none;}}
+
+/* El puntero desplaza temporalmente el resaltado de AM/PM. */
+@media (hover:hover){
+ .reloj-periodos:has(button:hover) button:not(:hover){background:transparent;color:inherit;transition:none;}
+}
+.reloj-periodos:has(button:focus-visible):not(:has(button:hover)) button:not(:focus-visible){background:transparent;color:inherit;transition:none;}
