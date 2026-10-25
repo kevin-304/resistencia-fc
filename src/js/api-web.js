@@ -2,7 +2,7 @@
 // almacenamiento del teléfono (IndexedDB) con los mismos nombres de "archivo" que la PC,
 // así las pantallas del día y del calendario funcionan igual.
 
-import { leerPaquete } from './paquetes.js';
+import { leerPaquete } from './modulos/datos/paquetes.js';
 
 const BD = 'resistencia-fc';
 const TABLA = 'archivos';

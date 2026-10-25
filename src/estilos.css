@@ -1,3 +1,5 @@
+@import url("js/modulos/reloj/selector-hora.css");
+@import url("js/modulos/interfaz/avisos.css");
 /* ============ Base ============ */
 :root {
   --fondo: #14161b; --superficie: #1d2027; --superficie-2: #262a33; --borde: #323743;
@@ -322,10 +324,6 @@ details.desplegable[open] summary { color: var(--texto); }
 @keyframes aparecer { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
 
 /* ============ Avisos flotantes ============ */
-#avisos-flotantes { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-.aviso-flotante { background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--acento); padding: 11px 16px; border-radius: 10px; box-shadow: var(--sombra); max-width: 380px; animation: aparecer .25s ease-out; font-size: .93em; }
-.aviso-flotante.error { border-left-color: var(--peligro); }
-.aviso-flotante.ok { border-left-color: var(--ok); }
 
 /* ============ Diálogo ============ */
 dialog { background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); border-radius: 14px; padding: 22px; box-shadow: 0 20px 60px rgb(0 0 0 / .4); max-width: 560px; width: 92vw; }
@@ -869,29 +867,13 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .rutinas-guardar {display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;}
 .rutina-vigencia {margin-top:12px;}
 @media(max-width:520px){.rutinas-selector-fila>.campo {flex-basis:100%;max-width:none;}}
-.selector-hora {min-width:0;}
-.hora-input-fila {display:flex;align-items:stretch;gap:5px;}
-.hora-input-fila input {min-width:0;width:100%;}
-.hora-input-fila .boton {flex-shrink:0;padding:8px;width:38px;}
-.selector-hora .marcar-hora {display:inline-flex;justify-content:center;margin-top:10px;font-size:.82em;padding:8px 12px;min-height:36px;white-space:normal;border:1px solid var(--borde);border-radius:8px;background:var(--superficie-2);color:var(--texto);font-weight:550;}
-[data-hora-manual][aria-invalid="true"] {outline:2px solid #b84141;}
 [data-ayuno-config][hidden] {display:none!important;}
 .comida-nueva>summary,.bloque-actividad>summary {user-select:none;cursor:grab;}
 .comida-nueva>summary:active,.bloque-actividad>summary:active {cursor:grabbing;}
 .comida-agarre {min-width:32px;min-height:36px;touch-action:none;-webkit-touch-callout:none;}
 .comida-arrastrando {opacity:.65;box-shadow:0 3px 10px #00000012;}
-.reloj-esfera {position:relative;width:300px;max-width:100%;aspect-ratio:1;margin:auto;border-radius:50%;background:var(--fondo,#f3f4f6);border:1px solid var(--borde,#dce0e6);}
-.reloj-numero {position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;font:inherit;display:grid;place-items:center;}
-.reloj-numero.es-minuto {width:20px;height:20px;font-size:11px;}
-.reloj-numero:hover,.reloj-numero:focus-visible,.reloj-numero[aria-pressed="true"],.reloj-periodos button[aria-pressed="true"] {background:#626a75;color:white;}
-.reloj-centro {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:1.5em;font-variant-numeric:tabular-nums;pointer-events:none;}
-.reloj-periodos {display:flex;align-items:center;justify-content:center;height:100%;gap:24px;}
-.reloj-periodos button {width:72px;height:72px;border-radius:50%;border:0;background:transparent;color:inherit;font:inherit;font-size:1.3em;cursor:pointer;}
 .agua-registro {margin-top:12px;}
 @media(pointer:coarse){.reloj-numero.es-minuto {width:23px;height:23px;}.comida-agarre {min-width:38px;}}
-.reloj-manecilla {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;stroke:currentColor;stroke-width:2;opacity:.22;}
-.reloj-centro {min-width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:var(--fondo,#f3f4f6);}
-.reloj-numero:focus-visible,.reloj-periodos button:focus-visible {outline:2px solid #626a75;outline-offset:2px;}
 /* Arrastre: tarjeta elevada, hueco de destino y recolocación suave. */
 .arrastre-en-curso,.arrastre-en-curso * {cursor:grabbing!important;}
 .arrastre-flotante {position:fixed;left:0;top:0;z-index:10000;pointer-events:none;will-change:transform;box-sizing:border-box;}
@@ -902,14 +884,6 @@ dialog.guia-visor[open] { display: flex; flex-direction: column; }
 .comida-nueva.comida-arrastrando,.bloque-actividad.comida-arrastrando {height:var(--alto-arrastre)!important;min-height:0;overflow:hidden;opacity:1;border:2px dashed #9ca6b2;background:var(--fondo,#edf0f3);box-shadow:none;}
 .comida-arrastrando>summary {visibility:hidden;}
 @media(prefers-reduced-motion:reduce){.arrastre-flotante {will-change:auto;}}
-.selector-hora {position:relative;}
-.hora-inline {position:absolute;z-index:200;padding:0;border:0;border-radius:50%;background:transparent;box-sizing:border-box;}
-.hora-inline .reloj-esfera {width:100%;margin:0;box-shadow:0 6px 18px #00000020;}
-.hora-inline .reloj-numero.es-minuto {width:19px;height:19px;font-size:11px;background:var(--fondo);}
-.hora-inline .reloj-numero.es-minuto:hover,.hora-inline .reloj-numero.es-minuto[aria-pressed="true"] {background:#626a75;color:white;}
-.guia-espiral {fill:none;stroke-width:1;opacity:.28;}
-.reloj-volver {border:0;color:inherit;font:inherit;font-size:1.3em;cursor:pointer;pointer-events:auto;line-height:1.1;}
-.reloj-volver small {display:block;font-size:.55em;font-weight:550;}
 .seccion-card:has(.hora-inline) {overflow:visible;position:relative;z-index:20;}
 .ayuno-nocturno {align-items:start;gap:22px;}
 .ayuno-nocturno>div {min-width:0;}
@@ -979,10 +953,6 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .comida-edicion{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 14px;}
 .comida-edicion>.campo:first-child{flex:0 0 174px;max-width:100%;}
 .comida-edicion>.campo:nth-child(2){flex:0 1 auto;max-width:100%;}
-.selector-hora{display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;}
-.hora-input-fila{flex:0 0 auto;}
-.hora-input-fila input{width:76px;flex:0 0 76px;padding-left:9px;padding-right:7px;}
-.selector-hora .marcar-hora{margin-top:0;white-space:nowrap;font-size:.79em;padding:8px 10px;min-height:44px;}
 .ayuno-nocturno .campo{width:auto;}
 .ayuno-nocturno>div{flex:0 1 auto;}
 .guardar-comida-cabecera,.guardar-alimento{font-size:.8em;padding:7px 9px;min-height:34px;white-space:nowrap;}
@@ -1030,13 +1000,6 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 @media(hover:hover){.agua-simple .accion-icono.accion-icono:hover{background:#454c56!important;color:#fff!important;}}
 .agua-simple .accion-icono.accion-icono:is(:active,:focus-visible){background:#454c56!important;color:#fff!important;}
 
-.reloj-navegacion{position:absolute;top:calc(50% + 28px);left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2;}
-.reloj-navegacion button{display:grid;place-items:center;width:30px;height:30px;padding:5px;border:0;border-radius:7px;background:transparent;color:var(--texto);cursor:pointer;}
-.reloj-navegacion svg{width:20px;height:20px;pointer-events:none;}
-.reloj-navegacion button:hover:not(:disabled),.reloj-navegacion button:focus-visible{background:#626a75;color:#fff;}
-.reloj-navegacion button:disabled{opacity:.25;cursor:default;}
-.reloj-esfera.etapa-periodo .reloj-periodos{transform:translateY(-18px);}
-
 /* Cada categoría despliega su propio formulario debajo del título. */
 .categorias-agrupadas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 10px;}
 .categoria-grupo{min-width:0;border:1px solid var(--borde);border-radius:10px;overflow:hidden;}
@@ -1073,17 +1036,6 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .cal-opciones button{height:52px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;text-transform:capitalize;font:inherit;}
 .cal-opciones button:hover,.cal-opciones button:focus-visible{background:var(--superficie-2);}
 .cal-opciones button[aria-current]{color:var(--primario,#15803d);font-weight:700;}
-
-/* AM/PM: respuesta al puntero independiente de la selección. */
-.reloj-periodos button{transition:background-color .15s ease,color .15s ease;}
-.reloj-periodos button:hover,.reloj-periodos button:focus-visible{background:#626a75;color:#fff;}
-@media (prefers-reduced-motion:reduce){.reloj-periodos button{transition:none;}}
-
-/* El puntero desplaza temporalmente el resaltado de AM/PM. */
-@media (hover:hover){
- .reloj-periodos:has(button:hover) button:not(:hover){background:transparent;color:inherit;transition:none;}
-}
-.reloj-periodos:has(button:focus-visible):not(:has(button:hover)) button:not(:focus-visible){background:transparent;color:inherit;transition:none;}
 
 .sueno-tramos{display:grid;gap:12px;margin-bottom:12px;}
 .sueno-tramo{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}

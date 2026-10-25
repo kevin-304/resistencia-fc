@@ -1,12 +1,12 @@
-import './acciones-ui.js';
-import {iniciarCambioDia} from './cambio-dia.js';
-import {mostrarSemanales} from './vistas/semanales.js';
+import './modulos/interfaz/acciones-ui.js';
+import { iniciarCambioDia } from './modulos/datos/cambio-dia.js';
+import { mostrarSemanales } from './vistas/semanales.js';
 // Arranque de la versión celular. Primero se instala window.api (almacenamiento del teléfono).
 import './api-web.js';
-import { estado, cargar, alGuardar, guardarTodoYa } from './estado.js';
-import { aplicarTema } from './tema.js';
+import { estado, cargar, alGuardar, guardarTodoYa } from './modulos/datos/estado.js';
+import { aplicarTema } from './modulos/interfaz/tema.js';
 import { fijarManejador, navegar, limpiarPantalla, aviso } from './nav.js';
-import { I } from './iconos.js';
+import { I } from './modulos/ilustraciones/iconos.js';
 import { hoyISO } from './util.js';
 import { mostrarCalendario } from './vistas/calendario.js';
 import { mostrarDia } from './vistas/dia.js';
@@ -19,7 +19,7 @@ import { mostrarMiRutina } from './vistas/mirutina.js';
 import { mostrarEstadisticas } from './vistas/estadisticas.js';
 import { mostrarRutas } from './vistas/rutas.js';
 import { mostrarPersonalizacion } from './vistas/personalizacion.js';
-import { iniciarNube } from './nube.js';
+import { iniciarNube } from './modulos/sincronizacion/nube.js';
 
 const MENU = [
   { id: 'hoy', nombre: 'Hoy', icono: I.hoy },
