@@ -1061,3 +1061,15 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .categoria-acciones .categoria-anadir{color:#16813c;}
 .categoria-acciones .categoria-anadir:hover,.categoria-acciones .categoria-guardar:hover,.categoria-acciones .categoria-guardar:focus-visible{background:#16813c;color:#fff;border-color:#16813c;}
 .categoria-acciones .categoria-cancelar:hover{background:#626a75;color:#fff;border-color:#626a75;}
+
+/* Selector compacto de meses y años. */
+.cal-selector{position:relative;}
+.cal-titulo{font:inherit;color:inherit;text-transform:capitalize;background:transparent;border:0;border-radius:8px;padding:8px 10px;cursor:pointer;}
+.cal-titulo:hover,.cal-titulo:focus-visible{background:var(--superficie-2);}
+.cal-periodos{position:absolute;top:100%;left:0;z-index:40;width:min(340px,85vw);height:310px;overflow-y:auto;overscroll-behavior:contain;background:var(--superficie);color:var(--texto,#222);border:1px solid var(--borde,#ddd);border-radius:12px;box-shadow:0 8px 24px #0002;padding:12px;}
+.cal-periodos section{margin:0 0 12px;}
+.cal-periodos h2{font-size:14px;margin:6px 8px;}
+.cal-opciones{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.cal-opciones button{height:52px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;text-transform:capitalize;font:inherit;}
+.cal-opciones button:hover,.cal-opciones button:focus-visible{background:var(--superficie-2);}
+.cal-opciones button[aria-current]{color:var(--primario,#15803d);font-weight:700;}

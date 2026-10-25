@@ -42,7 +42,7 @@ export function mostrarCalendario(cont, params = {}) {
   cont.innerHTML = `
     <div class="cal-cabecera">
       <button class="boton icono" data-mover="-1" title="Mes anterior">${I.izquierda}</button>
-      <h1>${MESES[mes - 1]} ${anio}</h1>
+      <div class="cal-selector"><h1><button type="button" class="cal-titulo" aria-expanded="false">${MESES[mes - 1]} ${anio}</button></h1><div class="cal-periodos" hidden></div></div>
       <button class="boton icono" data-mover="1" title="Mes siguiente">${I.derecha}</button>
       <button class="boton" data-hoy>Hoy</button>
       <div style="flex:1"></div>
@@ -60,6 +60,8 @@ export function mostrarCalendario(cont, params = {}) {
     </div>
     ${r ? resumenMes(r, ctx) : ''}
   `;
+
+  conectarPeriodos(cont, anio, mes);
 
   cont.querySelectorAll('[data-mover]').forEach((b) => b.addEventListener('click', () => {
     const d = new Date(anio, mes - 1 + Number(b.dataset.mover), 1);
@@ -105,4 +107,33 @@ function resumenMes(r, ctx) {
       ${item('Comidas registradas', `${r.comidasTotal}<small>comidas</small>`, ctx.plan.alimentos.slice(0, 3).map((a) => `${r.alimentos[a.id] || 0} ${escapar(a.nombre.toLowerCase())}`).join(' · '))}
     </div>
   </div>`;
+}
+
+// Navegación progresiva: mes → meses → años. El desplazamiento conserva filas.
+function conectarPeriodos(cont, anio, mes) {
+  const titulo = cont.querySelector('.cal-titulo');
+  const panel = cont.querySelector('.cal-periodos');
+  let nivel = 0;
+  function abrir() {
+    panel.hidden = false;
+    titulo.setAttribute('aria-expanded', 'true');
+    titulo.textContent = String(anio);
+    const inicio = Math.max(100, anio - 60), fin = Math.min(9900, anio + 60);
+    panel.innerHTML = nivel === 1
+      ? Array.from({length:fin-inicio+1},(_,i)=>{const a=inicio+i;return `<section data-periodo="${a}"><h2>${a}</h2><div class="cal-opciones">${MESES.map((nombre,m)=>`<button type="button" data-mes="${a}-${String(m+1).padStart(2,'0')}" ${a===anio&&m===mes-1?'aria-current="date"':''}>${nombre}</button>`).join('')}</div></section>`;}).join('')
+      : `<div class="cal-opciones cal-anios">${Array.from({length:fin-inicio+1},(_,i)=>`<button type="button" data-anio="${inicio+i}" ${inicio+i===anio?'aria-current="date"':''}>${inicio+i}</button>`).join('')}</div>`;
+    panel.querySelectorAll('[data-mes]').forEach(b=>b.onclick=()=>{mesVisible=b.dataset.mes;mostrarCalendario(cont);});
+    panel.querySelectorAll('[data-anio]').forEach(b=>b.onclick=()=>{anio=Number(b.dataset.anio);nivel=1;abrir();});
+    const seleccionado = nivel===1 ? panel.querySelector(`[data-periodo="${anio}"]`) : panel.querySelector(`[data-anio="${anio}"]`);
+    panel.scrollTop = seleccionado.offsetTop - panel.firstElementChild.offsetTop;
+  }
+  titulo.onclick=()=>{nivel=nivel===0?1:nivel===1?2:1;abrir();};
+  panel.onwheel=e=>{
+    if(e.ctrlKey)return;
+    e.preventDefault();
+    panel.scrollBy({top:Math.sign(e.deltaY)*64,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+  };
+  cont.addEventListener('click',e=>{if(!e.target.closest('.cal-selector'))cerrar();});
+  titulo.onkeydown=panel.onkeydown=e=>{if(e.key==='Escape'){cerrar();titulo.focus();}};
+  function cerrar(){nivel=0;panel.hidden=true;titulo.textContent=`${MESES[mes-1]} ${mesVisible.slice(0,4)}`;titulo.setAttribute('aria-expanded','false');}
 }
