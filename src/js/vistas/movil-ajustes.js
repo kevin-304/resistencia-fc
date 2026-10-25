@@ -1,3 +1,4 @@
+import { montarResumenCuenta } from "../modulos/perfiles/cuenta-resumen.js";
 import { montarExtrasPerfil } from "../modulos/perfiles/identidad-perfil.js";
 // (Celular) Perfil y ajustes: actualizar el perfil desde la PC, modo claro/oscuro, borrar datos.
 import { estado, guardarConfig } from "../modulos/datos/estado.js";
@@ -5,33 +6,31 @@ import { aplicarTema, PRESETS } from "../modulos/interfaz/tema.js";
 import { aviso, confirmar, navegar } from "../nav.js";
 import { recargarEnPerfil } from "./perfil.js";
 import { I } from "../modulos/ilustraciones/iconos.js";
-import { tarjetaNube } from "./nube.js";
-import { escapar, fechaMedia, num } from "../util.js";
+import { escapar } from "../util.js";
 
 export async function mostrarMovilAjustes(cont) {
   const p = estado.perfil;
-  const pendientes = await window.api.pendientes();
   const oscuro = PRESETS[estado.config.tema.preset]?.modo !== "claro";
   cont.innerHTML = `
-    <div class="cabecera"><div class="titulo"><h1>Perfil</h1><p>${escapar(p.nombre)} · plan desde el ${fechaMedia(p.fechaInicio)} · meta ${num(p.pesoMeta, 1)} kg</p></div></div>
-    <div data-extras-perfil></div><button class="boton" id="cambiar-perfil" style="margin-bottom:14px;width:100%">${I.perfil} Cambiar de perfil</button>
-    <section class="tarjeta" id="caja-nube" style="margin-bottom:14px"></section>
-    <section class="tarjeta" style="margin-bottom:14px">
-      <div class="tarjeta-cab"><h2>Actualizar desde la PC (por WhatsApp)</h2></div>
-      <p class="suave">Si cambiaste tu perfil, rutas o colores en la PC, envíalo de nuevo (Perfil → <b>Enviar perfil al celular</b>) y cárgalo aquí. Tus días del celular no se tocan.</p>
+    <div class="cabecera"><div class="titulo"><h1>${escapar(p.nombre)}</h1><p>Tu perfil de entrenamiento</p></div></div>
+    <div data-resumen-cuenta></div><div data-extras-perfil></div><button class="boton" data-editar-perfil style="margin-bottom:10px;width:100%">Editar datos personales</button><button class="boton" id="cambiar-perfil" style="margin-bottom:14px;width:100%">${I.perfil} Cambiar de perfil</button>
+
+    <details class="tarjeta perfil-transferir" style="margin-bottom:14px"><summary>Importar una copia de perfil</summary>
+      <p class="suave" style="margin-top:12px">También puedes importar una copia manual. Los registros existentes se conservan.</p>
       <button class="boton" id="importar" style="margin-top:12px">${I.carpeta} Cargar perfil de la PC</button>
-    </section>
+    </details>
     <section class="tarjeta" style="margin-bottom:14px">
       <div class="tarjeta-cab"><h2>Apariencia</h2></div>
       <button class="boton" id="modo">${oscuro ? I.sol : I.luna} ${oscuro ? "Modo claro" : "Modo oscuro"}</button>
     </section>
     <section class="tarjeta">
       <div class="tarjeta-cab"><h2>Datos de este celular</h2></div>
-      <p class="suave">Los datos viven solo en este teléfono hasta que los envías a la PC. ${pendientes.length ? `<b>Tienes ${pendientes.length} día(s) sin enviar.</b>` : "Todo está enviado."}</p>
+      <p class="suave">Tus registros se guardan aquí y se sincronizan al iniciar sesión. Conserva una copia antes de borrarlos.</p>
       <button class="boton peligro" id="borrar" style="margin-top:12px">${I.basura} Borrar los datos de este celular</button>
     </section>`;
 
-  tarjetaNube(cont.querySelector("#caja-nube"));
+  montarResumenCuenta(cont.querySelector("[data-resumen-cuenta]"));
+  cont.querySelector("[data-editar-perfil]").onclick = () => navegar("perfil");
   montarExtrasPerfil(cont.querySelector("[data-extras-perfil]"));
   cont
     .querySelector("#cambiar-perfil")
@@ -53,9 +52,8 @@ export async function mostrarMovilAjustes(cont) {
     mostrarMovilAjustes(cont);
   });
   cont.querySelector("#borrar").addEventListener("click", async () => {
-    const texto = pendientes.length
-      ? `Hay ${pendientes.length} día(s) que todavía no enviaste a la PC y se perderían.`
-      : "Todo ya fue enviado a la PC.";
+    const texto =
+      "Se eliminarán los registros locales. Comprueba antes que estén sincronizados o exporta una copia.";
     if (
       !(await confirmar(
         "¿Borrar los datos del celular?",

@@ -35,3 +35,15 @@ Spark tiene cuotas gratuitas; no se vinculó facturación ni tarjeta. Si se agot
 - `conexionEmulador` está limitada a la configuración local `demo-rfc` con direcciones de loopback. No puede modificar la conexión de producción.
 
 Para las pruebas locales, configurar `RFC_PRUEBA` en una carpeta de pruebas y arrancar los emuladores de Auth y Firestore. Java es únicamente una herramienta de pruebas: no se instala ni se necesita en los equipos que usan Resistencia f’c.
+
+## Cuenta y correos (1.0.55)
+
+La vista reutiliza `perfiles/cuenta-ui.js`, `cuenta-datos.js`, `cuenta-resumen.js` y `cuenta.css`. Inicio, registro y recuperación son formularios separados. El registro solicita nombre, apellido, apodo opcional, correo, contraseña de al menos 12 caracteres y confirmación. Cada contraseña tiene su control para mostrarla u ocultarla. No se almacenan contraseñas en los registros ni en `sincro.json`.
+
+La identidad se guarda en `cuentas/{uid}/ajustes/cuenta`, accesible solo por el propietario, y el nombre visible también se actualiza en Firebase Auth. Es independiente de los perfiles de entrenamiento. Al cambiar de cuenta, los perfiles ya vinculados a otra cuenta no se suben automáticamente a la nueva.
+
+Después del registro se solicita `sendEmailVerification` de Firebase. El usuario abre el enlace recibido; la aplicación consulta `reload` y renueva el token al recuperar el foco o al pulsar Ya verifiqué. La verificación se muestra como estado de cuenta y no borra ni bloquea los registros locales. Los usuarios existentes no reciben correos automáticamente por instalar esta versión; pueden solicitarlos desde su cuenta.
+
+Olvidé mi contraseña abre un formulario de correo y solicita `sendPasswordResetEmail`. La contraseña nueva la elige el usuario en el enlace de Firebase. Nunca se genera ni se envía una contraseña por email. La respuesta de recuperación no revela si un correo está registrado. Los mensajes de Firebase se solicitan en español.
+
+La interfaz se probó en PC y móvil con servicios de prueba inyectados: alternancia de ojos, confirmación distinta, registro, verificación simulada, control de reenvíos, edición, recuperación y cambio de cuenta. La validación pura tiene prueba propia. La revisión automática bloqueó las pruebas adicionales que completaban acciones de correo o generaban enlaces en el emulador; no se ejecutaron ni se enviaron correos reales durante esta tarea. La recepción real y la apertura de enlaces quedan pendientes de validación por el usuario.

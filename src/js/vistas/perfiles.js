@@ -1,10 +1,12 @@
+import { montarResumenCuenta } from "../modulos/perfiles/cuenta-resumen.js";
+import { imagenPerfilSegura } from "../modulos/perfiles/identidad-perfil.js";
 // Pantalla "¿Quién va a registrar?": elegir, crear o importar un perfil.
 import { estado } from "../modulos/datos/estado.js";
 import { navegar, aviso } from "../nav.js";
 import { recargarEnPerfil, importarYAbrir } from "./perfil.js";
 import { I } from "../modulos/ilustraciones/iconos.js";
 import { nubeConfigurada } from "../modulos/sincronizacion/nube.js";
-import { escapar, fechaMedia, num } from "../util.js";
+import { escapar, num } from "../util.js";
 
 export async function mostrarPerfiles(cont) {
   const [lista, u] = await Promise.all([
@@ -19,35 +21,37 @@ export async function mostrarPerfiles(cont) {
       .map((x) => x[0].toUpperCase())
       .join("");
 
-  cont.innerHTML = `<div class="bienvenida" style="max-width:900px">
-    <div class="logo-grande"><img src="../build/icon.png" alt=""><div class="titulo-logo">Resistencia <span class="fc">f'c</span></div></div>
-    <h2 style="text-align:center;margin-bottom:18px">¿Quién va a registrar?</h2>
+  cont.innerHTML = `<div class="bienvenida perfiles-pagina" style="max-width:900px">
+    <header class="perfiles-cab"><img src="../build/icon.png" alt=""><div><h1>Perfiles</h1><p class="suave">Resistencia f’c</p></div></header>
+    ${nubeConfigurada() ? "<div data-resumen-cuenta></div>" : ""}
+    <div class="perfiles-titulo"><h2>Perfiles de entrenamiento</h2></div>
     <div class="perfiles-rejilla">
       ${lista
         .map(
           (
             p,
-          ) => `<button class="perfil-tarjeta ${p.id === u.perfil ? "actual" : ""}" data-id="${escapar(p.id)}">
-        <span class="avatar">${escapar(iniciales(p.nombre))}</span>
+          ) => `<button class="perfil-tarjeta perfil-seleccion ${p.id === u.perfil ? "actual" : ""}" data-id="${escapar(p.id)}">
+        <span class="avatar">${imagenPerfilSegura(p.fotoPerfil) ? `<img src="${p.fotoPerfil}" alt="">` : escapar(iniciales(p.nombre))}</span><span class="perfil-seleccion-texto">
         <b>${escapar(p.nombre)}</b>
-        <span class="suave pequeño">${p.sexo === "M" ? "Ingeniera" : "Ingeniero"}${p.pesoMeta ? ` · meta ${num(p.pesoMeta, 1)} kg` : ""}</span>
-        ${p.fechaInicio ? `<span class="suave pequeño">Plan desde el ${fechaMedia(p.fechaInicio)}</span>` : ""}
-        ${p.id === u.perfil ? '<span class="estado-pill ok">Último usado</span>' : ""}
+        <span class="suave pequeño">${p.pesoMeta ? `Meta: ${num(p.pesoMeta, 1)} kg` : "Perfil personal"}</span>
+        ${p.id === u.perfil ? '<span class="perfil-usado">Último usado</span>' : ""}</span>
       </button>`,
         )
         .join("")}
-      <button class="perfil-tarjeta nuevo" id="crear"><span class="avatar">${I.mas}</span><b>Crear perfil nuevo</b><span class="suave pequeño">Empieza desde cero</span></button>
+      <button class="perfil-tarjeta perfil-seleccion nuevo" id="crear"><span class="avatar">${I.mas}</span><span class="perfil-seleccion-texto"><b>Crear perfil</b><span class="suave pequeño">Datos y rutina propios</span></span></button>
     </div>
     <div class="bienvenida-pie">
       ${estado.perfil ? `<button class="boton fantasma" id="volver">${I.izquierda} Volver</button>` : "<span></span>"}
       <div class="grupo-botones">
-        ${nubeConfigurada() ? '<button class="boton" id="nube">☁ Cuenta y sincronización</button>' : ""}
+        
         <button class="boton" id="importar">${I.carpeta} Importar perfil</button>
       </div>
     </div>
-    <p class="suave pequeño ${window.api.esCelular ? "oculto" : ""}" style="text-align:center;margin-top:14px">También puedes pegar la carpeta de un perfil en<br><span class="num">${escapar(u.carpeta)}\\perfiles</span><br>y aparecerá aquí al abrir el programa.</p>
+    ${window.api.esCelular ? "" : `<details class="perfiles-ubicacion"><summary>Carpeta de perfiles</summary><p class="suave pequeño">${escapar(u.carpeta)}\\perfiles</p></details>`}
   </div>`;
 
+  const resumenCuenta = cont.querySelector("[data-resumen-cuenta]");
+  if (resumenCuenta) montarResumenCuenta(resumenCuenta);
   cont.querySelectorAll(".perfil-tarjeta[data-id]").forEach((b) =>
     b.addEventListener("click", async () => {
       try {
@@ -64,7 +68,6 @@ export async function mostrarPerfiles(cont) {
   cont
     .querySelector("#importar")
     .addEventListener("click", () => importarYAbrir());
-  cont.querySelector("#nube")?.addEventListener("click", () => navegar("nube"));
   cont
     .querySelector("#volver")
     ?.addEventListener("click", () => navegar("calendario"));

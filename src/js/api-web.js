@@ -243,6 +243,7 @@ window.api = {
         sexo: p.sexo,
         fechaInicio: p.fechaInicio,
         pesoMeta: p.pesoMeta,
+        fotoPerfil: p.fotoPerfil,
         nubeId: p.nubeId,
       });
     }

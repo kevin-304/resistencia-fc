@@ -1,3 +1,4 @@
+import { normalizarIdentidad, nombreCuenta } from "../perfiles/cuenta-datos.js";
 import { fotoParaNube } from "./fotos.js";
 import { fusionarRegistro, perfilCoincidente } from "./fusion.js";
 import { crearColaLocal, confirmaciones } from "./cola-local.js";
@@ -50,6 +51,8 @@ let fb = null;
 let auth = null;
 let db = null;
 let usuario = null;
+let quitarIdentidad = () => {};
+let recargaCuenta = null;
 let activo = null; // { localId, nid, meta }
 let aplicandoRemoto = false;
 let desuscribir = [];
@@ -61,6 +64,11 @@ const info = {
   enLinea: navigator.onLine,
   pendiente: false,
   email: null,
+  nombreCuenta: null,
+  identidad: {},
+  verificado: false,
+  perfilAjeno: false,
+  avisoCuenta: null,
   sincronizando: false,
   ultima: null,
   error: null,
@@ -119,6 +127,7 @@ export async function iniciarNube() {
   auth = fb.initializeAuth(app, {
     persistence: [fb.indexedDBLocalPersistence, fb.browserLocalPersistence],
   });
+  auth.languageCode = "es";
   try {
     db = fb.initializeFirestore(app, {
       localCache: fb.persistentLocalCache({
@@ -138,10 +147,46 @@ export async function iniciarNube() {
   }
   ganchos.cambio = cambioLocal;
   fb.onAuthStateChanged(auth, async (u) => {
+    const anterior = usuario?.uid;
     usuario = u;
-    avisar({ conectado: !!u, email: u?.email || null, error: null });
+    if (anterior !== u?.uid) activo = null;
+    quitarIdentidad();
+    quitarIdentidad = () => {};
+    avisar({
+      conectado: !!u,
+      email: u?.email || null,
+      nombreCuenta: u?.displayName || null,
+      identidad: {},
+      verificado: !!u?.emailVerified,
+      avisoCuenta: null,
+      perfilAjeno: false,
+      error: null,
+    });
+    if (u) {
+      quitarIdentidad = fb.onSnapshot(
+        fb.doc(db, "cuentas", u.uid, "ajustes", "cuenta"),
+        (snap) => {
+          if (usuario?.uid !== u.uid) return;
+          const identidad = normalizarIdentidad(
+            snap.exists() ? snap.data() : {},
+          );
+          avisar({
+            identidad,
+            nombreCuenta: nombreCuenta(identidad, u.displayName || "Mi cuenta"),
+          });
+        },
+        (e) => avisar({ avisoCuenta: mensaje(e) }),
+      );
+    }
     detenerEscucha();
     if (u) await sincronizarTodo();
+  });
+  const alVolver = () => {
+    if (usuario && navigator.onLine) comprobarVerificacion();
+  };
+  window.addEventListener("focus", alVolver);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") alVolver();
   });
   window.addEventListener("offline", () => avisar({ enLinea: false }));
   window.addEventListener("online", () => {
@@ -158,19 +203,84 @@ export async function entrar(email, clave) {
     return mensaje(e);
   }
 }
-export async function crearCuenta(email, clave) {
+export async function crearCuenta(email, clave, datos = {}) {
   try {
     await fb.createUserWithEmailAndPassword(auth, email.trim(), clave);
+  } catch (e) {
+    return mensaje(e);
+  }
+  if (datos.nombre || datos.apellido) {
+    const error = await guardarIdentidad(datos);
+    if (error) avisar({ avisoCuenta: "Cuenta creada. " + error });
+  }
+  const error = await enviarVerificacion();
+  if (error) avisar({ avisoCuenta: "Cuenta creada. " + error });
+  return null;
+}
+export async function guardarIdentidad(datos) {
+  const u = usuario || auth?.currentUser;
+  if (!u) return "Inicia sesión para guardar los datos de tu cuenta.";
+  const identidad = normalizarIdentidad(datos);
+  if (!identidad.nombre || !identidad.apellido)
+    return "Escribe tu nombre y apellido.";
+  try {
+    await fb.setDoc(fb.doc(db, "cuentas", u.uid, "ajustes", "cuenta"), {
+      ...identidad,
+      actualizado: Date.now(),
+    });
+    await fb.updateProfile(u, { displayName: nombreCuenta(identidad) });
+    if (usuario?.uid === u.uid)
+      avisar({
+        identidad,
+        nombreCuenta: nombreCuenta(identidad),
+        avisoCuenta: null,
+      });
     return null;
   } catch (e) {
     return mensaje(e);
   }
+}
+export async function enviarVerificacion() {
+  if (!usuario) return "Primero inicia sesión.";
+  try {
+    await fb.sendEmailVerification(usuario);
+    avisar({
+      avisoCuenta:
+        "Te enviamos un enlace de verificación. Revisa también el correo no deseado.",
+    });
+    return null;
+  } catch (e) {
+    return mensaje(e);
+  }
+}
+export async function comprobarVerificacion() {
+  if (!usuario) return null;
+  if (recargaCuenta) return recargaCuenta;
+  const u = usuario;
+  recargaCuenta = (async () => {
+    try {
+      await fb.reload(u);
+      await fb.getIdToken(u, true);
+      if (usuario?.uid === u.uid)
+        avisar({
+          verificado: !!u.emailVerified,
+          avisoCuenta: u.emailVerified ? "Correo verificado." : null,
+        });
+      return null;
+    } catch (e) {
+      return mensaje(e);
+    } finally {
+      recargaCuenta = null;
+    }
+  })();
+  return recargaCuenta;
 }
 export async function recuperarClave(email) {
   try {
     await fb.sendPasswordResetEmail(auth, email.trim());
     return null;
   } catch (e) {
+    if (e?.code?.includes("user-not-found")) return null;
     return mensaje(e);
   }
 }
@@ -252,11 +362,16 @@ async function sincronizarTodoReal() {
     );
     const idAbierto = await idActivoLocal();
     let huboCambiosLista = false;
+    let perfilAjeno = false;
 
     for (const local of await window.api.listarPerfiles()) {
       const esActivo = local.id === idAbierto && !!estado.perfil;
       const arch = await archivosDe(local.id, esActivo);
       if (!arch.perfil) continue;
+      if (arch.sincro?.cuenta && arch.sincro.cuenta !== uid) {
+        if (esActivo) perfilAjeno = true;
+        continue;
+      }
       let nid = arch.perfil.nubeId;
       if (!nid) {
         nid = perfilCoincidente(arch.perfil, remotos, deJson) || nuevoId();
@@ -325,6 +440,7 @@ async function sincronizarTodoReal() {
       ultima: new Date(),
       error: null,
       pendiente: !!(restante.sucios?.length || restante.suciosDatos?.length),
+      perfilAjeno,
     });
     if (huboCambiosLista) window.dispatchEvent(new Event("nube-perfiles"));
   } catch (e) {

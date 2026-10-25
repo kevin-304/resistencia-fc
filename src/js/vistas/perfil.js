@@ -298,8 +298,27 @@ export function mostrarPerfil(cont) {
   const edad = p.nacimiento
     ? Math.floor(diasEntre(p.nacimiento, hoyISO()) / 365.25)
     : null;
+  const transferencia = window.api.esCelular
+    ? `<details class="tarjeta perfil-transferir" style="margin-top:16px"><summary>Importar o exportar</summary><div class="cuenta-acciones"><button class="boton" id="exportar">Exportar registros</button><button class="boton" id="importar">Importar perfil</button><button class="boton" id="cambiar">Cambiar perfil</button></div></details>`
+    : `    <details class="tarjeta perfil-transferir" style="margin-top:16px"><summary>Importar o exportar perfil</summary>
+      <div class="rejilla rejilla-2">
+        <div>
+          <p><b>Exportar</b> crea una carpeta <span class="num">"Perfil - ${escapar(p.nombre || "")}"</span> con todo lo tuyo: días, comidas, rutas, medidas, fotos y colores.</p>
+          <p class="suave pequeño" style="margin-top:6px">Pásala por USB, Drive o correo (comprimida en .zip). En la otra PC, con el programa instalado, se abre con <b>Importar perfil</b>.</p>
+          <button class="boton primario" id="exportar" style="margin-top:12px">${I.descargar} Exportar mi perfil</button>
+        </div>
+        <div>
+          <p><b>Otros perfiles</b>: cada persona tiene sus propios datos en esta PC. Puedes crear uno nuevo, importar uno que te pasaron o cambiar de perfil.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="boton" id="importar">${I.carpeta} Importar perfil</button>
+            <button class="boton" id="al-celular">📱 Enviar perfil al celular</button>
+            <button class="boton" id="cambiar">${I.perfil} Cambiar / crear perfil</button>
+          </div>
+        </div>
+      </div>
+    </details>`;
   cont.innerHTML = `
-    <div class="cabecera"><div class="titulo"><h1>Perfil</h1><p>Tus datos de partida y metas.</p></div></div>
+    <div class="cabecera"><div class="titulo"><h1>${escapar(p.nombre || "Mi perfil")}</h1><p>Datos personales y metas de entrenamiento.</p></div><div class="grupo-botones"><button class="boton" data-perfil-cambiar>Cambiar perfil</button><button class="boton" data-perfil-cuenta>Mi cuenta</button></div></div>
     <div data-extras-perfil></div><div class="rejilla rejilla-2" style="align-items:start">
       <section class="tarjeta" id="form">
         ${formularioPerfil(p)}
@@ -316,24 +335,7 @@ export function mostrarPerfil(cont) {
         <p class="suave pequeño" style="margin-top:16px">Cambiar la fecha de inicio mueve las semanas del plan (entrada gradual del ayuno y progresión de intervalos). Tus registros no se pierden.</p>
       </section>
     </div>
-    <section class="tarjeta" style="margin-top:16px">
-      <div class="tarjeta-cab"><h2>Compartir o llevar tu perfil</h2></div>
-      <div class="rejilla rejilla-2">
-        <div>
-          <p><b>Exportar</b> crea una carpeta <span class="num">"Perfil - ${escapar(p.nombre || "")}"</span> con todo lo tuyo: días, comidas, rutas, medidas, fotos y colores.</p>
-          <p class="suave pequeño" style="margin-top:6px">Pásala por USB, Drive o correo (comprimida en .zip). En la otra PC, con el programa instalado, se abre con <b>Importar perfil</b>.</p>
-          <button class="boton primario" id="exportar" style="margin-top:12px">${I.descargar} Exportar mi perfil</button>
-        </div>
-        <div>
-          <p><b>Otros perfiles</b>: cada persona tiene sus propios datos en esta PC. Puedes crear uno nuevo, importar uno que te pasaron o cambiar de perfil.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-            <button class="boton" id="importar">${I.carpeta} Importar perfil</button>
-            <button class="boton" id="al-celular">📱 Enviar perfil al celular</button>
-            <button class="boton" id="cambiar">${I.perfil} Cambiar / crear perfil</button>
-          </div>
-        </div>
-      </div>
-    </section>`;
+    ${transferencia}`;
   montarExtrasPerfil(
     cont.querySelector("[data-extras-perfil]"),
     (campo, valor) => {
@@ -342,6 +344,10 @@ export function mostrarPerfil(cont) {
     },
   );
   cont.querySelector("#exportar").addEventListener("click", async () => {
+    if (window.api.esCelular) {
+      navegar("enviar");
+      return;
+    }
     try {
       const ruta = await window.api.exportarPerfil();
       if (ruta) aviso("Perfil exportado en: " + ruta, "ok");
@@ -355,10 +361,13 @@ export function mostrarPerfil(cont) {
   cont
     .querySelector("#cambiar")
     .addEventListener("click", () => navegar("perfiles"));
-  cont.querySelector("#al-celular").addEventListener("click", async () => {
+  cont.querySelector("#al-celular")?.addEventListener("click", async () => {
     const { enviarPerfilAlCelular } = await import("../celular.js");
     enviarPerfilAlCelular();
   });
+  cont.querySelector("[data-perfil-cambiar]").onclick = () =>
+    navegar("perfiles");
+  cont.querySelector("[data-perfil-cuenta]").onclick = () => navegar("nube");
   const form = cont.querySelector("#form");
   conectarFormulario(form, p);
   cont.querySelector("#guardar").addEventListener("click", async () => {
