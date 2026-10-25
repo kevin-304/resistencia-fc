@@ -1073,3 +1073,8 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .cal-opciones button{height:52px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;text-transform:capitalize;font:inherit;}
 .cal-opciones button:hover,.cal-opciones button:focus-visible{background:var(--superficie-2);}
 .cal-opciones button[aria-current]{color:var(--primario,#15803d);font-weight:700;}
+
+/* AM/PM: respuesta al puntero independiente de la selección. */
+.reloj-periodos button{transition:background-color .15s ease,color .15s ease;}
+.reloj-periodos button:hover,.reloj-periodos button:focus-visible{background:#626a75;color:#fff;}
+@media (prefers-reduced-motion:reduce){.reloj-periodos button{transition:none;}}
