@@ -261,18 +261,6 @@
   color: var(--texto);
   margin: 0;
 }
-.perfiles-ubicacion {
-  font-size: 0.85em;
-  margin-top: 20px;
-  color: var(--texto-suave);
-}
-.perfiles-ubicacion summary {
-  cursor: pointer;
-}
-.perfiles-ubicacion p {
-  margin-top: 8px;
-  overflow-wrap: anywhere;
-}
 .perfil-transferir > summary {
   cursor: pointer;
   font-weight: 650;

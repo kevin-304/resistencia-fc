@@ -47,7 +47,6 @@ export async function mostrarPerfiles(cont) {
         <button class="boton" id="importar">${I.carpeta} Importar perfil</button>
       </div>
     </div>
-    ${window.api.esCelular ? "" : `<details class="perfiles-ubicacion"><summary>Carpeta de perfiles</summary><p class="suave pequeño">${escapar(u.carpeta)}\\perfiles</p></details>`}
   </div>`;
 
   const resumenCuenta = cont.querySelector("[data-resumen-cuenta]");
