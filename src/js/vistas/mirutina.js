@@ -1,3 +1,5 @@
+import { incorporarRutina } from '../modulos/rutinas/importar-rutina.js';
+import { aviso } from '../nav.js';
 import {
   normalizarProgramacion,
   rutinaVigente,
@@ -54,13 +56,6 @@ export function mostrarMiRutina(cont, opciones = {}) {
     p.actividades = Object.values(p.semana).some((d) => d.ruta.activa)
       ? ["ruta", "cardio"]
       : [];
-  // El plan histórico de Kevin combina circuitos con movimientos de peso corporal.
-  if (
-    /^kevin\b/i.test(estado.perfil?.nombre || "") &&
-    p.actividades.every((a) => ["ruta", "casa", "cardio"].includes(a)) &&
-    p.actividades.includes("cardio")
-  )
-    p.actividades = ["ruta", "cardio"];
   p = prepararSemana(p, hoy > inicioEditor ? hoy : inicioEditor);
   const abiertas = new Set();
   const guardar = () => {
@@ -70,7 +65,7 @@ export function mostrarMiRutina(cont, opciones = {}) {
     guardarConfig();
   };
   function render() {
-    cont.innerHTML = `<div class="cabecera"><div class="titulo"><h1>Mi rutina</h1></div></div>
+    cont.innerHTML = `<div class="cabecera"><div class="titulo"><h1>Mi rutina</h1></div><button type="button" class="boton" data-importar-rutina>Importar rutina</button><input type="file" accept=".json,.txt,application/json,text/plain" data-archivo-rutina hidden></div>
    ${panelProgramacion(programacion, seleccion, hoy)}<section class="tarjeta semana-config"><h2>Actividades</h2><div class="semana-actividades">${ACTIVIDADES.map((a) => `<label class="semana-opcion"><input type="checkbox" data-actividad="${a.id}" ${p.actividades.includes(a.id) ? "checked" : ""}>${iconoActividad(a.id, estado.perfil?.sexo)}<span>${escapar(a.nombre)}</span></label>`).join("")}</div></section>
    <section class="tarjeta semana-config"><h2>Días de entrenamiento</h2><p class="suave pequeño">Marca los días que vas a hacer ejercicio; deja vacíos los de descanso.</p><div class="semana-dias">${ORDEN_SEMANA.map((ds) => `<label class="semana-opcion"><input type="checkbox" data-entrena="${ds}" ${entrenaDia(p.semana[ds]) ? "checked" : ""}><span>${DIAS[ds]}</span></label>`).join("")}</div></section>
    <div class="secciones-grid rutina-semana">${ORDEN_SEMANA.filter((ds) =>
@@ -87,6 +82,19 @@ export function mostrarMiRutina(cont, opciones = {}) {
        ),
      )
      .join("")}</div>`;
+    const archivo=cont.querySelector('[data-archivo-rutina]');
+    cont.querySelector('[data-importar-rutina]').onclick=()=>archivo.click();
+    archivo.onchange=async()=>{
+      const f=archivo.files?.[0];if(!f)return;
+      try{
+        if(f.size>2000000)throw Error('El archivo es demasiado grande.');
+        const nuevo=incorporarRutina(estado.config,estado.perfil,await f.text());
+        estado.config=nuevo;
+        await guardarConfig.ya();
+        mostrarMiRutina(cont,{rutinaId:nuevo.programacionRutinas.seleccionada});
+        aviso('Rutina importada.','ok');
+      }catch(e){aviso(e.message,'error');}finally{archivo.value='';}
+    };
     conectarProgramacion(cont, {
       programacion,
       r: seleccion,

@@ -1,5 +1,5 @@
-// Generado por scripts/construir-web.js — versión 2026-10-26T00:48:48.861Z
-const CACHE = 'rfc-1792975728862';
+// Generado por scripts/construir-web.js — versión 2026-10-26T16:15:53.418Z
+const CACHE = 'rfc-1793031353420';
 const ARCHIVOS = [
   "./",
   "estilos.css",
@@ -84,6 +84,7 @@ const ARCHIVOS = [
   "js/modulos/rutinas/bloques-actividad.js",
   "js/modulos/rutinas/catalogo-ejercicios.js",
   "js/modulos/rutinas/editor-sesion.js",
+  "js/modulos/rutinas/importar-rutina.js",
   "js/modulos/rutinas/plan.js",
   "js/modulos/rutinas/preparacion-sesion.js",
   "js/modulos/rutinas/programacion-rutinas.js",
