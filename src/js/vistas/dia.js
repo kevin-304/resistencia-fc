@@ -396,27 +396,6 @@ export function mostrarDia(cont, { fecha }) {
       panel.querySelector("summary").focus();
       return;
     }
-    if (accion === "guardar-categoria") {
-      const c = buscarComida(objetivo.dataset.idComida),
-        panel = objetivo.closest(".categoria-comida");
-      if (!c) return;
-      if (
-        panel.querySelector("[data-item-categoria]").value.trim() &&
-        !agregarAlimentoDesde(panel, c)
-      )
-        return;
-      if (!c.items?.some((i) => i.categoria === objetivo.dataset.categoria))
-        return;
-      guardarComida(c);
-      actualizarCaloriasComida(c);
-      diaCambiado(fecha);
-      repintarComidas(c.id, null, {
-        categoria: objetivo.dataset.categoria,
-        limpiar: true,
-        cerrar: true,
-      });
-      return;
-    }
     if (accion === "editar-alimento") {
       const fila = objetivo.closest(".comida-item");
       fila.classList.remove("alimento-guardado");
@@ -629,7 +608,8 @@ export function mostrarDia(cont, { fecha }) {
       campo = caja.querySelector("[data-item-calorias]"),
       etiqueta = caja.querySelector("[data-item-kcal-campo]"),
       ayuda = caja.querySelector("[data-item-kcal-ayuda]");
-    etiqueta.hidden = !nombre;
+    etiqueta.hidden = true;
+    ayuda.hidden = true;
     if (reiniciar) {
       delete campo.dataset.manual;
       if (!cantidad.value) cantidad.value = "1";

@@ -1009,13 +1009,16 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .categoria-grupo>.categoria-comida>summary{display:flex;gap:8px;align-items:center;padding:10px;min-height:44px;font-size:.85em;}
 .categoria-grupo>.categoria-comida>summary b{flex:1;}
 .categoria-grupo>.categoria-comida[open]>summary{background:color-mix(in srgb,var(--texto) 5%,transparent);color:var(--texto);}
-.categoria-grupo .categoria-elegir{grid-template-columns:minmax(0,1fr) 64px 80px;max-width:none;padding:8px 10px;}
+.categoria-editor{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px;}
+.categoria-grupo .categoria-elegir{display:grid;grid-template-columns:minmax(120px,1fr) 64px;flex:1 1 240px;max-width:440px;padding:0;gap:8px;}
+.categoria-editor .categoria-acciones{padding:0;flex-wrap:nowrap;justify-content:flex-start;}
+.categoria-editor [data-item-kcal-ayuda]{display:none;}
 .categoria-acciones{display:flex;justify-content:flex-end;gap:10px;padding:2px 10px 12px;}
 .categoria-acciones .boton{display:inline-flex;align-items:center;gap:5px;font-size:.82em;padding:7px 10px;}
 .categoria-acciones svg{width:17px;height:17px;}
 .categoria-grupo>.comida-items:empty{display:none;}
 .categoria-grupo>.comida-items{padding:0 10px 4px;}
-@media(max-width:520px){.categoria-grupo .categoria-elegir{grid-template-columns:minmax(0,1fr) 80px;}.categoria-grupo [data-item-categoria]{grid-column:1/-1;}.categoria-grupo [data-item-cantidad]{grid-column:1;}.categoria-grupo .alimento-kcal{grid-column:2;}.categoria-grupo>.categoria-comida>summary{padding:8px;gap:6px;}}
+@media(max-width:520px){.categoria-editor{gap:10px;}.categoria-grupo .categoria-elegir{grid-template-columns:minmax(0,1fr) 56px;flex-basis:100%;}.categoria-grupo [data-item-categoria]{grid-column:auto;}.categoria-grupo [data-item-cantidad]{grid-column:auto;}.categoria-grupo>.categoria-comida>summary{padding:8px;gap:6px;}}
 
 .categoria-anadir.boton{color:#16813c;background:transparent;}
 .categoria-anadir.boton:hover{background:#16813c;color:#fff;}
@@ -1024,7 +1027,7 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .categoria-acciones{flex-wrap:wrap;gap:8px;}
 .categoria-acciones .boton{background:transparent;border:1px solid var(--borde);color:var(--texto);}
 .categoria-acciones .categoria-anadir{color:#16813c;}
-.categoria-acciones .categoria-anadir:hover,.categoria-acciones .categoria-guardar:hover,.categoria-acciones .categoria-guardar:focus-visible{background:#16813c;color:#fff;border-color:#16813c;}
+.categoria-acciones .categoria-anadir:hover,.categoria-acciones .categoria-anadir:focus-visible{background:#16813c;color:#fff;border-color:#16813c;}
 .categoria-acciones .categoria-cancelar:hover{background:#626a75;color:#fff;border-color:#626a75;}
 
 /* Selector compacto de meses y años. */

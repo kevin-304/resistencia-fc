@@ -56,13 +56,13 @@ export function selectorAlimentos(c, personales = []) {
     .map(({ cat, items }) => {
       const id = `alimentos-${c.id}-${cat.id}`;
       return `<section class="categoria-grupo ${items.length ? "tiene-alimentos" : ""}" data-grupo-categoria="${cat.id}"><details class="categoria-comida" data-categoria-panel="${cat.id}"><summary>${iconoCategoria(cat.id)}<b>${cat.nombre}</b></summary>
- <div class="categoria-elegir"><input type="search" data-lista-alimentos="${escapar(id)}" role="combobox" aria-autocomplete="list" aria-expanded="false" data-item-categoria="${cat.id}" aria-label="Buscar en ${escapar(cat.nombre)}" placeholder="Buscar en ${escapar(cat.nombre)} o escribir otro" autocomplete="off" maxlength="120"><datalist id="${escapar(id)}">${catalogo
+ <div class="categoria-editor"><div class="categoria-elegir"><input type="search" data-lista-alimentos="${escapar(id)}" role="combobox" aria-autocomplete="list" aria-expanded="false" data-item-categoria="${cat.id}" aria-label="Buscar en ${escapar(cat.nombre)}" placeholder="Buscar en ${escapar(cat.nombre)} o escribir otro" autocomplete="off" maxlength="120"><datalist id="${escapar(id)}">${catalogo
    .filter((a) => a.categoria === cat.id)
    .map((a) => `<option value="${escapar(a.nombre)}"></option>`)
    .join(
      "",
    )}</datalist><input data-item-cantidad placeholder="Cant." aria-label="Cantidad"><label class="alimento-kcal" data-item-kcal-campo hidden><span>kcal aprox.</span><input type="number" min="0" step="1" data-item-calorias placeholder="kcal" aria-label="Calorías estimadas editables"></label><small class="referencia-kcal" data-item-kcal-ayuda></small></div>
- <div class="categoria-acciones"><button type="button" class="boton categoria-anadir" data-con-texto data-accion="agregar-item-comida" data-id-comida="${escapar(c.id)}" data-categoria="${cat.id}" title="Añadir" aria-label="Añadir alimento en ${escapar(cat.nombre)}">${I.mas} Añadir</button><button type="button" class="boton categoria-guardar" data-accion="guardar-categoria" data-id-comida="${escapar(c.id)}" data-categoria="${cat.id}">Guardar</button><button type="button" class="boton categoria-cancelar" data-accion="cancelar-categoria">Cancelar</button></div></details>
+ <div class="categoria-acciones"><button type="button" class="boton categoria-anadir" data-con-texto data-accion="agregar-item-comida" data-id-comida="${escapar(c.id)}" data-categoria="${cat.id}" title="Añadir" aria-label="Añadir alimento en ${escapar(cat.nombre)}">${I.mas} Añadir</button><button type="button" class="boton categoria-cancelar" data-accion="cancelar-categoria">Cancelar</button></div></div></details>
  <div class="comida-items">${items.map(fila).join("")}</div></section>`;
     })
     .join("")}</div></div>`;
