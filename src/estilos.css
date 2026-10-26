@@ -1052,3 +1052,8 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .catalogo-previa svg{width:100%;max-height:260px;background:white;}
 .catalogo-previa p{font-size:.85rem;margin:6px 0;color:var(--texto-suave);}
 .guia-vector{background:white;}
+
+/* Guardar una categoría desde su cabecera, junto al nombre. */
+.categoria-comida:not([open])>summary>.categoria-guardar-cabecera{display:none;}
+.categoria-guardar-cabecera.boton{margin-left:auto;flex:none;padding:6px 10px;font-size:.82rem;min-height:32px;background:var(--superficie);color:var(--texto);border:1px solid var(--borde);}
+.categoria-guardar-cabecera.boton:hover,.categoria-guardar-cabecera.boton:focus-visible{background:#16813c;color:#fff;border-color:#16813c;}

@@ -396,6 +396,18 @@ export function mostrarDia(cont, { fecha }) {
       panel.querySelector("summary").focus();
       return;
     }
+    if (accion === "guardar-categoria") {
+      e.preventDefault();
+      const c=buscarComida(objetivo.dataset.idComida),panel=objetivo.closest('.categoria-comida');
+      if(!c)return;
+      if(panel.querySelector('[data-item-categoria]').value.trim()&&!agregarAlimentoDesde(panel,c))return;
+      if(!c.items?.some(i=>i.categoria===objetivo.dataset.categoria)){panel.querySelector('[data-item-categoria]').focus();return;}
+      guardarComida(c);
+      actualizarCaloriasComida(c);
+      diaCambiado(fecha);
+      repintarComidas(c.id,null,{categoria:objetivo.dataset.categoria,limpiar:true,cerrar:true});
+      return;
+    }
     if (accion === "editar-alimento") {
       const fila = objetivo.closest(".comida-item");
       fila.classList.remove("alimento-guardado");
