@@ -1,3 +1,5 @@
+import { conectarBuscadorAlimentos } from "../alimentacion/buscador-alimentos.js";
+import { alSalir } from "../../nav.js";
 import { crearPreparacion } from "./preparacion-sesion.js";
 import { escapar, idUnico } from "../../util.js";
 import { figuraReloj } from "../ilustraciones/figura-reloj.js";
@@ -5,6 +7,7 @@ import { imagenEjercicio } from "./plan.js";
 import {
   CATALOGO_EJERCICIOS,
   ejerciciosCatalogo,
+  fichaEjercicio,
 } from "./catalogo-ejercicios.js";
 export function montarPreparacion(
   cont,
@@ -50,7 +53,7 @@ export function montarPreparacion(
        ]
          .map(
            (e, i) =>
-             `<details class="prep-ejercicio"><summary><b>${escapar(e.nombre)}</b><small>${e.series || 1} × ${e.valor} ${e.unidad === "reps" ? "reps" : "s"}</small></summary><div class="prep-figura">${figuraReloj({ ...e, ejercicioId: e.id }, "", p.ejercicios)}</div>${
+             `<details class="prep-ejercicio"><summary><b>${escapar(e.nombre)}</b><small>${e.series || 1} × ${e.valor} ${e.unidad === "reps" ? "reps" : "s"}</small></summary><div class="prep-figura">${figuraReloj({ ...e, ejercicioId: e.id }, "", p.ejercicios)}</div>${e.nota || fichaEjercicio(e.nombre)?.nota ? `<p class="prep-indicacion">${escapar(e.nota || fichaEjercicio(e.nombre)?.nota)}</p>` : ""}${
                editando
                  ? `<div class="campos prep-campos">
    <label class="campo prep-nombre"><span>Ejercicio</span><input data-prep-g="${g}" data-prep-i="${i}" data-prep-k="nombre" value="${escapar(e.nombre)}"></label>
@@ -67,12 +70,14 @@ export function montarPreparacion(
          .join("")}</div>
    ${
      editando
-       ? `<div class="prep-agregar"><select data-prep-categoria="${g}" aria-label="Categoría de ejercicios"><option value="">Mis actividades</option>${CATALOGO_EJERCICIOS.map((c) => `<option value="${c.id}" ${categorias[g] === c.id ? "selected" : ""}>${escapar(c.nombre)}</option>`).join("")}</select><input data-prep-nuevo="${g}" list="prep-catalogo-${uid}-${g}" placeholder="Nombre del ejercicio"><button type="button" class="boton" data-prep-agregar="${g}" aria-label="Añadir ejercicio">+</button><datalist id="prep-catalogo-${uid}-${g}" data-prep-lista="${g}">${ejerciciosCatalogo(
+       ? `<div class="prep-agregar"><select data-prep-categoria="${g}" aria-label="Categoría de ejercicios"><option value="">Mis actividades</option>${CATALOGO_EJERCICIOS.map((c) => `<option value="${c.id}" ${categorias[g] === c.id ? "selected" : ""}>${escapar(c.nombre)}</option>`).join("")}</select><input data-prep-nuevo="${g}" data-catalogo-ejercicios="prep-catalogo-${uid}-${g}" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" placeholder="Nombre del ejercicio"><button type="button" class="boton" data-prep-agregar="${g}" aria-label="Añadir ejercicio">+</button><datalist id="prep-catalogo-${uid}-${g}" data-prep-lista="${g}">${ejerciciosCatalogo(
            categorias[g] || "",
            actividades,
          )
            .map((n) => `<option value="${escapar(n)}">`)
-           .join("")}</datalist></div>`
+           .join(
+             "",
+           )}</datalist></div><div class="catalogo-previa" data-prep-previa="${g}"></div>`
        : ""
    }</section>`,
      )
@@ -113,6 +118,7 @@ export function montarPreparacion(
       const g = agregar.dataset.prepAgregar,
         nombre = cont.querySelector(`[data-prep-nuevo="${g}"]`).value.trim();
       if (!nombre) return;
+      const ficha = fichaEjercicio(nombre);
       p[g].push({
         id: idUnico(),
         nombre,
@@ -123,6 +129,7 @@ export function montarPreparacion(
         descansoSeg: 20,
         bloque: "Principal",
         imagen: g === "ejercicios" ? undefined : imagenEjercicio(nombre),
+        nota: ficha?.nota || "",
       });
       guardar();
       render();
@@ -159,7 +166,9 @@ export function montarPreparacion(
       fila.duracionSeg = fila.valor;
     if (k === "nombre") {
       delete fila.imagen;
-      delete fila.nota;
+      fila.nota = fichaEjercicio(fila.nombre)?.nota || "";
+      t.closest("details").querySelector(".prep-figura").innerHTML =
+        figuraReloj(fila, "", p.ejercicios);
     }
     if (k === "valor" && g !== "ejercicios" && fila.nota)
       fila.nota = fila.nota.replace(
@@ -173,5 +182,30 @@ export function montarPreparacion(
       `${fila.series} × ${fila.valor} ${fila.unidad === "reps" ? "reps" : "s"}`;
     if (k === "unidad") render();
   };
+  cont.addEventListener("input", previa);
+  cont.addEventListener("change", previa);
+  function previa(e) {
+    const g = e.target.dataset.prepNuevo;
+    if (!g) return;
+    const nombre = e.target.value.trim(),
+      f = fichaEjercicio(nombre),
+      caja = cont.querySelector(`[data-prep-previa="${g}"]`);
+    if (caja)
+      caja.innerHTML = f
+        ? `${figuraReloj({ nombre }, "", [])}<p>${escapar(f.nota)}</p>`
+        : nombre
+          ? '<small class="suave">Ejercicio personalizado: sin guía asociada.</small>'
+          : "";
+  }
   render();
+  const limpiar = conectarBuscadorAlimentos(cont, {
+    selector: "[data-catalogo-ejercicios]",
+    atributo: "catalogoEjercicios",
+    etiqueta: "Ejercicios",
+  });
+  alSalir(() => {
+    limpiar();
+    cont.removeEventListener("input", previa);
+    cont.removeEventListener("change", previa);
+  });
 }

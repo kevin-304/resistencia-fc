@@ -1046,3 +1046,9 @@ button.boton[data-accion="borrar-comida"]:is(:focus-visible,:active),button.boto
 .sueno-tramo{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
 .sueno-tramo>.campo{flex:1 1 130px;min-width:0;}
 .sueno-calidad{margin-top:16px;}
+
+.catalogo-previa:empty{display:none;}
+.catalogo-previa{max-width:620px;padding:10px 0;}
+.catalogo-previa svg{width:100%;max-height:260px;background:white;}
+.catalogo-previa p{font-size:.85rem;margin:6px 0;color:var(--texto-suave);}
+.guia-vector{background:white;}

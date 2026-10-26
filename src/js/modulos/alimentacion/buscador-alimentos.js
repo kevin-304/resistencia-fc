@@ -1,7 +1,14 @@
 import { normalizarAlimento } from "./catalogo-comidas.js";
 
 // Lista propia: sigue al campo en cualquier contenedor desplazable.
-export function conectarBuscadorAlimentos(contenedor) {
+export function conectarBuscadorAlimentos(
+  contenedor,
+  {
+    selector = "[data-lista-alimentos]",
+    atributo = "listaAlimentos",
+    etiqueta = "Alimentos",
+  } = {},
+) {
   let seleccionando = false;
   let campo = null,
     lista = null,
@@ -35,12 +42,26 @@ export function conectarBuscadorAlimentos(contenedor) {
       }
     }
     lista.hidden = !visible;
+    const vp = window.visualViewport,
+      izquierda = vp?.offsetLeft || 0,
+      arriba = vp?.offsetTop || 0,
+      ancho = vp?.width || innerWidth,
+      alto = vp?.height || innerHeight;
+    const debajo = arriba + alto - r.bottom - 12,
+      encima = r.top - arriba - 12;
+    const haciaArriba = debajo < 150 && encima > debajo,
+      espacio = Math.max(0, Math.min(240, haciaArriba ? encima : debajo));
     lista.style.left =
-      Math.max(8, Math.min(r.left, innerWidth - r.width - 8)) + "px";
-    lista.style.top = r.bottom + 4 + "px";
-    lista.style.width = Math.min(r.width, innerWidth - 16) + "px";
-    lista.style.maxHeight =
-      Math.max(0, Math.min(240, innerHeight - r.bottom - 12)) + "px";
+      Math.max(
+        izquierda + 8,
+        Math.min(r.left, izquierda + ancho - r.width - 8),
+      ) + "px";
+    lista.style.width = Math.min(r.width, ancho - 16) + "px";
+    lista.style.maxHeight = espacio + "px";
+    lista.style.top =
+      (haciaArriba
+        ? r.top - Math.min(lista.scrollHeight, espacio) - 4
+        : r.bottom + 4) + "px";
   }
   function mover() {
     if (!lista) return;
@@ -74,7 +95,7 @@ export function conectarBuscadorAlimentos(contenedor) {
       cerrar();
       campo = input;
     }
-    const fuente = document.getElementById(input.dataset.listaAlimentos),
+    const fuente = document.getElementById(input.dataset[atributo]),
       busqueda = normalizarAlimento(input.value);
     opciones = [...(fuente?.options || [])]
       .map((o) => o.value)
@@ -88,7 +109,7 @@ export function conectarBuscadorAlimentos(contenedor) {
       lista.id = id;
       lista.className = "lista-alimentos";
       lista.setAttribute("role", "listbox");
-      lista.setAttribute("aria-label", "Alimentos");
+      lista.setAttribute("aria-label", etiqueta);
       document.body.appendChild(lista);
       lista.addEventListener("mousedown", (e) => e.preventDefault());
       lista.addEventListener("click", (e) => {
@@ -116,10 +137,10 @@ export function conectarBuscadorAlimentos(contenedor) {
   }
   function enfocar(e) {
     if (seleccionando) return;
-    if (e.target.matches("[data-lista-alimentos]")) abrir(e.target);
+    if (e.target.matches(selector)) abrir(e.target);
   }
   function teclas(e) {
-    if (!e.target.matches("[data-lista-alimentos]")) return;
+    if (!e.target.matches(selector)) return;
     if (e.key === "Escape") {
       cerrar();
       return;
@@ -159,6 +180,8 @@ export function conectarBuscadorAlimentos(contenedor) {
   document.addEventListener("pointerdown", fuera, true);
   document.addEventListener("scroll", mover, true);
   window.addEventListener("resize", mover);
+  window.visualViewport?.addEventListener("resize", mover);
+  window.visualViewport?.addEventListener("scroll", mover);
   const observador = new MutationObserver(() => {
     if (campo && !campo.isConnected) cerrar();
   });
@@ -174,5 +197,7 @@ export function conectarBuscadorAlimentos(contenedor) {
     document.removeEventListener("pointerdown", fuera, true);
     document.removeEventListener("scroll", mover, true);
     window.removeEventListener("resize", mover);
+    window.visualViewport?.removeEventListener("resize", mover);
+    window.visualViewport?.removeEventListener("scroll", mover);
   };
 }

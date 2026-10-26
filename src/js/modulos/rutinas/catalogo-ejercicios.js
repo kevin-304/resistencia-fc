@@ -1,3 +1,8 @@
+import {
+  GUIAS_VECTOR,
+  guiaVector,
+} from "../ilustraciones/guias/catalogo-svg.js";
+export { guiaVector as fichaEjercicio } from "../ilustraciones/guias/catalogo-svg.js";
 import { COMPLEMENTOS, ACTIVIDADES } from "./plan.js";
 const extras = {
   ruta: [
@@ -121,6 +126,9 @@ export const CATALOGO_EJERCICIOS = ACTIVIDADES.map((a) => ({
   ejercicios: [
     ...new Set([
       ...(extras[a.id] || []),
+      ...GUIAS_VECTOR.filter((g) => g.categorias.includes(a.id)).flatMap(
+        (g) => g.nombres,
+      ),
       ...Object.values(COMPLEMENTOS)
         .filter((r) => r.actividad === a.id)
         .flatMap((r) => (r.ejercicios || []).map((e) => e.nombre)),

@@ -1,3 +1,4 @@
+import { dibujoGuia } from "./guias/catalogo-svg.js";
 import { escapar } from "../../util.js";
 
 // Cada celda es una ilustración independiente de inicio y movimiento, sin texto.
@@ -78,6 +79,14 @@ export function ilustracionPersona(nombre) {
   if (/deslizamientos? de talon/.test(n))
     return `<svg class="reloj-figura ilustracion-persona" viewBox="0 200 1954 400" role="img" aria-label="${escapar(nombre)}: posición inicial y movimiento"><title>${escapar(nombre)}: inicio y movimiento</title><image href="img/ejercicios/personas/deslizamiento-talon.png" width="1954" height="805"/></svg>`;
   const regla = REGLAS.find(([r]) => r.test(n));
+  const variante =
+    /barra|pared|rodillas apoyadas|inclinado con dos|sentadilla a silla|sentadilla con mancuernas|goblet|press inclinado|fondos|maquina|polea|step|banca o grada/.test(
+      n,
+    );
+  if (!regla || variante) {
+    const vector = dibujoGuia(nombre);
+    if (vector) return vector;
+  }
   if (!regla) return "";
   const i = regla[1];
   const correcciones = {
