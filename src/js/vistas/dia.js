@@ -405,7 +405,7 @@ export function mostrarDia(cont, { fecha }) {
       guardarComida(c);
       actualizarCaloriasComida(c);
       diaCambiado(fecha);
-      repintarComidas(c.id,null,{categoria:objetivo.dataset.categoria,limpiar:true,cerrar:true});
+      repintarComidas(c.id,null,{categoria:objetivo.dataset.categoria,limpiar:true,cerrar:true,guardarCategoria:true});
       return;
     }
     if (accion === "editar-alimento") {
@@ -437,7 +437,7 @@ export function mostrarDia(cont, { fecha }) {
         .querySelector(
           `[data-comida-id="${c.id}"] [data-categoria-panel="${objetivo.dataset.categoria}"] [data-item-categoria]`,
         )
-        ?.focus();
+        ?.focus({preventScroll:true});
       return;
     }
     if (accion === "quitar-item-comida") {
@@ -768,6 +768,10 @@ export function mostrarDia(cont, { fecha }) {
 
   function repintarComidas(abrirId = null, cerrarId = null, opciones = {}) {
     const viejo = cont.querySelector("#sec-comidas");
+    const ordenes=[...viejo.querySelectorAll('[data-editor-comida]')].map(editor=>({
+      comida:editor.dataset.editorComida,
+      categorias:[...editor.querySelectorAll('[data-grupo-categoria]')].map(g=>g.dataset.grupoCategoria)
+    }));
     const borradores = [
       ...viejo.querySelectorAll("[data-categoria-panel]"),
     ].map((p) => ({
@@ -804,6 +808,15 @@ export function mostrarDia(cont, { fecha }) {
       k.value = b.kcal;
       if (b.manual) k.dataset.manual = b.manual;
       prepararCalorias(panel);
+    }
+    // Añadir conserva la posición. Solo Guardar traslada su categoría al final.
+    for(const orden of ordenes){
+      const editor=[...cont.querySelectorAll('[data-editor-comida]')].find(e=>e.dataset.editorComida===orden.comida);
+      if(!editor)continue;
+      const lista=editor.querySelector('.comida-categorias');
+      const grupos=new Map([...lista.children].map(g=>[g.dataset.grupoCategoria,g]));
+      for(const id of orden.categorias){const grupo=grupos.get(id);if(grupo)lista.appendChild(grupo);}
+      if(opciones.guardarCategoria&&orden.comida===abrirId){const grupo=grupos.get(opciones.categoria);if(grupo)lista.appendChild(grupo);}
     }
     ordenarTarjetasComidas();
     refrescar();
